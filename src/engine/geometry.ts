@@ -88,3 +88,46 @@ export function centerOf(t: Transform): Point {
 export function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
+
+// Resizes a (possibly rotated) rect by dragging one of its 4 corners while
+// keeping the diagonally opposite corner fixed in world space.
+// cornerIndex follows rectCorners' order: 0=TL, 1=TR, 2=BR, 3=BL (local space).
+export function resizeFromCorner(
+  fixedCornerWorld: Point,
+  cornerSign: Point, // sign (+/-1, +/-1) of the corner being DRAGGED, in local space
+  rotationDeg: number,
+  pointerWorld: Point,
+  minWidth: number,
+  minHeight: number,
+): Transform {
+  const rad = (rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(-rad);
+  const sin = Math.sin(-rad);
+  const dx = pointerWorld.x - fixedCornerWorld.x;
+  const dy = pointerWorld.y - fixedCornerWorld.y;
+  const localX = dx * cos - dy * sin;
+  const localY = dx * sin + dy * cos;
+
+  const width = Math.max(minWidth, Math.abs(localX));
+  const height = Math.max(minHeight, Math.abs(localY));
+
+  // Center sits half a diagonal away from the fixed corner, opposite the
+  // dragged corner's sign, rotated back into world space.
+  const halfW = width / 2;
+  const halfH = height / 2;
+  const centerLocalOffsetX = -cornerSign.x * halfW;
+  const centerLocalOffsetY = -cornerSign.y * halfH;
+  const fRad = (rotationDeg * Math.PI) / 180;
+  const fCos = Math.cos(fRad);
+  const fSin = Math.sin(fRad);
+  const worldOffsetX = centerLocalOffsetX * fCos - centerLocalOffsetY * fSin;
+  const worldOffsetY = centerLocalOffsetX * fSin + centerLocalOffsetY * fCos;
+
+  return {
+    x: fixedCornerWorld.x + worldOffsetX,
+    y: fixedCornerWorld.y + worldOffsetY,
+    width,
+    height,
+    rotationDeg,
+  };
+}

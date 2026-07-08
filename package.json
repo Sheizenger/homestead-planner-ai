@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
+    "immer": "^11.1.11",
     "jspdf": "^4.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

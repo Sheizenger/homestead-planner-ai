@@ -1,7 +1,7 @@
 import type { AnalyticsSnapshot, Fence, PlanObject, Warning } from '../domain/types';
 import { CONSTRAINTS } from '../domain/constraints';
 import { OBJECT_LIBRARY } from '../domain/objectLibrary';
-import { distance } from './geometry';
+import { distance, transformAabb, aabbOverlap } from './geometry';
 
 function matches(entryId: string, entryCategory: string, list: string[]): boolean {
   return list.includes(entryId) || list.includes(entryCategory);
@@ -55,6 +55,23 @@ export function computeWarnings(objects: PlanObject[], fences: Fence[], analytic
         ruleId: 'containment-required',
         objectIds: [obj.id],
       });
+    }
+  }
+
+  for (let i = 0; i < objects.length; i++) {
+    for (let j = i + 1; j < objects.length; j++) {
+      const a = objects[i];
+      const b = objects[j];
+      if (aabbOverlap(transformAabb(a.transform), transformAabb(b.transform))) {
+        warnings.push({
+          id: `warn-overlap-${a.id}-${b.id}`,
+          severity: 'critical',
+          message: `${a.label} and ${b.label} overlap on the plan.`,
+          ruleId: 'object-overlap',
+          objectIds: [a.id, b.id],
+          suggestedFix: { label: 'Move apart', action: 'increase-separation' },
+        });
+      }
     }
   }
 
