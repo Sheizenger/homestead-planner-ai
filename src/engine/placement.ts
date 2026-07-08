@@ -1,0 +1,266 @@
+import type { Plot, PlanObject, Transform, PlanningMode, ObjectCategory } from '../domain/types';
+import { OBJECT_LIBRARY, type ObjectLibraryEntry } from '../domain/objectLibrary';
+import { CONSTRAINTS } from '../domain/constraints';
+import type { ProgramItem } from './sizing';
+import {
+  polygonBounds,
+  rectFullyInsidePolygon,
+  transformAabb,
+  aabbOverlap,
+  distance,
+} from './geometry';
+
+// Coarse placement tiers: structures/utilities go first as spatial anchors,
+// then animals, then food zones, then incidental extras. Within a tier,
+// items are placed largest-first (see sort below) so big fields claim open
+// space before small beds nibble at what's left — plain priority-order
+// placement otherwise starves large production-scaled fields that happen to
+// sort late.
+const PLACEMENT_TIERS: string[][] = [
+  ['house'],
+  ['garage', 'shed', 'barn', 'cellar', 'woodshed'],
+  ['well', 'pump', 'septic', 'water-tank', 'solar-array', 'battery-room', 'inverter-room', 'generator'],
+  ['goat-shelter', 'goat-paddock', 'poultry-coop'],
+  ['raised-beds', 'greenhouse', 'hydroponic-tower', 'vegetable-area', 'potato-area', 'grain-field', 'orchard-trees', 'berry-rows', 'vineyard'],
+  ['compost', 'patio'],
+];
+
+function tierOf(typeId: string): number {
+  const idx = PLACEMENT_TIERS.findIndex((tier) => tier.includes(typeId));
+  return idx === -1 ? PLACEMENT_TIERS.length : idx;
+}
+
+function mulberry32(seed: number) {
+  let a = seed;
+  return function rand() {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function matches(entry: ObjectLibraryEntry, list: string[]): boolean {
+  return list.includes(entry.id) || list.includes(entry.category);
+}
+
+export interface PlacedResult {
+  objects: PlanObject[];
+  unplaced: ProgramItem[];
+}
+
+interface Candidate {
+  transform: Transform;
+  score: number;
+  reasons: string[];
+}
+
+const MODE_WEIGHTS: Record<PlanningMode, { access: number; separation: number; sun: number; beauty: number }> = {
+  'production-max': { access: 1, separation: 1, sun: 2.2, beauty: 0.2 },
+  'minimum-maintenance': { access: 2.2, separation: 0.8, sun: 1, beauty: 0.3 },
+  'beauty-balanced': { access: 1.2, separation: 1.1, sun: 1.2, beauty: 1.8 },
+  'safety-first': { access: 1, separation: 2.2, sun: 1, beauty: 0.3 },
+};
+
+export function placeObjects(
+  plot: Plot,
+  program: ProgramItem[],
+  mode: PlanningMode,
+  seed: number,
+): PlacedResult {
+  const rand = mulberry32(seed);
+  const bounds = polygonBounds(plot.boundary);
+  const plotW = bounds.maxX - bounds.minX;
+  const plotH = bounds.maxY - bounds.minY;
+  const step = Math.max(1.2, Math.min(plotW, plotH) / 28);
+  const weights = MODE_WEIGHTS[mode];
+
+  const sorted = [...program].sort((a, b) => {
+    const tierDiff = tierOf(a.typeId) - tierOf(b.typeId);
+    if (tierDiff !== 0) return tierDiff;
+    return b.width * b.height - a.width * a.height; // largest-first within a tier
+  });
+
+  const placed: PlanObject[] = [...plot.existingObjects.map((e) => ({
+    id: e.id,
+    typeId: e.type,
+    category: (OBJECT_LIBRARY[e.type]?.category ?? 'residential') as ObjectCategory,
+    transform: e.transform,
+    label: e.label,
+    locked: true,
+    layerId: (OBJECT_LIBRARY[e.type]?.category ?? 'residential') as ObjectCategory,
+    metadata: {},
+  }))];
+  const unplaced: ProgramItem[] = [];
+
+  let houseCenter = placed.find((p) => p.typeId === 'house')?.transform;
+
+  for (const item of sorted) {
+    const entry = OBJECT_LIBRARY[item.typeId];
+    if (!entry) continue;
+    const width = item.width;
+    const height = item.height;
+
+    let best = searchBestCandidate(plot, bounds, step, width, height, entry, placed, houseCenter, weights, rand);
+    for (const shrink of [0.8, 0.6, 0.45]) {
+      if (best) break;
+      best = searchBestCandidate(plot, bounds, step, width * shrink, height * shrink, entry, placed, houseCenter, weights, rand);
+    }
+    if (!best) {
+      unplaced.push(item);
+      continue;
+    }
+
+    const obj: PlanObject = {
+      id: `obj-${item.typeId}-${placed.length}-${Math.floor(rand() * 1e6)}`,
+      typeId: item.typeId,
+      category: entry.category,
+      transform: best.transform,
+      label: entry.label,
+      locked: false,
+      layerId: entry.category,
+      metadata: item.metadata,
+      rationale: buildRationale(entry, best.reasons),
+    };
+    placed.push(obj);
+    if (item.typeId === 'house') houseCenter = obj.transform;
+  }
+
+  return { objects: placed, unplaced };
+}
+
+function searchBestCandidate(
+  plot: Plot,
+  bounds: ReturnType<typeof polygonBounds>,
+  step: number,
+  width: number,
+  height: number,
+  entry: ObjectLibraryEntry,
+  placed: PlanObject[],
+  houseCenter: Transform | undefined,
+  weights: { access: number; separation: number; sun: number; beauty: number },
+  rand: () => number,
+): Candidate | null {
+  const orientations = width === height ? [0] : [0, 90];
+  let best: Candidate | null = null;
+
+  for (let x = bounds.minX + width / 2; x <= bounds.maxX - width / 2; x += step) {
+    for (let y = bounds.minY + height / 2; y <= bounds.maxY - height / 2; y += step) {
+      for (const rot of orientations) {
+        const w = rot === 90 ? height : width;
+        const h = rot === 90 ? width : height;
+        const transform: Transform = { x: x + (rand() - 0.5) * step * 0.3, y: y + (rand() - 0.5) * step * 0.3, width: w, height: h, rotationDeg: 0 };
+        if (!rectFullyInsidePolygon(transform, plot.boundary)) continue;
+
+        const aabb = transformAabb(transform);
+        const overlaps = placed.some((p) => aabbOverlap(aabb, transformAabb(p.transform), 1.2));
+        if (overlaps) continue;
+
+        const hardViolation = CONSTRAINTS.some((c) => {
+          if (!c.hard || c.kind !== 'separation' || !c.minDistance) return false;
+          if (!matches(entry, c.subjectTypes)) return false;
+          return placed.some((p) => {
+            const otherEntry = OBJECT_LIBRARY[p.typeId];
+            if (!otherEntry || !matches(otherEntry, c.relatedTypes)) return false;
+            return distance(transform, p.transform) < c.minDistance!;
+          });
+        });
+        if (hardViolation) continue;
+
+        const { score, reasons } = scoreCandidate(transform, entry, placed, houseCenter, bounds, weights);
+        if (!best || score > best.score) best = { transform, score, reasons };
+      }
+    }
+  }
+  return best;
+}
+
+function scoreCandidate(
+  transform: Transform,
+  entry: ObjectLibraryEntry,
+  placed: PlanObject[],
+  houseCenter: Transform | undefined,
+  bounds: ReturnType<typeof polygonBounds>,
+  weights: { access: number; separation: number; sun: number; beauty: number },
+): { score: number; reasons: string[] } {
+  let score = 0;
+  const reasons: string[] = [];
+
+  if (houseCenter && entry.id !== 'house') {
+    const d = distance(transform, houseCenter);
+    if (entry.needsAccess) {
+      score -= d * weights.access;
+      if (d < 15) reasons.push('close to the house for frequent access');
+    } else {
+      score -= d * weights.access * 0.15; // mild preference for compactness even for low-visit zones
+    }
+  } else if (!houseCenter) {
+    // House placement: bias toward the "front" (larger y = south/road side by convention).
+    score += (transform.y - bounds.minY) * 1.5;
+    reasons.push('positioned toward the plot’s road-facing side');
+  }
+
+  for (const c of CONSTRAINTS) {
+    if (!matches(entry, c.subjectTypes)) continue;
+    for (const p of placed) {
+      const otherEntry = OBJECT_LIBRARY[p.typeId];
+      if (!otherEntry || !matches(otherEntry, c.relatedTypes)) continue;
+      const d = distance(transform, p.transform);
+      if (c.kind === 'separation' && c.minDistance && d < c.minDistance) {
+        score -= (c.minDistance - d) * weights.separation;
+        reasons.push(`kept apart from ${p.label.toLowerCase()}`);
+      }
+      if (c.kind === 'adjacency' && c.maxDistance) {
+        if (d > c.maxDistance) score -= (d - c.maxDistance) * weights.access * 0.5;
+        else {
+          score += (c.maxDistance - d) * weights.access * 0.3;
+          reasons.push(`kept near ${p.label.toLowerCase()}`);
+        }
+      }
+    }
+  }
+
+  if (entry.sunNeed === 'full') {
+    const southness = transform.y - bounds.minY;
+    score += southness * weights.sun * 0.6;
+    const shaded = placed.some((p) => {
+      const otherEntry = OBJECT_LIBRARY[p.typeId];
+      if (!otherEntry || !['residential', 'food-perennial', 'storage'].includes(otherEntry.category)) return false;
+      const isNorthOfCandidate = p.transform.y < transform.y;
+      const withinShadowBand = Math.abs(p.transform.x - transform.x) < (p.transform.width + transform.width);
+      const closeEnough = transform.y - p.transform.y < p.transform.height * 2.5;
+      return isNorthOfCandidate && withinShadowBand && closeEnough;
+    });
+    if (shaded) score -= 40 * weights.sun;
+    else reasons.push('full southern sun exposure, clear of shade');
+  }
+
+  if (entry.noiseLevel === 'loud' || entry.odorLevel === 'strong') {
+    const distToBoundary = Math.min(
+      transform.x - bounds.minX,
+      bounds.maxX - transform.x,
+      transform.y - bounds.minY,
+      bounds.maxY - transform.y,
+    );
+    score += distToBoundary * weights.separation * 0.3;
+  }
+
+  if (weights.beauty > 1) {
+    const alignsWithExisting = placed.some(
+      (p) => Math.abs(p.transform.x - transform.x) < 1.5 || Math.abs(p.transform.y - transform.y) < 1.5,
+    );
+    if (alignsWithExisting) {
+      score += 12 * weights.beauty;
+      reasons.push('aligned with existing zones for visual order');
+    }
+  }
+
+  return { score, reasons };
+}
+
+function buildRationale(entry: ObjectLibraryEntry, reasons: string[]): string {
+  if (reasons.length === 0) return `${entry.label} placed within available space.`;
+  const unique = [...new Set(reasons)].slice(0, 2);
+  return `${entry.label}: ${unique.join('; ')}.`;
+}

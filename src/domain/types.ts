@@ -129,6 +129,21 @@ export interface UtilityNode {
   connections: string[]; // UtilityNode ids
 }
 
+export type ConstraintKind = 'adjacency' | 'separation' | 'sunlight' | 'access' | 'safety';
+
+export interface Constraint {
+  id: string;
+  kind: ConstraintKind;
+  // Matches an object if its typeId or category appears in these lists.
+  subjectTypes: string[];
+  relatedTypes: string[];
+  minDistance?: number; // 'separation' rules: violated if closer than this
+  maxDistance?: number; // 'adjacency' rules: violated if farther than this
+  hard: boolean; // hard constraints are enforced as placement filters, not just warnings
+  severity: WarningSeverity;
+  message: string;
+}
+
 export type WarningSeverity = 'info' | 'caution' | 'critical';
 
 export interface Warning {
