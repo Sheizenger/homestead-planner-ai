@@ -1,7 +1,7 @@
 import type { PlanObject, ZoneCategory } from '../../domain/types';
 import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
 import { CATEGORY_STYLES } from '../../domain/categories';
-import { ObjectGlyph } from './objectGlyphs';
+import { ObjectGlyph, lShapeVertices } from './objectGlyphs';
 
 export interface ObjectVisualProps {
   obj: PlanObject;
@@ -10,6 +10,12 @@ export interface ObjectVisualProps {
   hasWarning?: boolean;
   isSelected?: boolean;
   textClassName?: string;
+}
+
+function lShapePoints(width: number, height: number): string {
+  return lShapeVertices(width, height)
+    .map((p) => p.join(','))
+    .join(' ');
 }
 
 // Renders one object's fill shape + type-specific decorative glyph + label.
@@ -21,8 +27,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
   const fill = style?.[themeKey].fill ?? '#ddd';
   const stroke = hasWarning ? '#b3452e' : style?.[themeKey].stroke ?? '#888';
   const { width, height } = obj.transform;
-  const isCircle = entry?.shape === 'circle';
-  const radius = Math.min(width, height) / 2;
+  const shape = entry?.shape ?? 'rect';
   const strokeWidth = isSelected ? 0.3 : 0.15;
   const fillOpacity = obj.locked ? 0.5 : 0.85;
   const dash = obj.locked ? '0.4,0.3' : undefined;
@@ -30,9 +35,23 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
 
   return (
     <>
-      {isCircle ? (
-        <circle r={radius} fill={fill} fillOpacity={fillOpacity} stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={dash} />
-      ) : (
+      {shape === 'circle' && (
+        <circle
+          r={Math.min(width, height) / 2}
+          fill={fill}
+          fillOpacity={fillOpacity}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeDasharray={dash}
+        />
+      )}
+      {shape === 'oval' && (
+        <ellipse rx={width / 2} ry={height / 2} fill={fill} fillOpacity={fillOpacity} stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={dash} />
+      )}
+      {shape === 'lshape' && (
+        <polygon points={lShapePoints(width, height)} fill={fill} fillOpacity={fillOpacity} stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={dash} />
+      )}
+      {shape === 'rect' && (
         <rect
           x={-width / 2}
           y={-height / 2}
@@ -49,7 +68,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
 
       {entry && <ObjectGlyph entry={entry} width={width} height={height} stroke={style?.[themeKey].stroke ?? '#888'} />}
 
-      {showDesignDetail && !isCircle && (
+      {showDesignDetail && shape === 'rect' && (
         <rect
           x={-width / 2 + 0.3}
           y={-height / 2 + 0.3}

@@ -1,4 +1,4 @@
-import type { Constraint } from './types';
+import type { Constraint, WarningSeverity } from './types';
 
 // Category strings (e.g. 'animal', 'residential') and specific object-library
 // type ids (e.g. 'well', 'septic') can both be used as matchers — a single
@@ -124,5 +124,126 @@ export const CONSTRAINTS: Constraint[] = [
     hard: false,
     severity: 'info',
     message: 'Pump is far from the water tank.',
+  },
+  // Fire-safety separations. Distances follow common practice for
+  // wood-frame outbuilding spacing (roughly 6-15 m depending on
+  // construction material); treated as guidance (soft), not a hard
+  // placement filter, since exact local building code varies by region.
+  {
+    id: 'fire-house-outbuilding-separation',
+    kind: 'safety',
+    subjectTypes: ['house', 'house-l'],
+    relatedTypes: ['barn', 'shed', 'woodshed', 'goat-shelter', 'poultry-coop'],
+    minDistance: 8,
+    hard: false,
+    severity: 'caution',
+    message: 'Fire-safety guidance recommends greater separation between the house and combustible outbuildings (typically 8-15 m depending on materials).',
+  },
+  {
+    id: 'fire-outbuilding-mutual-separation',
+    kind: 'safety',
+    subjectTypes: ['barn', 'shed', 'woodshed', 'goat-shelter', 'poultry-coop'],
+    relatedTypes: ['barn', 'shed', 'woodshed', 'goat-shelter', 'poultry-coop'],
+    minDistance: 6,
+    hard: false,
+    severity: 'info',
+    message: 'Fire-safety guidance recommends at least 6 m between combustible outbuildings.',
+  },
+  {
+    id: 'generator-electrical-fire-clearance',
+    kind: 'safety',
+    subjectTypes: ['generator'],
+    relatedTypes: ['house', 'house-l', 'barn', 'shed', 'woodshed'],
+    minDistance: 3,
+    hard: true,
+    severity: 'critical',
+    message: 'Fuel-fired generators need at least 3 m clearance from combustible structures — exhaust heat and fuel are a fire/electrical hazard at this distance.',
+  },
+  {
+    id: 'generator-woodshed-clearance',
+    kind: 'safety',
+    subjectTypes: ['generator'],
+    relatedTypes: ['woodshed'],
+    minDistance: 5,
+    hard: false,
+    severity: 'caution',
+    message: 'Stored firewood this close to a fuel-fired generator is a fire risk.',
+  },
+  {
+    id: 'battery-woodshed-clearance',
+    kind: 'safety',
+    subjectTypes: ['battery-room'],
+    relatedTypes: ['woodshed'],
+    minDistance: 2,
+    hard: false,
+    severity: 'caution',
+    message: 'Battery storage next to firewood is a fire risk; keep some clearance.',
+  },
+  {
+    id: 'pool-electrical-clearance',
+    kind: 'safety',
+    subjectTypes: ['pool'],
+    relatedTypes: ['solar-array', 'battery-room', 'inverter-room', 'generator'],
+    minDistance: 3,
+    hard: false,
+    severity: 'caution',
+    message: 'Electrical safety codes require clearance between pools and mains-connected electrical equipment.',
+  },
+];
+
+export interface BoundarySetback {
+  id: string;
+  appliesTo: string[]; // typeIds or categories
+  minDistanceM: number;
+  severity: WarningSeverity;
+  message: string;
+}
+
+// Property-line setbacks. These mirror common dacha/allotment building-code
+// practice (house ≥3 m from the boundary, outbuildings/animal housing ≥4 m,
+// wells kept apart from the boundary for a sanitary margin, etc.) — offered
+// as planning guidance, not a substitute for the actual local building code.
+export const BOUNDARY_SETBACKS: BoundarySetback[] = [
+  {
+    id: 'setback-house',
+    appliesTo: ['house', 'house-l'],
+    minDistanceM: 3,
+    severity: 'caution',
+    message: 'is closer than the typical 3 m property-line setback for a dwelling.',
+  },
+  {
+    id: 'setback-outbuilding',
+    appliesTo: ['storage', 'animal'],
+    minDistanceM: 4,
+    severity: 'caution',
+    message: 'is closer than the typical 4 m setback for outbuildings/animal housing from the neighboring boundary.',
+  },
+  {
+    id: 'setback-perennial',
+    appliesTo: ['food-perennial'],
+    minDistanceM: 2,
+    severity: 'info',
+    message: 'is close enough to the boundary that mature trees/vines may overhang neighboring land.',
+  },
+  {
+    id: 'setback-well',
+    appliesTo: ['well'],
+    minDistanceM: 5,
+    severity: 'caution',
+    message: 'is closer than the typical 5 m sanitary setback for a well from the property line.',
+  },
+  {
+    id: 'setback-septic',
+    appliesTo: ['septic'],
+    minDistanceM: 2,
+    severity: 'caution',
+    message: 'is closer than the typical 2 m setback for a septic system from the property line.',
+  },
+  {
+    id: 'setback-pool',
+    appliesTo: ['pool'],
+    minDistanceM: 2,
+    severity: 'info',
+    message: 'is close to the boundary — keep clearance for maintenance access and safety.',
   },
 ];

@@ -26,11 +26,11 @@ export function generateVariant(project: Project, mode: PlanningMode, seed: numb
   const mergedInputs = mergeFreeTextIntoStructured(project.brief.structuredInputs, extraction);
   const program = buildProgram(mergedInputs, mode);
   const { objects, unplaced } = placeObjects(project.plot, program, mode, seed);
-  const paths = synthesizePaths(objects);
+  const paths = synthesizePaths(objects, project.plot);
   const fences = synthesizeFences(objects, project.plot);
   const zones = buildFutureExpansionZone(project.plot, objects, mode);
   const analytics = computeAnalytics(objects, zones, project.plot);
-  const warnings = computeWarnings(objects, fences, analytics);
+  const warnings = computeWarnings(objects, fences, analytics, project.plot, mergedInputs.householdSize);
 
   for (const item of unplaced) {
     warnings.unshift({

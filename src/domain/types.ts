@@ -49,6 +49,8 @@ export interface StructuredInputs {
   crops: string[];
   infrastructure: string[]; // 'solar' | 'well' | 'septic' | 'greenhouse' | ...
   aestheticPreference: number; // 0 = utilitarian, 100 = ornamental
+  houseSizePreset: 'small' | 'medium' | 'large';
+  houseShape: 'rect' | 'lshape';
 }
 
 export interface Brief {

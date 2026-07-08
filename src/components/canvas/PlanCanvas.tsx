@@ -5,6 +5,7 @@ import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
 import type { PlanObject, Point, Transform, ZoneCategory } from '../../domain/types';
 import { polygonBounds, rectCorners, resizeFromCorner } from '../../engine/geometry';
 import { ObjectVisual } from './ObjectVisual';
+import { pathStyle } from './pathStyle';
 
 const PX_PER_METER = 12;
 const PADDING_M = 6;
@@ -238,18 +239,21 @@ export function PlanCanvas() {
         {/* Paths */}
         {layerVisibility.path !== false &&
           !showUtilities &&
-          variant.paths.map((p) => (
-            <polyline
-              key={p.id}
-              points={p.points.map((pt) => `${pt.x},${pt.y}`).join(' ')}
-              fill="none"
-              stroke="#c2b49a"
-              strokeWidth={Math.min(0.6, p.widthM)}
-              strokeLinecap="round"
-              strokeDasharray="0.5,0.7"
-              opacity={0.55}
-            />
-          ))}
+          variant.paths.map((p) => {
+            const style = pathStyle(p);
+            return (
+              <polyline
+                key={p.id}
+                points={p.points.map((pt) => `${pt.x},${pt.y}`).join(' ')}
+                fill="none"
+                stroke={style.stroke}
+                strokeWidth={style.strokeWidth}
+                strokeLinecap="round"
+                strokeDasharray={style.dasharray}
+                opacity={style.opacity}
+              />
+            );
+          })}
 
         {/* Plot boundary */}
         <polygon

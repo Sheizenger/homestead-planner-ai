@@ -1,6 +1,6 @@
-import type { Plot, PlanObject, Transform, PlanningMode, ObjectCategory } from '../domain/types';
-import { OBJECT_LIBRARY, type ObjectLibraryEntry } from '../domain/objectLibrary';
-import { CONSTRAINTS } from '../domain/constraints';
+import type { Plot, PlanObject, Point, Transform, PlanningMode, ObjectCategory } from '../domain/types';
+import { OBJECT_LIBRARY, HOUSE_TYPE_IDS, type ObjectLibraryEntry } from '../domain/objectLibrary';
+import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../domain/constraints';
 import type { ProgramItem } from './sizing';
 import {
   polygonBounds,
@@ -8,7 +8,12 @@ import {
   transformAabb,
   aabbOverlap,
   distance,
+  distanceToPolygonBoundary,
 } from './geometry';
+
+function matchesSetback(entry: ObjectLibraryEntry, appliesTo: string[]): boolean {
+  return appliesTo.includes(entry.id) || appliesTo.includes(entry.category);
+}
 
 // Coarse placement tiers: structures/utilities go first as spatial anchors,
 // then animals, then food zones, then incidental extras. Within a tier,
@@ -17,12 +22,12 @@ import {
 // placement otherwise starves large production-scaled fields that happen to
 // sort late.
 const PLACEMENT_TIERS: string[][] = [
-  ['house'],
+  ['house', 'house-l'],
   ['garage', 'shed', 'barn', 'cellar', 'woodshed'],
   ['well', 'pump', 'septic', 'water-tank', 'solar-array', 'battery-room', 'inverter-room', 'generator'],
   ['goat-shelter', 'goat-paddock', 'poultry-coop'],
   ['raised-beds', 'greenhouse', 'hydroponic-tower', 'vegetable-area', 'potato-area', 'grain-field', 'orchard-trees', 'berry-rows', 'vineyard'],
-  ['compost', 'patio'],
+  ['compost', 'patio', 'pool', 'gazebo'],
 ];
 
 function tierOf(typeId: string): number {
@@ -94,7 +99,7 @@ export function placeObjects(
   }))];
   const unplaced: ProgramItem[] = [];
 
-  let houseCenter = placed.find((p) => p.typeId === 'house')?.transform;
+  let houseCenter = placed.find((p) => HOUSE_TYPE_IDS.includes(p.typeId))?.transform;
 
   for (const item of sorted) {
     const entry = OBJECT_LIBRARY[item.typeId];
@@ -124,7 +129,7 @@ export function placeObjects(
       rationale: buildRationale(entry, best.reasons),
     };
     placed.push(obj);
-    if (item.typeId === 'house') houseCenter = obj.transform;
+    if (HOUSE_TYPE_IDS.includes(item.typeId)) houseCenter = obj.transform;
   }
 
   return { objects: placed, unplaced };
@@ -158,7 +163,7 @@ function searchBestCandidate(
         if (overlaps) continue;
 
         const hardViolation = CONSTRAINTS.some((c) => {
-          if (!c.hard || c.kind !== 'separation' || !c.minDistance) return false;
+          if (!c.hard || (c.kind !== 'separation' && c.kind !== 'safety') || !c.minDistance) return false;
           if (!matches(entry, c.subjectTypes)) return false;
           return placed.some((p) => {
             const otherEntry = OBJECT_LIBRARY[p.typeId];
@@ -168,7 +173,7 @@ function searchBestCandidate(
         });
         if (hardViolation) continue;
 
-        const { score, reasons } = scoreCandidate(transform, entry, placed, houseCenter, bounds, weights);
+        const { score, reasons } = scoreCandidate(transform, entry, placed, houseCenter, bounds, weights, plot.boundary);
         if (!best || score > best.score) best = { transform, score, reasons };
       }
     }
@@ -183,11 +188,12 @@ function scoreCandidate(
   houseCenter: Transform | undefined,
   bounds: ReturnType<typeof polygonBounds>,
   weights: { access: number; separation: number; sun: number; beauty: number },
+  boundary: Point[],
 ): { score: number; reasons: string[] } {
   let score = 0;
   const reasons: string[] = [];
 
-  if (houseCenter && entry.id !== 'house') {
+  if (houseCenter && !HOUSE_TYPE_IDS.includes(entry.id)) {
     const d = distance(transform, houseCenter);
     if (entry.needsAccess) {
       score -= d * weights.access;
@@ -201,13 +207,23 @@ function scoreCandidate(
     reasons.push('positioned toward the plot’s road-facing side');
   }
 
+  for (const setback of BOUNDARY_SETBACKS) {
+    if (!matchesSetback(entry, setback.appliesTo)) continue;
+    const d = distanceToPolygonBoundary(transform, boundary);
+    if (d < setback.minDistanceM) {
+      score -= (setback.minDistanceM - d) * weights.separation * 2;
+    } else {
+      reasons.push('kept clear of the property line');
+    }
+  }
+
   for (const c of CONSTRAINTS) {
     if (!matches(entry, c.subjectTypes)) continue;
     for (const p of placed) {
       const otherEntry = OBJECT_LIBRARY[p.typeId];
       if (!otherEntry || !matches(otherEntry, c.relatedTypes)) continue;
       const d = distance(transform, p.transform);
-      if (c.kind === 'separation' && c.minDistance && d < c.minDistance) {
+      if ((c.kind === 'separation' || c.kind === 'safety') && c.minDistance && d < c.minDistance) {
         score -= (c.minDistance - d) * weights.separation;
         reasons.push(`kept apart from ${p.label.toLowerCase()}`);
       }

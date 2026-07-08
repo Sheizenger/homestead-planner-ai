@@ -32,6 +32,8 @@ const INFRA_TO_TYPES: Record<string, string[]> = {
   woodshed: ['woodshed'],
   garage: ['garage'],
   barn: ['barn'],
+  pool: ['pool'],
+  gazebo: ['gazebo'],
 };
 
 const MODE_SCALE: Record<PlanningMode, number> = {
@@ -39,6 +41,12 @@ const MODE_SCALE: Record<PlanningMode, number> = {
   'minimum-maintenance': 0.75,
   'beauty-balanced': 1.0,
   'safety-first': 0.9,
+};
+
+const HOUSE_SIZE_SCALE: Record<StructuredInputs['houseSizePreset'], number> = {
+  small: 0.55,
+  medium: 1,
+  large: 1.65,
 };
 
 // Object defaults are sized for a household of ~3; scale modestly around that baseline.
@@ -53,7 +61,8 @@ export function buildProgram(inputs: StructuredInputs, mode: PlanningMode): Prog
   // productivity" should grow orchards and fields, not inflate the garage.
   const foodModeScale = MODE_SCALE[mode];
 
-  items.push(sized('house', 1, 1));
+  const houseTypeId = inputs.houseShape === 'lshape' ? 'house-l' : 'house';
+  items.push(sized(houseTypeId, 1, HOUSE_SIZE_SCALE[inputs.houseSizePreset] ?? 1));
   if (inputs.aestheticPreference >= 35) items.push(sized('patio', 1, 1));
   items.push(sized('shed', 1, 1));
 

@@ -1,14 +1,44 @@
-import type { AnalyticsSnapshot, Fence, PlanObject, Warning } from '../domain/types';
-import { CONSTRAINTS } from '../domain/constraints';
+import type { AnalyticsSnapshot, Fence, PlanObject, Plot, Warning } from '../domain/types';
+import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../domain/constraints';
 import { OBJECT_LIBRARY } from '../domain/objectLibrary';
-import { distance, transformAabb, aabbOverlap } from './geometry';
+import { distance, distanceToPolygonBoundary, transformAabb, aabbOverlap } from './geometry';
 
 function matches(entryId: string, entryCategory: string, list: string[]): boolean {
   return list.includes(entryId) || list.includes(entryCategory);
 }
 
-export function computeWarnings(objects: PlanObject[], fences: Fence[], analytics: AnalyticsSnapshot): Warning[] {
+// Rough planning guideline for a self-sufficient homestead (living space +
+// garden + some animals) — not a legal minimum, just a sanity check so a
+// large household isn't planned onto a plot that can't realistically fit
+// its program. Real sanitary-minimum norms (~15 m²/person) are for urban
+// housing and don't apply to this kind of plot.
+export const RECOMMENDED_M2_PER_PERSON = 250;
+
+export function computeHouseholdAreaWarning(totalAreaM2: number, householdSize: number): Warning | null {
+  const recommended = householdSize * RECOMMENDED_M2_PER_PERSON;
+  if (totalAreaM2 >= recommended) return null;
+  const shortfall = Math.ceil(recommended - totalAreaM2);
+  const severity = totalAreaM2 < recommended * 0.6 ? 'critical' : 'caution';
+  return {
+    id: 'warn-household-area-norm',
+    severity,
+    message: `For ${householdSize} resident${householdSize === 1 ? '' : 's'}, a self-sufficient homestead typically needs around ${recommended.toLocaleString()} m² (~${RECOMMENDED_M2_PER_PERSON} m²/person); this plot is short by about ${shortfall.toLocaleString()} m². Consider a larger plot or a smaller household program.`,
+    ruleId: 'household-area-norm',
+    objectIds: [],
+  };
+}
+
+export function computeWarnings(objects: PlanObject[], fences: Fence[], analytics: AnalyticsSnapshot, plot: Plot, householdSize: number): Warning[] {
   const warnings: Warning[] = [];
+
+  const householdWarning = computeHouseholdAreaWarning(analytics.totalAreaM2, householdSize);
+  if (householdWarning) warnings.push(householdWarning);
+
+  // subjectTypes/relatedTypes can be the same list (e.g. "any two
+  // outbuildings"), which would otherwise match a pair in both directions
+  // and report it twice — dedupe on the unordered pair regardless of which
+  // side matched "subject" vs "related".
+  const reportedPairs = new Set<string>();
 
   for (const c of CONSTRAINTS) {
     for (const subject of objects) {
@@ -18,8 +48,11 @@ export function computeWarnings(objects: PlanObject[], fences: Fence[], analytic
         if (related.id === subject.id) continue;
         const relatedEntry = OBJECT_LIBRARY[related.typeId];
         if (!relatedEntry || !matches(relatedEntry.id, relatedEntry.category, c.relatedTypes)) continue;
+        const pairKey = `${c.id}:${[subject.id, related.id].sort().join('|')}`;
+        if (reportedPairs.has(pairKey)) continue;
         const d = distance(subject.transform, related.transform);
-        if (c.kind === 'separation' && c.minDistance && d < c.minDistance) {
+        if ((c.kind === 'separation' || c.kind === 'safety') && c.minDistance && d < c.minDistance) {
+          reportedPairs.add(pairKey);
           warnings.push({
             id: `warn-${c.id}-${subject.id}-${related.id}`,
             severity: c.severity,
@@ -30,6 +63,7 @@ export function computeWarnings(objects: PlanObject[], fences: Fence[], analytic
           });
         }
         if (c.kind === 'adjacency' && c.maxDistance && d > c.maxDistance) {
+          reportedPairs.add(pairKey);
           warnings.push({
             id: `warn-${c.id}-${subject.id}-${related.id}`,
             severity: c.severity,
@@ -55,6 +89,25 @@ export function computeWarnings(objects: PlanObject[], fences: Fence[], analytic
         ruleId: 'containment-required',
         objectIds: [obj.id],
       });
+    }
+  }
+
+  for (const obj of objects) {
+    const entry = OBJECT_LIBRARY[obj.typeId];
+    if (!entry) continue;
+    for (const setback of BOUNDARY_SETBACKS) {
+      if (!(setback.appliesTo.includes(entry.id) || setback.appliesTo.includes(entry.category))) continue;
+      const d = distanceToPolygonBoundary(obj.transform, plot.boundary);
+      if (d < setback.minDistanceM) {
+        warnings.push({
+          id: `warn-${setback.id}-${obj.id}`,
+          severity: setback.severity,
+          message: `${obj.label} ${setback.message}`,
+          ruleId: setback.id,
+          objectIds: [obj.id],
+          suggestedFix: { label: 'Move away from boundary', action: 'increase-separation' },
+        });
+      }
     }
   }
 

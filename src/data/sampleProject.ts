@@ -21,6 +21,8 @@ export function createSampleProject(): Project {
         crops: ['potato', 'grain', 'orchard', 'berries', 'greenhouse'],
         infrastructure: ['solar', 'well', 'septic'],
         aestheticPreference: 55,
+        houseSizePreset: 'medium',
+        houseShape: 'rect',
       },
       freeText:
         'I want a family homestead for 3 people with potatoes, grain, orchard, berries, goats, ' +
@@ -69,6 +71,8 @@ export function createBlankProject(name: string, width: number, height: number):
         crops: [],
         infrastructure: [],
         aestheticPreference: 50,
+        houseSizePreset: 'medium',
+        houseShape: 'rect',
       },
       freeText: '',
     },

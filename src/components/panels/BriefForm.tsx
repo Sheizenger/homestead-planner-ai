@@ -2,14 +2,25 @@ import { useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
 import type { PlanningMode } from '../../domain/types';
 import { parseFreeText } from '../../engine/textParser';
+import { polygonBounds } from '../../engine/geometry';
+import { RECOMMENDED_M2_PER_PERSON } from '../../engine/warnings';
 
 const CROP_OPTIONS = ['potato', 'grain', 'vegetable', 'berries', 'orchard', 'vineyard', 'greenhouse', 'hydroponic', 'raised-beds'];
-const INFRA_OPTIONS = ['solar', 'well', 'septic', 'water-tank', 'generator', 'compost', 'cellar', 'woodshed', 'garage', 'barn'];
+const INFRA_OPTIONS = ['solar', 'well', 'septic', 'water-tank', 'generator', 'compost', 'cellar', 'woodshed', 'garage', 'barn', 'pool', 'gazebo'];
 const MODE_OPTIONS: { value: PlanningMode; label: string }[] = [
   { value: 'minimum-maintenance', label: 'Minimum Maintenance' },
   { value: 'production-max', label: 'Maximum Productivity' },
   { value: 'beauty-balanced', label: 'Beauty + Function Balance' },
   { value: 'safety-first', label: 'Safety First' },
+];
+const HOUSE_SIZE_OPTIONS: { value: 'small' | 'medium' | 'large'; label: string }[] = [
+  { value: 'small', label: 'Small' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'large', label: 'Large' },
+];
+const HOUSE_SHAPE_OPTIONS: { value: 'rect' | 'lshape'; label: string }[] = [
+  { value: 'rect', label: 'Rectangular' },
+  { value: 'lshape', label: 'L-shaped' },
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -41,12 +52,19 @@ export function BriefForm() {
   const project = useProjectStore((s) => s.project);
   const updateFreeText = useProjectStore((s) => s.updateFreeText);
   const updateStructuredInputs = useProjectStore((s) => s.updateStructuredInputs);
+  const updatePlotSize = useProjectStore((s) => s.updatePlotSize);
   const generate = useProjectStore((s) => s.generate);
   const generating = useProjectStore((s) => s.generating);
   const [selectedMode, setSelectedMode] = useState<PlanningMode>('beauty-balanced');
 
   const inputs = project.brief.structuredInputs;
   const extraction = parseFreeText(project.brief.freeText);
+  const bounds = polygonBounds(project.plot.boundary);
+  const plotWidth = Math.round(bounds.maxX - bounds.minX);
+  const plotHeight = Math.round(bounds.maxY - bounds.minY);
+  const plotAreaM2 = plotWidth * plotHeight;
+  const recommendedM2 = inputs.householdSize * RECOMMENDED_M2_PER_PERSON;
+  const shortOfNorm = plotAreaM2 < recommendedM2;
 
   const toggleFromList = (list: string[], value: string) =>
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
@@ -85,6 +103,68 @@ export function BriefForm() {
             className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
           />
         </label>
+        <p className={`mt-1.5 text-[11px] ${shortOfNorm ? 'text-amber-700 dark:text-amber-500' : 'text-stone-500 dark:text-stone-400'}`}>
+          {shortOfNorm
+            ? `A self-sufficient homestead for ${inputs.householdSize} typically needs ~${recommendedM2.toLocaleString()} m² (~${RECOMMENDED_M2_PER_PERSON} m²/person) — this plot has ${plotAreaM2.toLocaleString()} m². Consider a larger plot or a smaller household.`
+            : `Guideline: ~${RECOMMENDED_M2_PER_PERSON} m²/person → ~${recommendedM2.toLocaleString()} m² recommended for ${inputs.householdSize}. This plot has ${plotAreaM2.toLocaleString()} m².`}
+        </p>
+      </Section>
+
+      <Section title="Plot size">
+        <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+          <label className="flex items-center gap-1.5">
+            Width
+            <input
+              type="number"
+              min={10}
+              step={1}
+              value={plotWidth}
+              onChange={(e) => updatePlotSize(Number(e.target.value), plotHeight)}
+              className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+            />
+            m
+          </label>
+          <label className="flex items-center gap-1.5">
+            Depth
+            <input
+              type="number"
+              min={10}
+              step={1}
+              value={plotHeight}
+              onChange={(e) => updatePlotSize(plotWidth, Number(e.target.value))}
+              className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+            />
+            m
+          </label>
+        </div>
+        <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">
+          {plotAreaM2.toLocaleString()} m² (~{(plotAreaM2 / 100).toFixed(1)} sotok)
+        </p>
+      </Section>
+
+      <Section title="House">
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {HOUSE_SIZE_OPTIONS.map((o) => (
+            <Chip
+              key={o.value}
+              active={inputs.houseSizePreset === o.value}
+              onClick={() => updateStructuredInputs({ houseSizePreset: o.value })}
+            >
+              {o.label}
+            </Chip>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {HOUSE_SHAPE_OPTIONS.map((o) => (
+            <Chip
+              key={o.value}
+              active={inputs.houseShape === o.value}
+              onClick={() => updateStructuredInputs({ houseShape: o.value })}
+            >
+              {o.label}
+            </Chip>
+          ))}
+        </div>
       </Section>
 
       <Section title="Aesthetic preference">

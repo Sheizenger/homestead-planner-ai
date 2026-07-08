@@ -1,6 +1,6 @@
 import type { ObjectCategory } from './types';
 
-export type PlacementShape = 'rect' | 'circle';
+export type PlacementShape = 'rect' | 'circle' | 'oval' | 'lshape';
 
 export interface ObjectLibraryEntry {
   id: string;
@@ -25,6 +25,24 @@ export const OBJECT_LIBRARY: Record<string, ObjectLibraryEntry> = {
     defaultWidth: 12, defaultHeight: 10, minWidth: 6, minHeight: 6,
     sunNeed: 'partial', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: true,
     requiresFence: false, description: 'Primary residence, anchors the plan.',
+  },
+  'house-l': {
+    id: 'house-l', label: 'House', category: 'residential', shape: 'lshape',
+    defaultWidth: 14, defaultHeight: 11, minWidth: 7, minHeight: 6,
+    sunNeed: 'partial', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: true,
+    requiresFence: false, description: 'L-shaped residence enclosing a private courtyard corner.',
+  },
+  gazebo: {
+    id: 'gazebo', label: 'Gazebo', category: 'leisure', shape: 'circle',
+    defaultWidth: 4, defaultHeight: 4, minWidth: 2.5, minHeight: 2.5,
+    sunNeed: 'partial', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: true,
+    requiresFence: false, description: 'Open-sided shelter for outdoor seating.',
+  },
+  pool: {
+    id: 'pool', label: 'Pool', category: 'leisure', shape: 'oval',
+    defaultWidth: 9, defaultHeight: 4.5, minWidth: 4, minHeight: 2.5,
+    sunNeed: 'full', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: true,
+    requiresFence: true, description: 'Swimming pool; full sun and fenced for child safety.',
   },
   garage: {
     id: 'garage', label: 'Garage', category: 'residential', shape: 'rect',
@@ -189,6 +207,8 @@ export const OBJECT_LIBRARY: Record<string, ObjectLibraryEntry> = {
     requiresFence: false, description: 'Fuel-fired backup power; needs clearance and noise separation.',
   },
 };
+
+export const HOUSE_TYPE_IDS = ['house', 'house-l'];
 
 export const OBJECT_LIBRARY_LIST = Object.values(OBJECT_LIBRARY);
 

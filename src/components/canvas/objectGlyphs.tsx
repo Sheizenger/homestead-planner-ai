@@ -43,12 +43,35 @@ export function ObjectGlyph({ entry, width, height, stroke }: GlyphProps) {
       return <WellMark radius={Math.min(width, height) / 2} stroke={stroke} />;
     case 'water-tank':
       return <TankRings radius={Math.min(width, height) / 2} stroke={stroke} />;
+    case 'pool':
+      return <PoolRipples width={width} height={height} stroke={stroke} />;
+    case 'gazebo':
+      return <RadialRoof radius={Math.min(width, height) / 2} stroke={stroke} />;
+    case 'house-l':
+      return <LShapeRoofLines width={width} height={height} stroke={stroke} />;
     default:
       if (entry.shape === 'rect') {
         return <RoofLines width={width} height={height} stroke={stroke} withDoor={entry.id === 'house' || entry.id === 'garage'} />;
       }
       return null;
   }
+}
+
+// Notch cut from the front-right corner, shared with ObjectVisual's fill
+// polygon so the glyph and the shape it sits on never disagree.
+export function lShapeVertices(width: number, height: number): [number, number][] {
+  const hw = width / 2;
+  const hh = height / 2;
+  const nx = Math.min(width * 0.42, width - 1.5);
+  const ny = Math.min(height * 0.42, height - 1.5);
+  return [
+    [-hw, -hh],
+    [hw, -hh],
+    [hw, hh - ny],
+    [hw - nx, hh - ny],
+    [hw - nx, hh],
+    [-hw, hh],
+  ];
 }
 
 function RoofLines({ width, height, stroke, withDoor }: { width: number; height: number; stroke: string; withDoor: boolean }) {
@@ -296,6 +319,60 @@ function TankRings({ radius, stroke }: { radius: number; stroke: string }) {
     <g opacity={0.7}>
       <circle r={radius * 0.65} fill="none" stroke={stroke} strokeWidth={0.07} />
       <circle r={radius * 0.3} fill={stroke} fillOpacity={0.3} />
+    </g>
+  );
+}
+
+function PoolRipples({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+  const margin = Math.min(width, height) * 0.22;
+  const rows = 3;
+  const usableH = height - margin * 2;
+  const amp = Math.min(0.3, usableH / 10);
+  const waves: React.ReactNode[] = [];
+  for (let r = 0; r < rows; r++) {
+    const y = -height / 2 + margin + (r * usableH) / (rows - 1);
+    const x0 = -width / 2 + margin * 0.6;
+    const x1 = width / 2 - margin * 0.6;
+    const mid = (x0 + x1) / 2;
+    waves.push(
+      <path
+        key={r}
+        d={`M ${x0} ${y} Q ${(x0 + mid) / 2} ${y - amp}, ${mid} ${y} T ${x1} ${y}`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={0.07}
+      />,
+    );
+  }
+  return <g opacity={0.6}>{waves}</g>;
+}
+
+function RadialRoof({ radius, stroke }: { radius: number; stroke: string }) {
+  const spokes = 8;
+  const lines = Array.from({ length: spokes }, (_, i) => {
+    const angle = (i / spokes) * Math.PI * 2;
+    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+  });
+  return (
+    <g opacity={0.6}>
+      <circle r={radius * 0.15} fill={stroke} fillOpacity={0.5} />
+      {lines.map((p, i) => (
+        <line key={i} x1={0} y1={0} x2={p.x} y2={p.y} stroke={stroke} strokeWidth={0.05} />
+      ))}
+    </g>
+  );
+}
+
+function LShapeRoofLines({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+  const pts = lShapeVertices(width, height);
+  const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+  const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+  return (
+    <g opacity={0.6}>
+      {pts.map((p, i) => (
+        <line key={i} x1={p[0]} y1={p[1]} x2={cx} y2={cy} stroke={stroke} strokeWidth={0.06} />
+      ))}
+      {width > 3 && <line x1={-0.5} y1={height / 2} x2={0.5} y2={height / 2} stroke={stroke} strokeWidth={0.35} opacity={0.9} />}
     </g>
   );
 }

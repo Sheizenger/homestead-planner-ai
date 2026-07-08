@@ -3,6 +3,7 @@ import type { LayoutVariant, Plot } from '../../domain/types';
 import { CATEGORY_STYLES, ZONE_CATEGORY_ORDER } from '../../domain/categories';
 import { polygonBounds } from '../../engine/geometry';
 import { ObjectVisual } from './ObjectVisual';
+import { pathStyle } from './pathStyle';
 
 const PX_PER_METER = 12;
 const PADDING_M = 6;
@@ -48,9 +49,21 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
         <polygon key={f.id} points={f.points.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={f.fenceType === 'perimeter' ? '#4a4a4a' : '#8a7050'} strokeWidth={f.fenceType === 'perimeter' ? 0.2 : 0.1} strokeDasharray={f.fenceType === 'perimeter' ? undefined : '0.3,0.3'} />
       ))}
 
-      {variant.paths.map((p) => (
-        <polyline key={p.id} points={p.points.map((pt) => `${pt.x},${pt.y}`).join(' ')} fill="none" stroke="#c2b49a" strokeWidth={Math.min(0.6, p.widthM)} strokeLinecap="round" strokeDasharray="0.5,0.7" opacity={0.55} />
-      ))}
+      {variant.paths.map((p) => {
+        const style = pathStyle(p);
+        return (
+          <polyline
+            key={p.id}
+            points={p.points.map((pt) => `${pt.x},${pt.y}`).join(' ')}
+            fill="none"
+            stroke={style.stroke}
+            strokeWidth={style.strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={style.dasharray}
+            opacity={style.opacity}
+          />
+        );
+      })}
 
       <polygon points={plot.boundary.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#292524" strokeWidth={0.25} />
 

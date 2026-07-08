@@ -37,7 +37,13 @@ generates 3 layout variants automatically on first load.
     mode swapped in) plus the future-expansion reserve zone.
   - `analytics.ts` / `warnings.ts` — area accounting and constraint/overlap/
     capacity warnings, recomputed from `CONSTRAINTS` so scoring and warnings
-    never drift apart.
+    never drift apart. Also checks plot-boundary setbacks
+    (`BOUNDARY_SETBACKS`) and a household-size-vs-plot-area guideline
+    (`RECOMMENDED_M2_PER_PERSON`).
+  - `pathsAndFences.ts` — synthesizes a gate point on the road-facing
+    boundary edge, a paved driveway (gate → garage), a narrower entrance
+    walk (gate → house), and gravel garden paths to other frequently-visited
+    zones; fences wrap anything with `requiresFence: true`.
   - `exporters.ts` — SVG → PNG/PDF rasterization and JSON serialization.
 - **`src/state/projectStore.ts`** — Zustand store. Each `LayoutVariant` owns
   its own undo/redo history stack (immutable snapshots), so switching
@@ -59,11 +65,21 @@ generates 3 layout variants automatically on first load.
   rule, which is what makes the rationale panel possible. It will not always
   find the theoretically optimal layout on a very tightly packed plot.
 - **Generator output is axis-aligned** (rotation 0° or 90° only), which
-  keeps all the placement/overlap math exact AABB checks. Manual editing
-  still supports free rotation.
-- **Straight-line access paths** (house → each frequently-visited zone) are
-  an explicit MVP simplification, not real pathfinding around zone
-  interiors — called out in the PRD as an accepted risk.
+  keeps all the placement/overlap math exact AABB checks, even for
+  non-rectangular object types (pool/gazebo ellipses, the L-shaped house) —
+  those render as their true shape but are placed/collision-checked against
+  their bounding box, the same simplification already used for circular
+  wells and water tanks. Manual editing still supports free rotation.
+- **Straight-line paths** (gate → house/garage, house → each
+  frequently-visited zone) are an explicit MVP simplification, not real
+  pathfinding around zone interiors — called out in the PRD as an accepted
+  risk.
+- **Building-code-style guidance (setbacks, fire/electrical clearances,
+  household-area norm) is planning advice, not a compliance guarantee.**
+  Distances (3 m house setback, 8 m house-to-outbuilding fire separation,
+  250 m²/person, etc.) follow common dacha/allotment practice as a
+  reasonable default, not any specific jurisdiction's actual code — flagged
+  explicitly in the PRD's non-goals (no permit-grade compliance).
 
 ## Extension points
 

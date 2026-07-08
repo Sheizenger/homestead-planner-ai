@@ -6,7 +6,6 @@ import type {
   LayoutVariant,
   ObjectCategory,
   PlanningMode,
-  Plot,
   Project,
   Transform,
   VisualizationMode,
@@ -31,9 +30,9 @@ function snapshotOf(v: LayoutVariant): EditSnapshot {
   };
 }
 
-function applySnapshot(v: LayoutVariant, snap: EditSnapshot, plot: Plot): LayoutVariant {
-  const analytics = computeAnalytics(snap.objects, snap.zones, plot);
-  const warnings = computeWarnings(snap.objects, snap.fences, analytics);
+function applySnapshot(v: LayoutVariant, snap: EditSnapshot, project: Project): LayoutVariant {
+  const analytics = computeAnalytics(snap.objects, snap.zones, project.plot);
+  const warnings = computeWarnings(snap.objects, snap.fences, analytics, project.plot, project.brief.structuredInputs.householdSize);
   return { ...v, ...snap, analytics, warnings };
 }
 
@@ -58,6 +57,7 @@ interface ProjectState {
   newProject: (name: string, width: number, height: number) => void;
   updateFreeText: (text: string) => void;
   updateStructuredInputs: (patch: Partial<Project['brief']['structuredInputs']>) => void;
+  updatePlotSize: (width: number, height: number) => void;
   generate: (mode?: PlanningMode) => void;
   regenerateVariant: (variantId: string) => void;
   setActiveVariant: (id: string) => void;
@@ -92,11 +92,11 @@ function defaultLocked(): Record<ObjectCategory, boolean> {
   return Object.fromEntries(cats.map((c) => [c, false])) as Record<ObjectCategory, boolean>;
 }
 
-function withActiveVariant(project: Project, updater: (v: LayoutVariant, plot: Plot) => LayoutVariant): Project {
+function withActiveVariant(project: Project, updater: (v: LayoutVariant, project: Project) => LayoutVariant): Project {
   return {
     ...project,
     updatedAt: new Date().toISOString(),
-    variants: project.variants.map((v) => (v.id === project.activeVariantId ? updater(v, project.plot) : v)),
+    variants: project.variants.map((v) => (v.id === project.activeVariantId ? updater(v, project) : v)),
   };
 }
 
@@ -148,6 +148,23 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       }),
     ),
 
+  updatePlotSize: (width, height) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        updatedAt: new Date().toISOString(),
+        plot: {
+          ...state.project.plot,
+          boundary: [
+            { x: 0, y: 0 },
+            { x: width, y: 0 },
+            { x: width, y: height },
+            { x: 0, y: height },
+          ],
+        },
+      },
+    })),
+
   generate: (mode) => {
     set({ generating: true });
     const project = get().project;
@@ -180,42 +197,42 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   updateObjectTransform: (objectId, transform) =>
     set((state) => ({
-      project: withActiveVariant(state.project, (v, plot) => {
+      project: withActiveVariant(state.project, (v, project) => {
         const withHistory = pushHistory(v);
         const objects = withHistory.objects.map((o) =>
           o.id === objectId && !o.locked ? { ...o, transform: { ...o.transform, ...transform } } : o,
         );
-        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, plot);
+        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, project);
       }),
     })),
 
   moveObjects: (updates) =>
     set((state) => ({
-      project: withActiveVariant(state.project, (v, plot) => {
+      project: withActiveVariant(state.project, (v, project) => {
         const withHistory = pushHistory(v);
         const byId = new Map(updates.map((u) => [u.id, u.transform]));
         const objects = withHistory.objects.map((o) =>
           byId.has(o.id) && !o.locked ? { ...o, transform: byId.get(o.id)! } : o,
         );
-        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, plot);
+        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, project);
       }),
     })),
 
   deleteObjects: (ids) =>
     set((state) => ({
       selectedObjectIds: [],
-      project: withActiveVariant(state.project, (v, plot) => {
+      project: withActiveVariant(state.project, (v, project) => {
         const withHistory = pushHistory(v);
         const objects = withHistory.objects.filter((o) => !ids.includes(o.id) || o.locked);
         const fences = withHistory.fences.filter((f) => !ids.some((id) => f.id === `fence-${id}`));
         const paths = withHistory.paths.filter((p) => !ids.some((id) => p.id === `path-${id}`));
-        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects, fences, paths }, plot);
+        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects, fences, paths }, project);
       }),
     })),
 
   duplicateObjects: (ids) =>
     set((state) => ({
-      project: withActiveVariant(state.project, (v, plot) => {
+      project: withActiveVariant(state.project, (v, project) => {
         const withHistory = pushHistory(v);
         const clones = withHistory.objects
           .filter((o) => ids.includes(o.id))
@@ -226,7 +243,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             transform: { ...o.transform, x: o.transform.x + 2, y: o.transform.y + 2 },
           }));
         const objects = [...withHistory.objects, ...clones];
-        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, plot);
+        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, project);
       }),
     })),
 
@@ -246,23 +263,23 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   undo: () =>
     set((state) => ({
-      project: withActiveVariant(state.project, (v, plot) => {
+      project: withActiveVariant(state.project, (v, project) => {
         if (v.history.past.length === 0) return v;
         const prev = v.history.past[v.history.past.length - 1];
         const past = v.history.past.slice(0, -1);
         const future = [snapshotOf(v), ...v.history.future].slice(0, HISTORY_LIMIT);
-        return applySnapshot({ ...v, history: { past, future } }, prev, plot);
+        return applySnapshot({ ...v, history: { past, future } }, prev, project);
       }),
     })),
 
   redo: () =>
     set((state) => ({
-      project: withActiveVariant(state.project, (v, plot) => {
+      project: withActiveVariant(state.project, (v, project) => {
         if (v.history.future.length === 0) return v;
         const next = v.history.future[0];
         const future = v.history.future.slice(1);
         const past = [...v.history.past, snapshotOf(v)].slice(-HISTORY_LIMIT);
-        return applySnapshot({ ...v, history: { past, future } }, next, plot);
+        return applySnapshot({ ...v, history: { past, future } }, next, project);
       }),
     })),
 
@@ -280,14 +297,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const obj = source?.objects.find((o) => o.id === objectId);
       if (!obj) return state;
       return {
-        project: withActiveVariant(state.project, (v, plot) => {
+        project: withActiveVariant(state.project, (v, project) => {
           const aabb = transformAabb(obj.transform);
           const collides = v.objects.some((o) => aabbOverlap(aabb, transformAabb(o.transform)));
           if (collides) return v;
           const withHistory = pushHistory(v);
           const clone = { ...obj, id: `obj-${uuid()}`, locked: false };
           const objects = [...withHistory.objects, clone];
-          return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, plot);
+          return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects }, project);
         }),
       };
     }),

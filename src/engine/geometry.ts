@@ -81,6 +81,29 @@ export function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+// Closest point to `p` on the closed segment a-b.
+export function projectPointOntoSegment(p: Point, a: Point, b: Point): Point {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const lenSq = abx * abx + aby * aby;
+  if (lenSq === 0) return a;
+  const t = clamp(((p.x - a.x) * abx + (p.y - a.y) * aby) / lenSq, 0, 1);
+  return { x: a.x + abx * t, y: a.y + aby * t };
+}
+
+// Minimum distance from a point to the nearest edge of a polygon boundary
+// (not "is inside" — used for property-line setback checks).
+export function distanceToPolygonBoundary(p: Point, polygon: Point[]): number {
+  let min = Infinity;
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i];
+    const b = polygon[(i + 1) % polygon.length];
+    const closest = projectPointOntoSegment(p, a, b);
+    min = Math.min(min, distance(p, closest));
+  }
+  return min;
+}
+
 export function centerOf(t: Transform): Point {
   return { x: t.x, y: t.y };
 }
