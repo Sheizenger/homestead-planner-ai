@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import type { LayoutVariant, Plot } from '../../domain/types';
 import { CATEGORY_STYLES, ZONE_CATEGORY_ORDER } from '../../domain/categories';
 import { polygonBounds } from '../../engine/geometry';
+import { ObjectVisual } from './ObjectVisual';
 
 const PX_PER_METER = 12;
 const PADDING_M = 6;
@@ -53,17 +54,11 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
 
       <polygon points={plot.boundary.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#292524" strokeWidth={0.25} />
 
-      {variant.objects.map((obj) => {
-        const style = CATEGORY_STYLES[obj.category as keyof typeof CATEGORY_STYLES];
-        return (
-          <g key={obj.id} transform={`translate(${obj.transform.x} ${obj.transform.y}) rotate(${obj.transform.rotationDeg})`}>
-            <rect x={-obj.transform.width / 2} y={-obj.transform.height / 2} width={obj.transform.width} height={obj.transform.height} fill={style?.light.fill ?? '#ddd'} stroke={style?.light.stroke ?? '#888'} strokeWidth={0.15} rx={0.2} />
-            <text textAnchor="middle" dominantBaseline="middle" fontSize={Math.min(1.6, Math.max(0.7, Math.min(obj.transform.width, obj.transform.height) / 4))} fill="#1c1917" transform={`rotate(${-obj.transform.rotationDeg})`}>
-              {obj.label}
-            </text>
-          </g>
-        );
-      })}
+      {variant.objects.map((obj) => (
+        <g key={obj.id} transform={`translate(${obj.transform.x} ${obj.transform.y}) rotate(${obj.transform.rotationDeg})`}>
+          <ObjectVisual obj={obj} themeKey="light" textClassName="select-none" />
+        </g>
+      ))}
 
       {showRationale &&
         variant.objects

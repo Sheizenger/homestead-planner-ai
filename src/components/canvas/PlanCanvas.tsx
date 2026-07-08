@@ -4,6 +4,7 @@ import { CATEGORY_STYLES } from '../../domain/categories';
 import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
 import type { PlanObject, Point, Transform, ZoneCategory } from '../../domain/types';
 import { polygonBounds, rectCorners, resizeFromCorner } from '../../engine/geometry';
+import { ObjectVisual } from './ObjectVisual';
 
 const PX_PER_METER = 12;
 const PADDING_M = 6;
@@ -262,7 +263,6 @@ export function PlanCanvas() {
         {/* Objects */}
         {objects.map((obj) => {
           const category = obj.category as ZoneCategory;
-          const style = CATEGORY_STYLES[category];
           if (layerVisibility[obj.category] === false) return null;
           if (showUtilities && !['utility', 'energy', 'water'].includes(category)) return null;
           const isSelected = selectedObjectIds.includes(obj.id);
@@ -272,42 +272,14 @@ export function PlanCanvas() {
           return (
             <g key={obj.id} onPointerDown={(e) => handleObjectPointerDown(e, obj)} className="cursor-move">
               <g transform={`translate(${obj.transform.x} ${obj.transform.y}) rotate(${obj.transform.rotationDeg})`}>
-                <rect
-                  x={-obj.transform.width / 2}
-                  y={-obj.transform.height / 2}
-                  width={obj.transform.width}
-                  height={obj.transform.height}
-                  fill={style?.[themeKey].fill ?? '#ddd'}
-                  fillOpacity={obj.locked ? 0.5 : 0.85}
-                  stroke={hasWarning ? '#b3452e' : style?.[themeKey].stroke ?? '#888'}
-                  strokeWidth={isSelected ? 0.3 : 0.15}
-                  strokeDasharray={obj.locked ? '0.4,0.3' : undefined}
-                  rx={0.2}
+                <ObjectVisual
+                  obj={obj}
+                  themeKey={themeKey}
+                  showDesignDetail={showDesignDetail}
+                  hasWarning={hasWarning}
+                  isSelected={isSelected}
+                  textClassName="select-none fill-stone-900 dark:fill-stone-100"
                 />
-                {showDesignDetail && (
-                  <rect
-                    x={-obj.transform.width / 2 + 0.3}
-                    y={-obj.transform.height / 2 + 0.3}
-                    width={Math.max(0, obj.transform.width - 0.6)}
-                    height={Math.max(0, obj.transform.height - 0.6)}
-                    fill="none"
-                    stroke={style?.[themeKey].stroke ?? '#888'}
-                    strokeWidth={0.06}
-                    strokeDasharray="0.2,0.2"
-                  />
-                )}
-                <text
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={Math.min(1.6, Math.max(0.7, Math.min(obj.transform.width, obj.transform.height) / 4))}
-                  className="select-none fill-stone-900 dark:fill-stone-100"
-                  transform={`rotate(${-obj.transform.rotationDeg})`}
-                >
-                  {obj.label}
-                </text>
-                {hasWarning && (
-                  <circle cx={obj.transform.width / 2 - 0.5} cy={-obj.transform.height / 2 + 0.5} r={0.35} fill="#b3452e" />
-                )}
               </g>
 
               {showRationale && obj.rationale && !obj.locked && (
