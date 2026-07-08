@@ -45,6 +45,10 @@ generates 3 layout variants automatically on first load.
     walk (gate → house), and gravel garden paths to other frequently-visited
     zones; fences wrap anything with `requiresFence: true`.
   - `exporters.ts` — SVG → PNG/PDF rasterization and JSON serialization.
+  - `costs.ts` — rough cost estimate (land + per-object construction +
+    annual upkeep) for a location, using `domain/costData.ts`'s region
+    table (land price + labor/maintenance index per country/state) and
+    static USD/EUR/RUB exchange rates.
 - **`src/state/projectStore.ts`** — Zustand store. Each `LayoutVariant` owns
   its own undo/redo history stack (immutable snapshots), so switching
   variants never corrupts editing history.
@@ -80,6 +84,14 @@ generates 3 layout variants automatically on first load.
   250 m²/person, etc.) follow common dacha/allotment practice as a
   reasonable default, not any specific jurisdiction's actual code — flagged
   explicitly in the PRD's non-goals (no permit-grade compliance).
+- **Location picker is a country/region dropdown, not an interactive map.**
+  A literal clickable world map (e.g. Leaflet + GeoJSON boundaries) would
+  need tile/boundary data this app doesn't otherwise depend on, for a UX
+  win that a searchable dropdown mostly already delivers; a "Custom / other
+  location" option with a manual USD/m² land price covers anywhere not in
+  the built-in list. Cost figures (`domain/costData.ts`) are 2025
+  market-report ballparks converted to a common USD baseline, not
+  appraisals — real prices vary a lot by exact parcel.
 
 ## Extension points
 

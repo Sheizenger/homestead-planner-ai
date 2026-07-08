@@ -7,6 +7,7 @@ import { BottomStatusBar } from './components/layout/BottomStatusBar';
 import { PlanCanvas } from './components/canvas/PlanCanvas';
 import { VariantComparisonView } from './components/comparison/VariantComparisonView';
 import { ExportModal } from './components/export/ExportModal';
+import { CostModal } from './components/cost/CostModal';
 
 function useKeyboardShortcuts() {
   const selectedObjectIds = useProjectStore((s) => s.selectedObjectIds);
@@ -83,6 +84,7 @@ function App() {
       </div>
       <BottomStatusBar />
       <ExportModal />
+      <CostModal />
     </div>
   );
 }

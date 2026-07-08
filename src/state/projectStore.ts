@@ -51,6 +51,9 @@ interface ProjectState {
   comparisonIds: string[];
   view: 'workspace' | 'comparison';
   isExportOpen: boolean;
+  isCostOpen: boolean;
+  costRegionId: string;
+  customLandPriceUsd: number;
   generating: boolean;
 
   loadSample: () => void;
@@ -80,6 +83,9 @@ interface ProjectState {
   setComparisonIds: (ids: string[]) => void;
   copyObjectToActive: (fromVariantId: string, objectId: string) => void;
   setExportOpen: (open: boolean) => void;
+  setCostOpen: (open: boolean) => void;
+  setCostRegion: (id: string) => void;
+  setCustomLandPrice: (usd: number) => void;
 }
 
 function defaultVisibility(): Record<ObjectCategory, boolean> {
@@ -121,6 +127,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   comparisonIds: [],
   view: 'workspace',
   isExportOpen: false,
+  isCostOpen: false,
+  costRegionId: 'custom',
+  customLandPriceUsd: 5,
   generating: false,
 
   loadSample: () => {
@@ -310,6 +319,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }),
 
   setExportOpen: (open) => set({ isExportOpen: open }),
+  setCostOpen: (open) => set({ isCostOpen: open }),
+  setCostRegion: (id) => set({ costRegionId: id }),
+  setCustomLandPrice: (usd) => set({ customLandPriceUsd: usd }),
 }));
 
 export function getActiveVariant(project: Project): LayoutVariant | undefined {

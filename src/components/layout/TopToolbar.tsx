@@ -25,6 +25,7 @@ export function TopToolbar() {
   const theme = useProjectStore((s) => s.theme);
   const setTheme = useProjectStore((s) => s.setTheme);
   const setExportOpen = useProjectStore((s) => s.setExportOpen);
+  const setCostOpen = useProjectStore((s) => s.setCostOpen);
   const regenerateVariant = useProjectStore((s) => s.regenerateVariant);
 
   return (
@@ -118,6 +119,13 @@ export function TopToolbar() {
           className="rounded px-2 py-1 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
         >
           {theme === 'light' ? 'Dark mode' : 'Light mode'}
+        </button>
+
+        <button
+          onClick={() => setCostOpen(true)}
+          className="rounded-md border border-stone-300 px-3 py-1.5 font-medium text-stone-600 hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+        >
+          Cost Estimate
         </button>
 
         <button
