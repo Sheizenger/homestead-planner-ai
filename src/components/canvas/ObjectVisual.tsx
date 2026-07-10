@@ -1,6 +1,6 @@
 import type { PlanObject, Season, ZoneCategory } from '../../domain/types';
 import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
-import { CATEGORY_STYLES } from '../../domain/categories';
+import { CATEGORY_STYLES, TYPE_STYLE_OVERRIDE } from '../../domain/categories';
 import { seasonalFillOverride } from '../../domain/seasons';
 import { ObjectGlyph, lShapeVertices } from './objectGlyphs';
 
@@ -26,8 +26,9 @@ function lShapePoints(width: number, height: number): string {
 export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSelected, textClassName, season }: ObjectVisualProps) {
   const entry = OBJECT_LIBRARY[obj.typeId];
   const style = CATEGORY_STYLES[obj.category as ZoneCategory];
-  const fill = seasonalFillOverride(obj.category as ZoneCategory, season) ?? style?.[themeKey].fill ?? '#ddd';
-  const stroke = hasWarning ? '#b3452e' : style?.[themeKey].stroke ?? '#888';
+  const typeStyle = TYPE_STYLE_OVERRIDE[obj.typeId];
+  const fill = seasonalFillOverride(obj.category as ZoneCategory, season) ?? typeStyle?.[themeKey].fill ?? style?.[themeKey].fill ?? '#ddd';
+  const stroke = hasWarning ? '#b3452e' : typeStyle?.[themeKey].stroke ?? style?.[themeKey].stroke ?? '#888';
   const { width, height } = obj.transform;
   const shape = entry?.shape ?? 'rect';
   const strokeWidth = isSelected ? 0.3 : 0.15;
@@ -103,7 +104,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
         />
       )}
 
-      {entry && <ObjectGlyph entry={entry} width={width} height={height} stroke={style?.[themeKey].stroke ?? '#888'} season={season} />}
+      {entry && <ObjectGlyph entry={entry} width={width} height={height} stroke={typeStyle?.[themeKey].stroke ?? style?.[themeKey].stroke ?? '#888'} season={season} />}
 
       {showDesignDetail && shape === 'rect' && (
         <rect
@@ -112,7 +113,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
           width={Math.max(0, width - 0.6)}
           height={Math.max(0, height - 0.6)}
           fill="none"
-          stroke={style?.[themeKey].stroke ?? '#888'}
+          stroke={typeStyle?.[themeKey].stroke ?? style?.[themeKey].stroke ?? '#888'}
           strokeWidth={0.06}
           strokeDasharray="0.2,0.2"
         />

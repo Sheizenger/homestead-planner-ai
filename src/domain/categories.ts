@@ -70,6 +70,16 @@ export const CATEGORY_STYLES: Record<ZoneCategory, CategoryStyle> = {
   },
 };
 
+// A few object types read strongly as a specific material regardless of
+// their placement category — a pool is 'leisure' for siting/warning
+// purposes but should still look like water, not generic leisure-purple.
+export const TYPE_STYLE_OVERRIDE: Record<string, { light: { fill: string; stroke: string }; dark: { fill: string; stroke: string } }> = {
+  pool: {
+    light: { fill: '#bfe6f0', stroke: '#1a7fa3' },
+    dark: { fill: '#153a42', stroke: '#5fc3dd' },
+  },
+};
+
 export const ZONE_CATEGORY_ORDER: ZoneCategory[] = [
   'residential',
   'access',
