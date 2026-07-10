@@ -7,6 +7,7 @@ import { categoryLabel } from '../../i18n/labels';
 import { translateRationale } from '../../i18n/rationale';
 import { translateWarning } from '../../i18n/warnings';
 import { ObjectVisual } from './ObjectVisual';
+import { WaterfrontZone } from './WaterfrontZone';
 import { pathStyle } from './pathStyle';
 
 const PX_PER_METER = 12;
@@ -46,6 +47,8 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
       xmlns="http://www.w3.org/2000/svg"
     >
       <rect x={bounds.minX - PADDING_M} y={bounds.minY - PADDING_M} width={worldW} height={worldH} fill="#fafaf9" />
+
+      <WaterfrontZone plot={plot} themeKey="light" locale={locale} />
 
       {variant.zones.map((z) => (
         <polygon key={z.id} points={z.boundary.map((p) => `${p.x},${p.y}`).join(' ')} fill={CATEGORY_STYLES[z.category].light.fill} fillOpacity={0.35} stroke={CATEGORY_STYLES[z.category].light.stroke} strokeWidth={0.12} strokeDasharray="0.6,0.4" />

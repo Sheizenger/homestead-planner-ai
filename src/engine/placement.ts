@@ -10,12 +10,18 @@ import {
   aabbOverlap,
   distance,
   distanceToPolygonBoundary,
+  type Bounds,
 } from './geometry';
+import { computeWaterfrontBounds } from './waterfront';
 
 // Fraction of the house footprint that's realistically usable for roof-mount
 // PV (one south-facing slope, minus dormers/chimneys/valleys) — a coarse
 // stand-in for a real roof-plane model.
 const ROOF_USABLE_FRACTION = 0.5;
+
+// These belong on/right at the water and are the only types allowed inside
+// the waterfront strip — everything else is excluded from it (see below).
+const WATER_LOVING_TYPES = ['dock', 'micro-hydro'];
 
 // Categories that read as "private/technical" and shouldn't crowd the direct
 // house-to-gate approach (the one strip of yard every visitor actually sees
@@ -36,7 +42,7 @@ function matchesSetback(entry: ObjectLibraryEntry, appliesTo: string[]): boolean
 const PLACEMENT_TIERS: string[][] = [
   ['house', 'house-l'],
   ['garage', 'shed', 'barn', 'cellar', 'woodshed', 'workshop'],
-  ['well', 'pump', 'septic', 'water-tank', 'rainwater-cistern', 'solar-array', 'battery-room', 'inverter-room', 'generator'],
+  ['well', 'pump', 'septic', 'water-tank', 'rainwater-cistern', 'solar-array', 'battery-room', 'inverter-room', 'generator', 'micro-hydro', 'dock'],
   ['goat-shelter', 'goat-paddock', 'poultry-coop', 'apiary'],
   ['raised-beds', 'greenhouse', 'hydroponic-tower', 'vegetable-area', 'potato-area', 'grain-field', 'orchard-trees', 'berry-rows', 'vineyard'],
   ['compost', 'patio', 'pool', 'gazebo', 'banya', 'smokehouse'],
@@ -125,12 +131,20 @@ export function placeObjects(
   const unplaced: ProgramItem[] = [];
 
   let houseCenter = placed.find((p) => HOUSE_TYPE_IDS.includes(p.typeId))?.transform;
+  const waterfrontBounds = computeWaterfrontBounds(plot);
 
   for (const item of sorted) {
     const entry = OBJECT_LIBRARY[item.typeId];
     if (!entry) continue;
     const width = item.width;
     const height = item.height;
+
+    if (WATER_LOVING_TYPES.includes(item.typeId) && !waterfrontBounds) {
+      // A dock or micro-hydro turbine was requested but no waterfront is
+      // configured for this plot — nowhere sensible to put it.
+      unplaced.push(item);
+      continue;
+    }
 
     if (item.typeId === 'solar-array' && houseCenter) {
       const roofArea = houseCenter.width * houseCenter.height * ROOF_USABLE_FRACTION;
@@ -157,10 +171,17 @@ export function placeObjects(
       }
     }
 
-    let best = searchBestCandidate(plot, bounds, step, width, height, entry, placed, houseCenter, weights, rand, layout);
+    const isWaterLoving = WATER_LOVING_TYPES.includes(item.typeId);
+    // Dock/micro-hydro search only the waterfront strip itself (they belong
+    // on the water); everything else is hard-excluded from that strip so a
+    // barn or vegetable bed never lands in the river.
+    const searchBounds = isWaterLoving ? waterfrontBounds! : bounds;
+    const avoidBounds = isWaterLoving ? null : waterfrontBounds;
+
+    let best = searchBestCandidate(plot, searchBounds, step, width, height, entry, placed, houseCenter, weights, rand, layout, avoidBounds);
     for (const shrink of [0.8, 0.6, 0.45]) {
       if (best) break;
-      best = searchBestCandidate(plot, bounds, step, width * shrink, height * shrink, entry, placed, houseCenter, weights, rand, layout);
+      best = searchBestCandidate(plot, searchBounds, step, width * shrink, height * shrink, entry, placed, houseCenter, weights, rand, layout, avoidBounds);
     }
     if (!best) {
       unplaced.push(item);
@@ -186,7 +207,7 @@ export function placeObjects(
 
 function searchBestCandidate(
   plot: Plot,
-  bounds: ReturnType<typeof polygonBounds>,
+  bounds: Bounds,
   step: number,
   width: number,
   height: number,
@@ -196,6 +217,7 @@ function searchBestCandidate(
   weights: { access: number; separation: number; sun: number; beauty: number },
   rand: () => number,
   layout: { spacingPad: number; comfortDist: number; compactPullScale: number },
+  avoidBounds: Bounds | null,
 ): Candidate | null {
   const orientations = width === height ? [0] : [0, 90];
   let best: Candidate | null = null;
@@ -209,6 +231,8 @@ function searchBestCandidate(
         if (!rectFullyInsidePolygon(transform, plot.boundary)) continue;
 
         const aabb = transformAabb(transform);
+        if (avoidBounds && aabbOverlap(aabb, avoidBounds)) continue;
+
         const overlaps = placed.some((p) => aabbOverlap(aabb, transformAabb(p.transform), layout.spacingPad));
         if (overlaps) continue;
 

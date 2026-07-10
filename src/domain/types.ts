@@ -37,6 +37,17 @@ export type TerrainSlope = 'flat' | 'gentle' | 'steep';
 
 export type SoilType = 'loam' | 'clay' | 'sandy' | 'rocky' | 'unknown';
 
+export type WaterfrontType = 'river' | 'lake' | 'pond';
+export type WaterfrontEdge = 'north' | 'south' | 'east' | 'west';
+
+export interface Waterfront {
+  type: WaterfrontType;
+  edge: WaterfrontEdge; // which boundary edge the water runs along
+  widthM: number; // how much of the plot's depth from that edge is water
+  flowSpeedMps?: number; // river only — for micro-hydro feasibility
+  elevationDropM?: number; // river/lake outlet — for micro-hydro feasibility
+}
+
 export interface StructuredInputs {
   householdSize: number;
   climateZone: ClimateZone;
@@ -75,6 +86,7 @@ export interface Plot {
   soilType: SoilType;
   waterSources: string[];
   gridPower: boolean;
+  waterfront?: Waterfront;
   existingObjects: PlotObject_Existing[];
 }
 

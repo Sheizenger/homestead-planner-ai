@@ -219,6 +219,16 @@ export const CONSTRAINTS: Constraint[] = [
     severity: 'info',
     message: 'Rainwater cistern is far from the house, requiring a longer downspout/gutter run.',
   },
+  {
+    id: 'hydro-battery-adjacency',
+    kind: 'adjacency',
+    subjectTypes: ['micro-hydro'],
+    relatedTypes: ['battery-room'],
+    maxDistance: 15,
+    hard: false,
+    severity: 'caution',
+    message: 'Micro-hydro turbine is far from the battery room, increasing cable losses and cost.',
+  },
 ];
 
 export interface BoundarySetback {

@@ -8,6 +8,7 @@ import { t, type Locale } from '../../i18n/translations';
 import { categoryLabel } from '../../i18n/labels';
 import { translateRationale } from '../../i18n/rationale';
 import { ObjectVisual } from './ObjectVisual';
+import { WaterfrontZone } from './WaterfrontZone';
 import { pathStyle } from './pathStyle';
 
 const PX_PER_METER = 12;
@@ -215,6 +216,8 @@ export function PlanCanvas() {
         className="block"
       >
         <g>{gridLines}</g>
+
+        {layerVisibility.water !== false && <WaterfrontZone plot={project.plot} themeKey={themeKey} locale={locale} />}
 
         {/* Future-expansion / area-only zones */}
         {variant.zones.map((z) => (

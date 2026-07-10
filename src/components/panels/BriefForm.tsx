@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
-import type { ClimateZone, PlanningMode } from '../../domain/types';
+import type { ClimateZone, PlanningMode, WaterfrontEdge, WaterfrontType } from '../../domain/types';
 import { parseFreeText } from '../../engine/textParser';
 import { polygonBounds } from '../../engine/geometry';
 import { RECOMMENDED_M2_PER_PERSON } from '../../engine/warnings';
@@ -11,7 +11,21 @@ const INFRA_OPTIONS = [
   'solar', 'well', 'septic', 'water-tank', 'generator', 'compost', 'cellar', 'woodshed', 'garage', 'barn',
   'pool', 'gazebo', 'apiary', 'banya', 'smokehouse', 'workshop', 'rainwater-cistern',
 ];
+// Only offered once a waterfront is configured — a dock or turbine needs
+// somewhere to actually go.
+const WATERFRONT_INFRA_OPTIONS = ['dock', 'micro-hydro'];
 const ANIMAL_OPTIONS = ['goats', 'poultry'];
+const WATERFRONT_TYPE_OPTIONS: { value: WaterfrontType; key: string }[] = [
+  { value: 'river', key: 'waterfront.river' },
+  { value: 'lake', key: 'waterfront.lake' },
+  { value: 'pond', key: 'waterfront.pond' },
+];
+const WATERFRONT_EDGE_OPTIONS: { value: WaterfrontEdge; key: string }[] = [
+  { value: 'north', key: 'edge.north' },
+  { value: 'south', key: 'edge.south' },
+  { value: 'east', key: 'edge.east' },
+  { value: 'west', key: 'edge.west' },
+];
 const MODE_OPTIONS: { value: PlanningMode; key: string }[] = [
   { value: 'minimum-maintenance', key: 'planningMode.minimum-maintenance' },
   { value: 'production-max', key: 'planningMode.production-max' },
@@ -67,11 +81,13 @@ export function BriefForm() {
   const updateFreeText = useProjectStore((s) => s.updateFreeText);
   const updateStructuredInputs = useProjectStore((s) => s.updateStructuredInputs);
   const updatePlotSize = useProjectStore((s) => s.updatePlotSize);
+  const updateWaterfront = useProjectStore((s) => s.updateWaterfront);
   const generate = useProjectStore((s) => s.generate);
   const generating = useProjectStore((s) => s.generating);
   const [selectedMode, setSelectedMode] = useState<PlanningMode>('beauty-balanced');
 
   const inputs = project.brief.structuredInputs;
+  const waterfront = project.plot.waterfront;
   const extraction = parseFreeText(project.brief.freeText);
   const bounds = polygonBounds(project.plot.boundary);
   const plotWidth = Math.round(bounds.maxX - bounds.minX);
@@ -79,6 +95,7 @@ export function BriefForm() {
   const plotAreaM2 = plotWidth * plotHeight;
   const recommendedM2 = inputs.householdSize * RECOMMENDED_M2_PER_PERSON;
   const shortOfNorm = plotAreaM2 < recommendedM2;
+  const infraOptions = waterfront ? [...INFRA_OPTIONS, ...WATERFRONT_INFRA_OPTIONS] : INFRA_OPTIONS;
 
   const toggleFromList = (list: string[], value: string) =>
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
@@ -169,6 +186,81 @@ export function BriefForm() {
         <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">
           {t(locale, 'brief.plotAreaSummary', { area: plotAreaM2.toLocaleString(), sotok: (plotAreaM2 / 100).toFixed(1) })}
         </p>
+      </Section>
+
+      <Section title={t(locale, 'brief.waterfront')}>
+        <div className="flex flex-wrap gap-1.5">
+          <Chip active={!waterfront} onClick={() => updateWaterfront(null)}>
+            {t(locale, 'waterfront.none')}
+          </Chip>
+          {WATERFRONT_TYPE_OPTIONS.map((o) => (
+            <Chip
+              key={o.value}
+              active={waterfront?.type === o.value}
+              onClick={() =>
+                updateWaterfront({
+                  type: o.value,
+                  edge: waterfront?.edge ?? 'west',
+                  widthM: waterfront?.widthM ?? (o.value === 'pond' ? 6 : 10),
+                  flowSpeedMps: waterfront?.flowSpeedMps ?? (o.value === 'river' ? 0.8 : undefined),
+                  elevationDropM: waterfront?.elevationDropM ?? 1.5,
+                })
+              }
+            >
+              {t(locale, o.key)}
+            </Chip>
+          ))}
+        </div>
+
+        {waterfront && (
+          <div className="mt-2 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {WATERFRONT_EDGE_OPTIONS.map((o) => (
+                <Chip key={o.value} active={waterfront.edge === o.value} onClick={() => updateWaterfront({ ...waterfront, edge: o.value })}>
+                  {t(locale, o.key)}
+                </Chip>
+              ))}
+            </div>
+            <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
+              {t(locale, 'brief.waterfrontWidth')}
+              <input
+                type="number"
+                min={2}
+                step={1}
+                value={waterfront.widthM}
+                onChange={(e) => updateWaterfront({ ...waterfront, widthM: Number(e.target.value) })}
+                className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+              />
+            </label>
+            {waterfront.type === 'river' && (
+              <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
+                {t(locale, 'brief.flowSpeed')}
+                <input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={waterfront.flowSpeedMps ?? 0}
+                  onChange={(e) => updateWaterfront({ ...waterfront, flowSpeedMps: Number(e.target.value) })}
+                  className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+                />
+              </label>
+            )}
+            {waterfront.type !== 'pond' && (
+              <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
+                {t(locale, 'brief.elevationDrop')}
+                <input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={waterfront.elevationDropM ?? 0}
+                  onChange={(e) => updateWaterfront({ ...waterfront, elevationDropM: Number(e.target.value) })}
+                  className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+                />
+              </label>
+            )}
+            <p className="text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.waterfrontHint')}</p>
+          </div>
+        )}
       </Section>
 
       <Section title={t(locale, 'brief.house')}>
@@ -266,7 +358,7 @@ export function BriefForm() {
 
       <Section title={t(locale, 'brief.infrastructure')}>
         <div className="flex flex-wrap gap-1.5">
-          {INFRA_OPTIONS.map((infra) => (
+          {infraOptions.map((infra) => (
             <Chip
               key={infra}
               active={inputs.infrastructure.includes(infra)}

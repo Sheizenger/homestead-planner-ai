@@ -107,6 +107,8 @@ export const OBJECT_COST_TABLE: Record<string, ObjectCostEntry> = {
   smokehouse: { installFixed: 600, annualFixed: 20 },
   workshop: { installPerM2: 350, annualPerM2: 6 },
   'rainwater-cistern': { installFixed: 1000, annualFixed: 30 },
+  dock: { installPerM2: 400, annualFixed: 60 },
+  'micro-hydro': { installFixed: 3500, annualFixed: 150 },
 };
 
 export const PATH_COST_PER_M2: Record<string, { install: number; annual: number }> = {

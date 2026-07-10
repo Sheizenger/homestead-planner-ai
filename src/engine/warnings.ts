@@ -3,6 +3,23 @@ import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../domain/constraints';
 import { CROP_CLIMATE_NOTES } from '../domain/climateData';
 import { OBJECT_LIBRARY } from '../domain/objectLibrary';
 import { distance, distanceToPolygonBoundary, transformAabb, aabbOverlap } from './geometry';
+import { isHydroFeasible } from './waterfront';
+
+export function computeHydroFeasibilityWarnings(plot: Plot, objects: PlanObject[]): Warning[] {
+  const turbine = objects.find((o) => o.typeId === 'micro-hydro');
+  if (!turbine || isHydroFeasible(plot)) return [];
+  return [
+    {
+      id: 'warn-hydro-infeasible',
+      severity: 'caution',
+      message:
+        "The configured waterfront doesn't have enough flow speed or elevation drop for a micro-hydro turbine to generate meaningful power — consider a stronger site or reconsidering this feature.",
+      messageKey: 'warning.hydroInfeasible',
+      ruleId: 'hydro-infeasible',
+      objectIds: [turbine.id],
+    },
+  ];
+}
 
 function matches(entryId: string, entryCategory: string, list: string[]): boolean {
   return list.includes(entryId) || list.includes(entryCategory);
@@ -67,6 +84,7 @@ export function computeWarnings(
   const householdWarning = computeHouseholdAreaWarning(analytics.totalAreaM2, householdSize);
   if (householdWarning) warnings.push(householdWarning);
   warnings.push(...computeClimateCropWarnings(climateZone, crops));
+  warnings.push(...computeHydroFeasibilityWarnings(plot, objects));
 
   // subjectTypes/relatedTypes can be the same list (e.g. "any two
   // outbuildings"), which would otherwise match a pair in both directions

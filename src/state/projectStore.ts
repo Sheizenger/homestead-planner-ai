@@ -10,6 +10,7 @@ import type {
   Season,
   Transform,
   VisualizationMode,
+  Waterfront,
   ZoneCategory,
 } from '../domain/types';
 import { ZONE_CATEGORY_ORDER } from '../domain/categories';
@@ -98,6 +99,7 @@ interface ProjectState {
   updateFreeText: (text: string) => void;
   updateStructuredInputs: (patch: Partial<Project['brief']['structuredInputs']>) => void;
   updatePlotSize: (width: number, height: number) => void;
+  updateWaterfront: (waterfront: Waterfront | null) => void;
   generate: (mode?: PlanningMode) => void;
   regenerateVariant: (variantId: string) => void;
   setActiveVariant: (id: string) => void;
@@ -265,6 +267,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             { x: 0, y: height },
           ],
         },
+      },
+    })),
+
+  updateWaterfront: (waterfront) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        updatedAt: new Date().toISOString(),
+        plot: { ...state.project.plot, waterfront: waterfront ?? undefined },
       },
     })),
 

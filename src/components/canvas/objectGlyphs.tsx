@@ -104,6 +104,10 @@ export function ObjectGlyph({ entry, width, height, stroke, season }: GlyphProps
       return <BoltIcon width={width} height={height} stroke={stroke} />;
     case 'generator':
       return <GeneratorIcon width={width} height={height} stroke={stroke} />;
+    case 'dock':
+      return <DockPlanks width={width} height={height} stroke={stroke} />;
+    case 'micro-hydro':
+      return <TurbineIcon width={width} height={height} stroke={stroke} />;
     default:
       if (entry.shape === 'rect') {
         return <RoofLines width={width} height={height} stroke={stroke} withDoor={['house', 'garage', 'shed'].includes(entry.id)} />;
@@ -872,6 +876,60 @@ function GeneratorIcon({ width, height, stroke }: { width: number; height: numbe
       <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.06} fill="none" stroke={stroke} strokeWidth={0.08} />
       <circle cx={-w * 0.15} r={h * 0.28} fill="none" stroke={stroke} strokeWidth={0.06} />
       <path d={`M ${w / 2} ${-h * 0.15} q ${h * 0.35} ${-h * 0.15} ${h * 0.3} ${-h * 0.5}`} fill="none" stroke={stroke} strokeWidth={0.05} opacity={0.7} />
+    </g>
+  );
+}
+
+// Cross-plank ties along the dock's long axis (like a real pier deck) plus a
+// small moored boat at the water end — reads as "walk out onto this", not a
+// plain rectangle.
+function DockPlanks({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+  const alongY = height >= width;
+  const spacing = 0.9;
+  const lines: React.ReactNode[] = [];
+  if (alongY) {
+    const count = Math.max(2, Math.floor(height / spacing));
+    for (let i = 0; i <= count; i++) {
+      const y = -height / 2 + (i * height) / count;
+      lines.push(<line key={i} x1={-width / 2 + 0.1} y1={y} x2={width / 2 - 0.1} y2={y} stroke={stroke} strokeWidth={0.05} opacity={0.55} />);
+    }
+  } else {
+    const count = Math.max(2, Math.floor(width / spacing));
+    for (let i = 0; i <= count; i++) {
+      const x = -width / 2 + (i * width) / count;
+      lines.push(<line key={i} x1={x} y1={-height / 2 + 0.1} x2={x} y2={height / 2 - 0.1} stroke={stroke} strokeWidth={0.05} opacity={0.55} />);
+    }
+  }
+  const boatX = alongY ? 0 : width / 2 - 0.7;
+  const boatY = alongY ? height / 2 - 0.7 : 0;
+  const boatRx = alongY ? 0.45 : 0.32;
+  const boatRy = alongY ? 0.32 : 0.45;
+  return (
+    <g opacity={0.8}>
+      {lines}
+      <ellipse cx={boatX} cy={boatY} rx={boatRx} ry={boatRy} fill={stroke} fillOpacity={0.3} stroke={stroke} strokeWidth={0.06} />
+    </g>
+  );
+}
+
+// Three curved blades around a hub, with small flow chevrons on either side
+// indicating moving water — a water turbine, not a generic energy box.
+function TurbineIcon({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+  const r = Math.min(width, height) * 0.3;
+  const blades = [0, 120, 240].map((deg) => (deg * Math.PI) / 180);
+  return (
+    <g opacity={0.8}>
+      <circle r={r} fill="none" stroke={stroke} strokeWidth={0.07} />
+      {blades.map((rad, i) => {
+        const bx = Math.cos(rad) * r * 0.85;
+        const by = Math.sin(rad) * r * 0.85;
+        const cx = Math.cos(rad + 0.9) * r * 0.55;
+        const cy = Math.sin(rad + 0.9) * r * 0.55;
+        return <path key={i} d={`M 0 0 Q ${cx} ${cy}, ${bx} ${by}`} fill="none" stroke={stroke} strokeWidth={0.08} />;
+      })}
+      <circle r={r * 0.15} fill={stroke} />
+      <path d={`M ${-r * 1.7} 0 l 0.22 -0.18 M ${-r * 1.7} 0 l 0.22 0.18`} stroke={stroke} strokeWidth={0.06} opacity={0.6} fill="none" />
+      <path d={`M ${r * 1.7} 0 l 0.22 -0.18 M ${r * 1.7} 0 l 0.22 0.18`} stroke={stroke} strokeWidth={0.06} opacity={0.6} fill="none" />
     </g>
   );
 }

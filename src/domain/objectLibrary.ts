@@ -236,6 +236,18 @@ export const OBJECT_LIBRARY: Record<string, ObjectLibraryEntry> = {
     sunNeed: 'none', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: false,
     requiresFence: true, description: 'Collects roof runoff for irrigation; sited close to the house for short downspout runs.',
   },
+  dock: {
+    id: 'dock', label: 'Dock', category: 'leisure', shape: 'rect',
+    defaultWidth: 2.5, defaultHeight: 6, minWidth: 1.5, minHeight: 3,
+    sunNeed: 'none', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: true,
+    requiresFence: false, description: 'Small pier/boat dock; belongs on calm water — a lake, pond, or slow-moving river section.',
+  },
+  'micro-hydro': {
+    id: 'micro-hydro', label: 'Micro-Hydro Turbine', category: 'energy', shape: 'rect',
+    defaultWidth: 2, defaultHeight: 2, minWidth: 1, minHeight: 1,
+    sunNeed: 'none', noiseLevel: 'moderate', odorLevel: 'none', needsAccess: true,
+    requiresFence: true, description: 'Small water turbine; needs enough flow speed or elevation drop across the waterfront to generate meaningful power.',
+  },
 };
 
 export const HOUSE_TYPE_IDS = ['house', 'house-l'];

@@ -40,6 +40,8 @@ const INFRA_TERMS: Record<string, string> = {
   smokehouse: 'smokehouse', smoker: 'smokehouse',
   workshop: 'workshop',
   cistern: 'rainwater-cistern', 'rainwater tank': 'rainwater-cistern', 'rainwater cistern': 'rainwater-cistern',
+  dock: 'dock', pier: 'dock', 'boat dock': 'dock', jetty: 'dock',
+  'micro-hydro': 'micro-hydro', 'micro hydro': 'micro-hydro', 'hydro turbine': 'micro-hydro', 'water turbine': 'micro-hydro',
 };
 
 const STYLE_TERMS: Record<string, number> = {

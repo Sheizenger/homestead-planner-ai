@@ -1,17 +1,22 @@
 import type { PlanObject, Plot, PathEntity, Fence, Point, Transform } from '../domain/types';
 import { OBJECT_LIBRARY, HOUSE_TYPE_IDS } from '../domain/objectLibrary';
 import { transformAabb, projectPointOntoSegment, distance, nearestPointOnAabb, type Bounds } from './geometry';
+import { computeWaterfrontBounds } from './waterfront';
 
 // The "gate" is where the plot boundary is crossed to reach the house — the
 // boundary edge with the largest average y (our south/road-facing convention,
 // see placement.ts's house-siting bias), at the point closest to the house.
-export function findGatePoint(boundary: Point[], houseCenter: Point): Point {
+// A waterfront edge is skipped even if it would otherwise win — a driveway
+// can't cross a river or lake.
+export function findGatePoint(boundary: Point[], houseCenter: Point, waterfrontBounds?: Bounds | null): Point {
   let bestEdge: [Point, Point] | null = null;
   let bestY = -Infinity;
   for (let i = 0; i < boundary.length; i++) {
     const a = boundary[i];
     const b = boundary[(i + 1) % boundary.length];
-    const midY = (a.y + b.y) / 2;
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    if (waterfrontBounds && pointInWaterfront(mid, waterfrontBounds)) continue;
+    const midY = mid.y;
     if (midY > bestY) {
       bestY = midY;
       bestEdge = [a, b];
@@ -19,6 +24,15 @@ export function findGatePoint(boundary: Point[], houseCenter: Point): Point {
   }
   if (!bestEdge) return houseCenter;
   return projectPointOntoSegment(houseCenter, bestEdge[0], bestEdge[1]);
+}
+
+// Both boxes are axis-aligned rectangles derived from the same plot
+// coordinate system, so a plain inclusive bounds check is exact here — no
+// need for general point-in-polygon (which is flaky for points that sit
+// exactly on a shared edge, as this one deliberately does).
+function pointInWaterfront(p: Point, b: Bounds): boolean {
+  const eps = 1e-6;
+  return p.x >= b.minX - eps && p.x <= b.maxX + eps && p.y >= b.minY - eps && p.y <= b.maxY + eps;
 }
 
 // Nearest point on an object's own footprint to an external point — paths
@@ -68,7 +82,7 @@ export function synthesizePaths(objects: PlanObject[], plot: Plot): PathEntity[]
   const house = objects.find((o) => HOUSE_TYPE_IDS.includes(o.typeId));
   if (!house) return [];
   const houseCenter = { x: house.transform.x, y: house.transform.y };
-  const gate = findGatePoint(plot.boundary, houseCenter);
+  const gate = findGatePoint(plot.boundary, houseCenter, computeWaterfrontBounds(plot));
   const garage = objects.find((o) => o.typeId === 'garage');
   const paths: PathEntity[] = [];
 
