@@ -1,6 +1,7 @@
-import type { PlanObject, ZoneCategory } from '../../domain/types';
+import type { PlanObject, Season, ZoneCategory } from '../../domain/types';
 import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
 import { CATEGORY_STYLES } from '../../domain/categories';
+import { seasonalFillOverride } from '../../domain/seasons';
 import { ObjectGlyph, lShapeVertices } from './objectGlyphs';
 
 export interface ObjectVisualProps {
@@ -10,6 +11,7 @@ export interface ObjectVisualProps {
   hasWarning?: boolean;
   isSelected?: boolean;
   textClassName?: string;
+  season?: Season;
 }
 
 function lShapePoints(width: number, height: number): string {
@@ -21,10 +23,10 @@ function lShapePoints(width: number, height: number): string {
 // Renders one object's fill shape + type-specific decorative glyph + label.
 // Shared by the interactive canvas and the static export renderer so the two
 // never visually drift apart.
-export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSelected, textClassName }: ObjectVisualProps) {
+export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSelected, textClassName, season }: ObjectVisualProps) {
   const entry = OBJECT_LIBRARY[obj.typeId];
   const style = CATEGORY_STYLES[obj.category as ZoneCategory];
-  const fill = style?.[themeKey].fill ?? '#ddd';
+  const fill = seasonalFillOverride(obj.category as ZoneCategory, season) ?? style?.[themeKey].fill ?? '#ddd';
   const stroke = hasWarning ? '#b3452e' : style?.[themeKey].stroke ?? '#888';
   const { width, height } = obj.transform;
   const shape = entry?.shape ?? 'rect';
@@ -66,7 +68,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
         />
       )}
 
-      {entry && <ObjectGlyph entry={entry} width={width} height={height} stroke={style?.[themeKey].stroke ?? '#888'} />}
+      {entry && <ObjectGlyph entry={entry} width={width} height={height} stroke={style?.[themeKey].stroke ?? '#888'} season={season} />}
 
       {showDesignDetail && shape === 'rect' && (
         <rect

@@ -1,32 +1,34 @@
 import { useId } from 'react';
 import type { ObjectLibraryEntry } from '../../domain/objectLibrary';
+import type { Season } from '../../domain/types';
 
 interface GlyphProps {
   entry: ObjectLibraryEntry;
   width: number;
   height: number;
   stroke: string;
+  season?: Season;
 }
 
 // Decorative per-type detail drawn inside an object's own local frame
 // (origin at its center, unrotated) — shared by the live canvas and the
 // static export renderer so the two never visually drift apart.
-export function ObjectGlyph({ entry, width, height, stroke }: GlyphProps) {
+export function ObjectGlyph({ entry, width, height, stroke, season }: GlyphProps) {
   if (width < 1 || height < 1) return null;
 
   switch (entry.id) {
     case 'orchard-trees':
-      return <TreeGrid width={width} height={height} stroke={stroke} />;
+      return <TreeGrid width={width} height={height} stroke={stroke} season={season} />;
     case 'berry-rows':
-      return <RowLines width={width} height={height} stroke={stroke} rows={4} dashed />;
+      return <RowLines width={width} height={height} stroke={stroke} rows={4} dashed dormant={season === 'winter'} />;
     case 'vineyard':
-      return <RowLines width={width} height={height} stroke={stroke} rows={6} />;
+      return <RowLines width={width} height={height} stroke={stroke} rows={6} dormant={season === 'winter'} />;
     case 'raised-beds':
       return <BedGrid width={width} height={height} stroke={stroke} />;
     case 'potato-area':
     case 'grain-field':
     case 'vegetable-area':
-      return <FurrowLines width={width} height={height} stroke={stroke} />;
+      return <FurrowLines width={width} height={height} stroke={stroke} fallow={season === 'winter'} />;
     case 'greenhouse':
       return <GlassGrid width={width} height={height} stroke={stroke} />;
     case 'hydroponic-tower':
@@ -42,6 +44,7 @@ export function ObjectGlyph({ entry, width, height, stroke }: GlyphProps) {
     case 'well':
       return <WellMark radius={Math.min(width, height) / 2} stroke={stroke} />;
     case 'water-tank':
+    case 'rainwater-cistern':
       return <TankRings radius={Math.min(width, height) / 2} stroke={stroke} />;
     case 'pool':
       return <PoolRipples width={width} height={height} stroke={stroke} />;
@@ -49,6 +52,10 @@ export function ObjectGlyph({ entry, width, height, stroke }: GlyphProps) {
       return <RadialRoof radius={Math.min(width, height) / 2} stroke={stroke} />;
     case 'house-l':
       return <LShapeRoofLines width={width} height={height} stroke={stroke} />;
+    case 'apiary':
+      return <HiveRows width={width} height={height} stroke={stroke} />;
+    case 'smokehouse':
+      return <SmokeIcon height={height} stroke={stroke} />;
     default:
       if (entry.shape === 'rect') {
         return <RoofLines width={width} height={height} stroke={stroke} withDoor={entry.id === 'house' || entry.id === 'garage'} />;
@@ -95,7 +102,7 @@ function RoofLines({ width, height, stroke, withDoor }: { width: number; height:
   );
 }
 
-function TreeGrid({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+function TreeGrid({ width, height, stroke, season }: { width: number; height: number; stroke: string; season?: Season }) {
   const spacing = 2.6;
   const margin = 1.1;
   const cols = Math.max(1, Math.floor((width - margin * 2) / spacing) + 1);
@@ -111,25 +118,51 @@ function TreeGrid({ width, height, stroke }: { width: number; height: number; st
     }
   }
   const canopyR = Math.min(0.85, spacing / 2.6);
+  // Winter: bare canopy (outline only, no fill, no fruit dot). Spring:
+  // blossom tint. Autumn: fruit/foliage tint. Summer/undefined: default green.
+  const canopyFill = season === 'spring' ? '#e9b8c9' : season === 'autumn' ? '#c9772e' : stroke;
+  const showCanopyFill = season !== 'winter';
+  const showFruitDot = season === 'autumn' || season === undefined || season === 'summer';
   return (
     <g>
       {trees.map((t, i) => (
         <g key={i} transform={`translate(${t.x} ${t.y})`}>
-          <circle r={canopyR} fill={stroke} fillOpacity={0.3} stroke={stroke} strokeWidth={0.07} />
-          <circle r={canopyR * 0.22} fill={stroke} fillOpacity={0.55} />
+          <circle
+            r={canopyR}
+            fill={showCanopyFill ? canopyFill : 'none'}
+            fillOpacity={0.3}
+            stroke={stroke}
+            strokeWidth={0.07}
+            strokeDasharray={season === 'winter' ? '0.15,0.12' : undefined}
+          />
+          {showFruitDot && <circle r={canopyR * 0.22} fill={canopyFill} fillOpacity={0.55} />}
         </g>
       ))}
     </g>
   );
 }
 
-function RowLines({ width, height, stroke, rows, dashed }: { width: number; height: number; stroke: string; rows: number; dashed?: boolean }) {
+function RowLines({
+  width,
+  height,
+  stroke,
+  rows,
+  dashed,
+  dormant,
+}: {
+  width: number;
+  height: number;
+  stroke: string;
+  rows: number;
+  dashed?: boolean;
+  dormant?: boolean;
+}) {
   const margin = 0.6;
   const usableH = height - margin * 2;
   if (usableH <= 0) return null;
   const lines = Array.from({ length: rows }, (_, i) => -height / 2 + margin + (rows === 1 ? usableH / 2 : (i * usableH) / (rows - 1)));
   return (
-    <g opacity={0.65}>
+    <g opacity={dormant ? 0.35 : 0.65}>
       {lines.map((y, i) => (
         <line
           key={i}
@@ -138,7 +171,7 @@ function RowLines({ width, height, stroke, rows, dashed }: { width: number; heig
           x2={width / 2 - margin}
           y2={y}
           stroke={stroke}
-          strokeWidth={0.09}
+          strokeWidth={dormant ? 0.05 : 0.09}
           strokeDasharray={dashed ? '0.4,0.35' : undefined}
         />
       ))}
@@ -146,7 +179,8 @@ function RowLines({ width, height, stroke, rows, dashed }: { width: number; heig
   );
 }
 
-function FurrowLines({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+function FurrowLines({ width, height, stroke, fallow }: { width: number; height: number; stroke: string; fallow?: boolean }) {
+  if (fallow) return null; // bare/tilled soil over winter — no crop rows to show
   const spacing = 1.1;
   const margin = 0.5;
   const usableH = height - margin * 2;
@@ -373,6 +407,47 @@ function LShapeRoofLines({ width, height, stroke }: { width: number; height: num
         <line key={i} x1={p[0]} y1={p[1]} x2={cx} y2={cy} stroke={stroke} strokeWidth={0.06} />
       ))}
       {width > 3 && <line x1={-0.5} y1={height / 2} x2={0.5} y2={height / 2} stroke={stroke} strokeWidth={0.35} opacity={0.9} />}
+    </g>
+  );
+}
+
+function HiveRows({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+  const spacing = 1.3;
+  const margin = 0.5;
+  const cols = Math.max(1, Math.min(4, Math.floor((width - margin * 2) / spacing) + 1));
+  const rows = Math.max(1, Math.min(2, Math.floor((height - margin * 2) / spacing) + 1));
+  const boxW = Math.min(0.8, spacing * 0.7);
+  const boxH = Math.min(0.6, spacing * 0.55);
+  const hives: { x: number; y: number }[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      hives.push({
+        x: -width / 2 + margin + (cols === 1 ? width - margin * 2 : (c * (width - margin * 2)) / (cols - 1)),
+        y: -height / 2 + margin + (rows === 1 ? height - margin * 2 : (r * (height - margin * 2)) / (rows - 1)),
+      });
+    }
+  }
+  return (
+    <g opacity={0.75}>
+      {hives.map((h, i) => (
+        <rect key={i} x={h.x - boxW / 2} y={h.y - boxH / 2} width={boxW} height={boxH} fill={stroke} fillOpacity={0.3} stroke={stroke} strokeWidth={0.06} />
+      ))}
+    </g>
+  );
+}
+
+function SmokeIcon({ height, stroke }: { height: number; stroke: string }) {
+  const cx = 0;
+  const top = -height / 2;
+  return (
+    <g opacity={0.7}>
+      <path
+        d={`M ${cx} ${top + 0.2} C ${cx + 0.4} ${top - 0.3}, ${cx - 0.4} ${top - 0.7}, ${cx} ${top - 1.1}`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={0.08}
+      />
+      <rect x={cx - 0.2} y={top + 0.1} width={0.4} height={0.3} fill={stroke} />
     </g>
   );
 }

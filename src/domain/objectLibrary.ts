@@ -206,6 +206,36 @@ export const OBJECT_LIBRARY: Record<string, ObjectLibraryEntry> = {
     sunNeed: 'none', noiseLevel: 'loud', odorLevel: 'mild', needsAccess: true,
     requiresFence: false, description: 'Fuel-fired backup power; needs clearance and noise separation.',
   },
+  apiary: {
+    id: 'apiary', label: 'Apiary', category: 'animal', shape: 'rect',
+    defaultWidth: 5, defaultHeight: 3, minWidth: 2, minHeight: 2,
+    sunNeed: 'partial', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: true,
+    requiresFence: false, description: 'Beehives for honey and pollination; keep clear of leisure areas and foot traffic.',
+  },
+  banya: {
+    id: 'banya', label: 'Banya', category: 'leisure', shape: 'rect',
+    defaultWidth: 5, defaultHeight: 4, minWidth: 3, minHeight: 3,
+    sunNeed: 'partial', noiseLevel: 'quiet', odorLevel: 'mild', needsAccess: true,
+    requiresFence: false, description: 'Wood-fired sauna/bathhouse; a solid-fuel firebox, so it needs fire-safety clearance like a woodshed.',
+  },
+  smokehouse: {
+    id: 'smokehouse', label: 'Smokehouse', category: 'storage', shape: 'rect',
+    defaultWidth: 2.5, defaultHeight: 2, minWidth: 1.5, minHeight: 1.5,
+    sunNeed: 'none', noiseLevel: 'quiet', odorLevel: 'strong', needsAccess: true,
+    requiresFence: false, description: 'Wood-fired meat/fish smoking; open flame and smoke need fire and odor clearance.',
+  },
+  workshop: {
+    id: 'workshop', label: 'Workshop', category: 'storage', shape: 'rect',
+    defaultWidth: 6, defaultHeight: 5, minWidth: 3, minHeight: 3,
+    sunNeed: 'none', noiseLevel: 'loud', odorLevel: 'mild', needsAccess: true,
+    requiresFence: false, description: 'Power-tool workspace; noisy, kept apart from quiet leisure zones.',
+  },
+  'rainwater-cistern': {
+    id: 'rainwater-cistern', label: 'Rainwater Cistern', category: 'water', shape: 'circle',
+    defaultWidth: 2.5, defaultHeight: 2.5, minWidth: 1.2, minHeight: 1.2,
+    sunNeed: 'none', noiseLevel: 'quiet', odorLevel: 'none', needsAccess: false,
+    requiresFence: true, description: 'Collects roof runoff for irrigation; sited close to the house for short downspout runs.',
+  },
 };
 
 export const HOUSE_TYPE_IDS = ['house', 'house-l'];

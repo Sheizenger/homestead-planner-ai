@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import type { LayoutVariant, Plot } from '../../domain/types';
+import type { LayoutVariant, Plot, Season } from '../../domain/types';
 import { CATEGORY_STYLES, ZONE_CATEGORY_ORDER } from '../../domain/categories';
 import { polygonBounds } from '../../engine/geometry';
 import { ObjectVisual } from './ObjectVisual';
@@ -14,12 +14,13 @@ export interface StaticPlanRenderProps {
   showLegend?: boolean;
   showRationale?: boolean;
   showWarnings?: boolean;
+  season?: Season;
 }
 
 // Non-interactive renderer shared by the export pipeline (and structurally
 // mirroring PlanCanvas) so exports never visually drift from the live plan.
 export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>(function StaticPlanRender(
-  { variant, plot, showLegend, showRationale, showWarnings },
+  { variant, plot, showLegend, showRationale, showWarnings, season },
   ref,
 ) {
   const bounds = polygonBounds(plot.boundary);
@@ -69,7 +70,7 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
 
       {variant.objects.map((obj) => (
         <g key={obj.id} transform={`translate(${obj.transform.x} ${obj.transform.y}) rotate(${obj.transform.rotationDeg})`}>
-          <ObjectVisual obj={obj} themeKey="light" textClassName="select-none" />
+          <ObjectVisual obj={obj} themeKey="light" textClassName="select-none" season={season} />
         </g>
       ))}
 

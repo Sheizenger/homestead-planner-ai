@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
-import type { PlanningMode } from '../../domain/types';
+import type { ClimateZone, PlanningMode } from '../../domain/types';
 import { parseFreeText } from '../../engine/textParser';
 import { polygonBounds } from '../../engine/geometry';
 import { RECOMMENDED_M2_PER_PERSON } from '../../engine/warnings';
 
 const CROP_OPTIONS = ['potato', 'grain', 'vegetable', 'berries', 'orchard', 'vineyard', 'greenhouse', 'hydroponic', 'raised-beds'];
-const INFRA_OPTIONS = ['solar', 'well', 'septic', 'water-tank', 'generator', 'compost', 'cellar', 'woodshed', 'garage', 'barn', 'pool', 'gazebo'];
+const INFRA_OPTIONS = [
+  'solar', 'well', 'septic', 'water-tank', 'generator', 'compost', 'cellar', 'woodshed', 'garage', 'barn',
+  'pool', 'gazebo', 'apiary', 'banya', 'smokehouse', 'workshop', 'rainwater-cistern',
+];
 const MODE_OPTIONS: { value: PlanningMode; label: string }[] = [
   { value: 'minimum-maintenance', label: 'Minimum Maintenance' },
   { value: 'production-max', label: 'Maximum Productivity' },
@@ -21,6 +24,14 @@ const HOUSE_SIZE_OPTIONS: { value: 'small' | 'medium' | 'large'; label: string }
 const HOUSE_SHAPE_OPTIONS: { value: 'rect' | 'lshape'; label: string }[] = [
   { value: 'rect', label: 'Rectangular' },
   { value: 'lshape', label: 'L-shaped' },
+];
+const CLIMATE_OPTIONS: { value: ClimateZone; label: string }[] = [
+  { value: 'temperate', label: 'Temperate' },
+  { value: 'continental', label: 'Continental' },
+  { value: 'mediterranean', label: 'Mediterranean' },
+  { value: 'subtropical', label: 'Subtropical' },
+  { value: 'arid', label: 'Arid' },
+  { value: 'cold', label: 'Cold' },
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -107,6 +118,23 @@ export function BriefForm() {
           {shortOfNorm
             ? `A self-sufficient homestead for ${inputs.householdSize} typically needs ~${recommendedM2.toLocaleString()} m² (~${RECOMMENDED_M2_PER_PERSON} m²/person) — this plot has ${plotAreaM2.toLocaleString()} m². Consider a larger plot or a smaller household.`
             : `Guideline: ~${RECOMMENDED_M2_PER_PERSON} m²/person → ~${recommendedM2.toLocaleString()} m² recommended for ${inputs.householdSize}. This plot has ${plotAreaM2.toLocaleString()} m².`}
+        </p>
+      </Section>
+
+      <Section title="Climate zone">
+        <div className="flex flex-wrap gap-1.5">
+          {CLIMATE_OPTIONS.map((o) => (
+            <Chip
+              key={o.value}
+              active={inputs.climateZone === o.value}
+              onClick={() => updateStructuredInputs({ climateZone: o.value })}
+            >
+              {o.label}
+            </Chip>
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">
+          Used for rough crop-fit warnings (e.g. grapes in a cold zone) — not a substitute for local agronomic advice.
         </p>
       </Section>
 

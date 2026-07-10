@@ -1,5 +1,6 @@
 import { useProjectStore } from '../../state/projectStore';
 import type { VisualizationMode } from '../../domain/types';
+import { SEASONS, SEASON_LABELS } from '../../domain/seasons';
 
 const MODES: { value: VisualizationMode; label: string }[] = [
   { value: 'schematic', label: 'Schematic' },
@@ -13,6 +14,8 @@ export function TopToolbar() {
   const project = useProjectStore((s) => s.project);
   const visualizationMode = useProjectStore((s) => s.visualizationMode);
   const setVisualizationMode = useProjectStore((s) => s.setVisualizationMode);
+  const season = useProjectStore((s) => s.season);
+  const setSeason = useProjectStore((s) => s.setSeason);
   const view = useProjectStore((s) => s.view);
   const setView = useProjectStore((s) => s.setView);
   const setActiveVariant = useProjectStore((s) => s.setActiveVariant);
@@ -20,16 +23,29 @@ export function TopToolbar() {
   const setZoom = useProjectStore((s) => s.setZoom);
   const snapToGrid = useProjectStore((s) => s.snapToGrid);
   const toggleSnap = useProjectStore((s) => s.toggleSnap);
+  const showLegend = useProjectStore((s) => s.showLegend);
+  const toggleLegend = useProjectStore((s) => s.toggleLegend);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
   const theme = useProjectStore((s) => s.theme);
   const setTheme = useProjectStore((s) => s.setTheme);
   const setExportOpen = useProjectStore((s) => s.setExportOpen);
   const setCostOpen = useProjectStore((s) => s.setCostOpen);
+  const setProjectsOpen = useProjectStore((s) => s.setProjectsOpen);
   const regenerateVariant = useProjectStore((s) => s.regenerateVariant);
 
   return (
     <div className="flex items-center gap-3 border-b border-stone-200 bg-white px-3 py-2 text-xs dark:border-stone-800 dark:bg-stone-900">
+      <button
+        onClick={() => setProjectsOpen(true)}
+        className="max-w-[10rem] truncate rounded-md border border-stone-300 px-2 py-1 font-medium text-stone-600 hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+        title={project.name}
+      >
+        {project.name}
+      </button>
+
+      <div className="mx-1 h-5 w-px bg-stone-200 dark:bg-stone-800" />
+
       <div className="flex items-center gap-1 rounded-md border border-stone-300 p-0.5 dark:border-stone-700">
         {project.variants.map((v) => (
           <button
@@ -87,6 +103,24 @@ export function TopToolbar() {
         ))}
       </div>
 
+      {visualizationMode === 'seasonal' && (
+        <div className="flex items-center gap-1 rounded-md border border-stone-300 p-0.5 dark:border-stone-700">
+          {SEASONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setSeason(s)}
+              className={`rounded px-2 py-1 font-medium transition-colors ${
+                season === s
+                  ? 'bg-emerald-700 text-white dark:bg-emerald-600'
+                  : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
+              }`}
+            >
+              {SEASON_LABELS[s]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mx-1 h-5 w-px bg-stone-200 dark:bg-stone-800" />
 
       <button onClick={undo} className="rounded px-2 py-1 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800">
@@ -101,6 +135,13 @@ export function TopToolbar() {
         className={`rounded px-2 py-1 font-medium ${snapToGrid ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900' : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'}`}
       >
         Snap
+      </button>
+
+      <button
+        onClick={toggleLegend}
+        className={`rounded px-2 py-1 font-medium ${showLegend ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900' : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'}`}
+      >
+        Legend
       </button>
 
       <div className="ml-auto flex items-center gap-2">

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useProjectStore, getActiveVariant } from '../../state/projectStore';
-import { CATEGORY_STYLES } from '../../domain/categories';
+import { CATEGORY_STYLES, ZONE_CATEGORY_ORDER } from '../../domain/categories';
 import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
-import type { PlanObject, Point, Transform, ZoneCategory } from '../../domain/types';
+import type { LayoutVariant, PlanObject, Point, Transform, ZoneCategory } from '../../domain/types';
 import { polygonBounds, rectCorners, resizeFromCorner } from '../../engine/geometry';
 import { ObjectVisual } from './ObjectVisual';
 import { pathStyle } from './pathStyle';
@@ -29,6 +29,8 @@ export function PlanCanvas() {
   const theme = useProjectStore((s) => s.theme);
   const themeKey = theme === 'dark' ? 'dark' : 'light';
   const visualizationMode = useProjectStore((s) => s.visualizationMode);
+  const season = useProjectStore((s) => s.season);
+  const showLegend = useProjectStore((s) => s.showLegend);
   const layerVisibility = useProjectStore((s) => s.layerVisibility);
   const snapToGrid = useProjectStore((s) => s.snapToGrid);
   const gridSize = useProjectStore((s) => s.gridSize);
@@ -191,12 +193,14 @@ export function PlanCanvas() {
   const showDesignDetail = visualizationMode === 'design';
   const showUtilities = visualizationMode === 'utilities';
   const showRationale = visualizationMode === 'rationale';
+  const activeSeason = visualizationMode === 'seasonal' ? season : undefined;
 
   if (!variant) {
     return <div className="flex h-full items-center justify-center text-sm text-stone-500">No layout generated yet.</div>;
   }
 
   return (
+    <div className="relative h-full w-full">
     <div className="h-full w-full overflow-auto bg-stone-50 dark:bg-stone-950">
       <svg
         ref={svgRef}
@@ -283,6 +287,7 @@ export function PlanCanvas() {
                   hasWarning={hasWarning}
                   isSelected={isSelected}
                   textClassName="select-none fill-stone-900 dark:fill-stone-100"
+                  season={activeSeason}
                 />
               </g>
 
@@ -346,6 +351,8 @@ export function PlanCanvas() {
         <ScaleBar bounds={bounds} />
       </svg>
     </div>
+      {showLegend && <PlanLegend variant={variant} themeKey={themeKey} />}
+    </div>
   );
 }
 
@@ -372,5 +379,28 @@ function ScaleBar({ bounds }: { bounds: ReturnType<typeof polygonBounds> }) {
       <line x1={barLenM} y1={-0.3} x2={barLenM} y2={0.3} stroke="#333" strokeWidth={0.1} />
       <text x={barLenM / 2} y={1.1} textAnchor="middle" fontSize={0.7} fill="#333">{barLenM} m</text>
     </g>
+  );
+}
+
+function PlanLegend({ variant, themeKey }: { variant: LayoutVariant; themeKey: 'light' | 'dark' }) {
+  const used = ZONE_CATEGORY_ORDER.filter(
+    (c) => variant.objects.some((o) => o.category === c) || variant.zones.some((z) => z.category === c),
+  );
+  if (used.length === 0) return null;
+  return (
+    <div className="pointer-events-none absolute right-3 bottom-3 rounded-md border border-stone-300 bg-white/95 p-2.5 text-[11px] shadow-sm dark:border-stone-700 dark:bg-stone-900/95">
+      <div className="mb-1 font-semibold text-stone-600 dark:text-stone-300">Legend</div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+        {used.map((c) => (
+          <div key={c} className="flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-sm border"
+              style={{ backgroundColor: CATEGORY_STYLES[c][themeKey].fill, borderColor: CATEGORY_STYLES[c][themeKey].stroke }}
+            />
+            <span className="text-stone-600 dark:text-stone-300">{CATEGORY_STYLES[c].label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

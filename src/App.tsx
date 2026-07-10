@@ -8,6 +8,7 @@ import { PlanCanvas } from './components/canvas/PlanCanvas';
 import { VariantComparisonView } from './components/comparison/VariantComparisonView';
 import { ExportModal } from './components/export/ExportModal';
 import { CostModal } from './components/cost/CostModal';
+import { ProjectsModal } from './components/projects/ProjectsModal';
 
 function useKeyboardShortcuts() {
   const selectedObjectIds = useProjectStore((s) => s.selectedObjectIds);
@@ -85,6 +86,7 @@ function App() {
       <BottomStatusBar />
       <ExportModal />
       <CostModal />
+      <ProjectsModal />
     </div>
   );
 }

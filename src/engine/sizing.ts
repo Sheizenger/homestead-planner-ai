@@ -34,6 +34,11 @@ const INFRA_TO_TYPES: Record<string, string[]> = {
   barn: ['barn'],
   pool: ['pool'],
   gazebo: ['gazebo'],
+  apiary: ['apiary'],
+  banya: ['banya'],
+  smokehouse: ['smokehouse'],
+  workshop: ['workshop'],
+  'rainwater-cistern': ['rainwater-cistern'],
 };
 
 const MODE_SCALE: Record<PlanningMode, number> = {

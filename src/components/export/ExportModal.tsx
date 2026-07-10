@@ -9,6 +9,8 @@ export function ExportModal() {
   const isOpen = useProjectStore((s) => s.isExportOpen);
   const setExportOpen = useProjectStore((s) => s.setExportOpen);
   const project = useProjectStore((s) => s.project);
+  const visualizationMode = useProjectStore((s) => s.visualizationMode);
+  const season = useProjectStore((s) => s.season);
   const variant = getActiveVariant(project);
   const [format, setFormat] = useState<Format>('png');
   const [includeLegend, setIncludeLegend] = useState(true);
@@ -97,6 +99,7 @@ export function ExportModal() {
                 showLegend={includeLegend}
                 showRationale={includeRationale}
                 showWarnings={includeWarnings}
+                season={visualizationMode === 'seasonal' ? season : undefined}
               />
             )}
           </div>

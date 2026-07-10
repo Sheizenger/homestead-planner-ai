@@ -1,6 +1,8 @@
 import { useProjectStore } from '../../state/projectStore';
 import { CATEGORY_STYLES } from '../../domain/categories';
 import { polygonBounds } from '../../engine/geometry';
+import { computeCostEstimate, findRegion } from '../../engine/costs';
+import { CURRENCIES, CURRENCY_SYMBOLS, convertFromUsd } from '../../domain/costData';
 import type { LayoutVariant } from '../../domain/types';
 
 function MiniPlan({ variant, boundary, onObjectClick }: { variant: LayoutVariant; boundary: { x: number; y: number }[]; onObjectClick?: (id: string) => void }) {
@@ -42,6 +44,12 @@ export function VariantComparisonView() {
   const setActiveVariant = useProjectStore((s) => s.setActiveVariant);
   const setView = useProjectStore((s) => s.setView);
   const copyObjectToActive = useProjectStore((s) => s.copyObjectToActive);
+  const costRegionId = useProjectStore((s) => s.costRegionId);
+  const customLandPriceUsd = useProjectStore((s) => s.customLandPriceUsd);
+  const setCostOpen = useProjectStore((s) => s.setCostOpen);
+
+  const baseRegion = findRegion(costRegionId);
+  const region = baseRegion.id === 'custom' ? { ...baseRegion, landPricePerM2Usd: customLandPriceUsd } : baseRegion;
 
   return (
     <div className="h-full overflow-y-auto bg-stone-100 p-4 dark:bg-stone-950">
@@ -51,6 +59,7 @@ export function VariantComparisonView() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {project.variants.map((v) => {
           const isActive = v.id === project.activeVariantId;
+          const cost = computeCostEstimate(v, region);
           return (
             <div key={v.id} className={`rounded-lg border p-3 ${isActive ? 'border-emerald-600 bg-white dark:bg-stone-900' : 'border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900'}`}>
               <div className="mb-2 flex items-center justify-between">
@@ -82,6 +91,24 @@ export function VariantComparisonView() {
                 <span>Maintenance: {v.analytics.maintenanceComplexityScore.toFixed(0)}</span>
                 <span>Warnings: {v.warnings.length}</span>
               </div>
+
+              <button
+                onClick={() => {
+                  setActiveVariant(v.id);
+                  setCostOpen(true);
+                }}
+                className="mt-2 w-full rounded-md border border-stone-200 px-2 py-1.5 text-left text-[11px] hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-800"
+                title="Open full cost breakdown for this variant"
+              >
+                <span className="text-stone-500 dark:text-stone-400">Est. total upfront: </span>
+                {CURRENCIES.map((c, i) => (
+                  <span key={c} className="font-medium text-stone-800 dark:text-stone-100">
+                    {i > 0 && ' / '}
+                    {CURRENCY_SYMBOLS[c]}
+                    {convertFromUsd(cost.totalUpfrontUsd, c).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </span>
+                ))}
+              </button>
 
               {v.rationaleSummary.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[11px] text-stone-500 dark:text-stone-400">

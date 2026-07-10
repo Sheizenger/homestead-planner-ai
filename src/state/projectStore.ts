@@ -7,6 +7,7 @@ import type {
   ObjectCategory,
   PlanningMode,
   Project,
+  Season,
   Transform,
   VisualizationMode,
   ZoneCategory,
@@ -17,6 +18,15 @@ import { generateVariants, generateVariant } from '../engine/generate';
 import { computeAnalytics } from '../engine/analytics';
 import { computeWarnings } from '../engine/warnings';
 import { transformAabb, aabbOverlap } from '../engine/geometry';
+import {
+  saveProject,
+  loadProject,
+  listProjects,
+  deleteProject,
+  getLastActiveProjectId,
+  debounce,
+  type ProjectSummary,
+} from './persistence';
 
 const HISTORY_LIMIT = 40;
 
@@ -32,7 +42,15 @@ function snapshotOf(v: LayoutVariant): EditSnapshot {
 
 function applySnapshot(v: LayoutVariant, snap: EditSnapshot, project: Project): LayoutVariant {
   const analytics = computeAnalytics(snap.objects, snap.zones, project.plot);
-  const warnings = computeWarnings(snap.objects, snap.fences, analytics, project.plot, project.brief.structuredInputs.householdSize);
+  const warnings = computeWarnings(
+    snap.objects,
+    snap.fences,
+    analytics,
+    project.plot,
+    project.brief.structuredInputs.householdSize,
+    project.brief.structuredInputs.climateZone,
+    project.brief.structuredInputs.crops,
+  );
   return { ...v, ...snap, analytics, warnings };
 }
 
@@ -42,22 +60,30 @@ interface ProjectState {
   project: Project;
   theme: Theme;
   visualizationMode: VisualizationMode;
+  season: Season;
   selectedObjectIds: string[];
   layerVisibility: Record<ObjectCategory, boolean>;
   layerLocked: Record<ObjectCategory, boolean>;
   snapToGrid: boolean;
   gridSize: number;
   zoom: number;
+  showLegend: boolean;
   comparisonIds: string[];
   view: 'workspace' | 'comparison';
   isExportOpen: boolean;
   isCostOpen: boolean;
   costRegionId: string;
   customLandPriceUsd: number;
+  isProjectsOpen: boolean;
   generating: boolean;
 
   loadSample: () => void;
   newProject: (name: string, width: number, height: number) => void;
+  switchToProject: (id: string) => void;
+  deleteSavedProject: (id: string) => void;
+  importProjectFromJson: (json: string) => { ok: true } | { ok: false; error: string };
+  getSavedProjects: () => ProjectSummary[];
+  setProjectsOpen: (open: boolean) => void;
   updateFreeText: (text: string) => void;
   updateStructuredInputs: (patch: Partial<Project['brief']['structuredInputs']>) => void;
   updatePlotSize: (width: number, height: number) => void;
@@ -75,8 +101,10 @@ interface ProjectState {
   undo: () => void;
   redo: () => void;
   setVisualizationMode: (mode: VisualizationMode) => void;
+  setSeason: (season: Season) => void;
   setTheme: (theme: Theme) => void;
   toggleSnap: () => void;
+  toggleLegend: () => void;
   setGridSize: (n: number) => void;
   setZoom: (z: number) => void;
   setView: (v: 'workspace' | 'comparison') => void;
@@ -111,25 +139,40 @@ function pushHistory(v: LayoutVariant): LayoutVariant {
   return { ...v, history: { past, future: [] } };
 }
 
+function loadInitialProject(): Project {
+  const lastId = getLastActiveProjectId();
+  const restored = lastId ? loadProject(lastId) : null;
+  if (restored) return restored;
+  const sample = createSampleProject();
+  saveProject(sample);
+  return sample;
+}
+
+function isProject(value: unknown): value is Project {
+  if (!value || typeof value !== 'object') return false;
+  const p = value as Record<string, unknown>;
+  return typeof p.id === 'string' && typeof p.name === 'string' && !!p.plot && Array.isArray(p.variants) && !!p.brief;
+}
+
 export const useProjectStore = create<ProjectState>((set, get) => ({
-  project: (() => {
-    const p = createSampleProject();
-    return p;
-  })(),
+  project: loadInitialProject(),
   theme: 'light',
   visualizationMode: 'schematic',
+  season: 'summer',
   selectedObjectIds: [],
   layerVisibility: defaultVisibility(),
   layerLocked: defaultLocked(),
   snapToGrid: true,
   gridSize: 1,
   zoom: 1,
+  showLegend: false,
   comparisonIds: [],
   view: 'workspace',
   isExportOpen: false,
   isCostOpen: false,
   costRegionId: 'custom',
   customLandPriceUsd: 5,
+  isProjectsOpen: false,
   generating: false,
 
   loadSample: () => {
@@ -140,8 +183,46 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   newProject: (name, width, height) => {
     const project = createBlankProject(name, width, height);
-    set({ project, selectedObjectIds: [] });
+    set({ project, selectedObjectIds: [], isProjectsOpen: false });
   },
+
+  switchToProject: (id) => {
+    const project = loadProject(id);
+    if (!project) return;
+    set({ project, selectedObjectIds: [], isProjectsOpen: false });
+  },
+
+  deleteSavedProject: (id) => {
+    deleteProject(id);
+    if (get().project.id === id) {
+      const remaining = listProjects();
+      if (remaining.length > 0) {
+        const next = loadProject(remaining[0].id);
+        if (next) {
+          set({ project: next, selectedObjectIds: [] });
+          return;
+        }
+      }
+      const sample = createSampleProject();
+      saveProject(sample);
+      set({ project: sample, selectedObjectIds: [] });
+    }
+  },
+
+  importProjectFromJson: (json) => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      return { ok: false, error: 'Not valid JSON.' };
+    }
+    if (!isProject(parsed)) return { ok: false, error: "Doesn't look like a Homestead Planner project file." };
+    set({ project: parsed, selectedObjectIds: [], isProjectsOpen: false });
+    return { ok: true };
+  },
+
+  getSavedProjects: () => listProjects(),
+  setProjectsOpen: (open) => set({ isProjectsOpen: open }),
 
   updateFreeText: (text) =>
     set(
@@ -293,8 +374,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     })),
 
   setVisualizationMode: (mode) => set({ visualizationMode: mode }),
+  setSeason: (season) => set({ season }),
   setTheme: (theme) => set({ theme }),
   toggleSnap: () => set((s) => ({ snapToGrid: !s.snapToGrid })),
+  toggleLegend: () => set((s) => ({ showLegend: !s.showLegend })),
   setGridSize: (n) => set({ gridSize: n }),
   setZoom: (z) => set({ zoom: Math.max(0.3, Math.min(4, z)) }),
   setView: (v) => set({ view: v }),
@@ -323,6 +406,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   setCostRegion: (id) => set({ costRegionId: id }),
   setCustomLandPrice: (usd) => set({ customLandPriceUsd: usd }),
 }));
+
+const debouncedSaveProject = debounce((project: Project) => saveProject(project), 600);
+let lastSavedProject: Project | null = null;
+useProjectStore.subscribe((state) => {
+  if (state.project !== lastSavedProject) {
+    lastSavedProject = state.project;
+    debouncedSaveProject(state.project);
+  }
+});
 
 export function getActiveVariant(project: Project): LayoutVariant | undefined {
   return project.variants.find((v) => v.id === project.activeVariantId);

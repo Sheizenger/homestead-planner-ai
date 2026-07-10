@@ -33,6 +33,13 @@ const INFRA_TERMS: Record<string, string> = {
   woodshed: 'woodshed', firewood: 'woodshed',
   garage: 'garage',
   barn: 'barn',
+  pool: 'pool', 'swimming pool': 'pool',
+  gazebo: 'gazebo', pavilion: 'gazebo',
+  apiary: 'apiary', bees: 'apiary', beehives: 'apiary', beekeeping: 'apiary',
+  banya: 'banya', sauna: 'banya', bathhouse: 'banya',
+  smokehouse: 'smokehouse', smoker: 'smokehouse',
+  workshop: 'workshop',
+  cistern: 'rainwater-cistern', 'rainwater tank': 'rainwater-cistern', 'rainwater cistern': 'rainwater-cistern',
 };
 
 const STYLE_TERMS: Record<string, number> = {

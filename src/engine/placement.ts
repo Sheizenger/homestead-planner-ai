@@ -23,11 +23,11 @@ function matchesSetback(entry: ObjectLibraryEntry, appliesTo: string[]): boolean
 // sort late.
 const PLACEMENT_TIERS: string[][] = [
   ['house', 'house-l'],
-  ['garage', 'shed', 'barn', 'cellar', 'woodshed'],
-  ['well', 'pump', 'septic', 'water-tank', 'solar-array', 'battery-room', 'inverter-room', 'generator'],
-  ['goat-shelter', 'goat-paddock', 'poultry-coop'],
+  ['garage', 'shed', 'barn', 'cellar', 'woodshed', 'workshop'],
+  ['well', 'pump', 'septic', 'water-tank', 'rainwater-cistern', 'solar-array', 'battery-room', 'inverter-room', 'generator'],
+  ['goat-shelter', 'goat-paddock', 'poultry-coop', 'apiary'],
   ['raised-beds', 'greenhouse', 'hydroponic-tower', 'vegetable-area', 'potato-area', 'grain-field', 'orchard-trees', 'berry-rows', 'vineyard'],
-  ['compost', 'patio', 'pool', 'gazebo'],
+  ['compost', 'patio', 'pool', 'gazebo', 'banya', 'smokehouse'],
 ];
 
 function tierOf(typeId: string): number {

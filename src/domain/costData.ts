@@ -102,6 +102,11 @@ export const OBJECT_COST_TABLE: Record<string, ObjectCostEntry> = {
   generator: { installFixed: 1200, annualFixed: 150 },
   pool: { installPerM2: 900, annualFixed: 600, annualPerM2: 15 },
   gazebo: { installPerM2: 250, annualPerM2: 3 },
+  apiary: { installFixed: 800, annualFixed: 150 },
+  banya: { installPerM2: 900, annualPerM2: 8 },
+  smokehouse: { installFixed: 600, annualFixed: 20 },
+  workshop: { installPerM2: 350, annualPerM2: 6 },
+  'rainwater-cistern': { installFixed: 1000, annualFixed: 30 },
 };
 
 export const PATH_COST_PER_M2: Record<string, { install: number; annual: number }> = {
@@ -128,4 +133,5 @@ export const OBJECT_CATEGORY_FALLBACK_COST: Partial<Record<ObjectCategory, Objec
   energy: { installFixed: 1500, annualFixed: 60 },
   water: { installFixed: 1200, annualFixed: 50 },
   utility: { installFixed: 800, annualFixed: 40 },
+  animal: { installPerM2: 100, annualFixed: 100 },
 };

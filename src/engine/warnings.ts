@@ -1,5 +1,6 @@
-import type { AnalyticsSnapshot, Fence, PlanObject, Plot, Warning } from '../domain/types';
+import type { AnalyticsSnapshot, ClimateZone, Fence, PlanObject, Plot, Warning } from '../domain/types';
 import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../domain/constraints';
+import { CROP_CLIMATE_NOTES } from '../domain/climateData';
 import { OBJECT_LIBRARY } from '../domain/objectLibrary';
 import { distance, distanceToPolygonBoundary, transformAabb, aabbOverlap } from './geometry';
 
@@ -28,11 +29,35 @@ export function computeHouseholdAreaWarning(totalAreaM2: number, householdSize: 
   };
 }
 
-export function computeWarnings(objects: PlanObject[], fences: Fence[], analytics: AnalyticsSnapshot, plot: Plot, householdSize: number): Warning[] {
+export function computeClimateCropWarnings(climateZone: ClimateZone, crops: string[]): Warning[] {
+  const warnings: Warning[] = [];
+  for (const note of CROP_CLIMATE_NOTES) {
+    if (!crops.includes(note.crop) || !note.questionableZones.includes(climateZone)) continue;
+    warnings.push({
+      id: `warn-climate-${note.crop}`,
+      severity: note.severity,
+      message: `${note.crop[0].toUpperCase()}${note.crop.slice(1)} in a ${climateZone} climate: ${note.message}`,
+      ruleId: 'climate-crop-fit',
+      objectIds: [],
+    });
+  }
+  return warnings;
+}
+
+export function computeWarnings(
+  objects: PlanObject[],
+  fences: Fence[],
+  analytics: AnalyticsSnapshot,
+  plot: Plot,
+  householdSize: number,
+  climateZone: ClimateZone,
+  crops: string[],
+): Warning[] {
   const warnings: Warning[] = [];
 
   const householdWarning = computeHouseholdAreaWarning(analytics.totalAreaM2, householdSize);
   if (householdWarning) warnings.push(householdWarning);
+  warnings.push(...computeClimateCropWarnings(climateZone, crops));
 
   // subjectTypes/relatedTypes can be the same list (e.g. "any two
   // outbuildings"), which would otherwise match a pair in both directions

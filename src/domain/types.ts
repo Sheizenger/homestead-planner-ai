@@ -217,3 +217,5 @@ export type VisualizationMode =
   | 'utilities'
   | 'seasonal'
   | 'rationale';
+
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter';

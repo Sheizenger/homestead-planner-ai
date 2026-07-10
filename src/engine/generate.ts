@@ -30,7 +30,15 @@ export function generateVariant(project: Project, mode: PlanningMode, seed: numb
   const fences = synthesizeFences(objects, project.plot);
   const zones = buildFutureExpansionZone(project.plot, objects, mode);
   const analytics = computeAnalytics(objects, zones, project.plot);
-  const warnings = computeWarnings(objects, fences, analytics, project.plot, mergedInputs.householdSize);
+  const warnings = computeWarnings(
+    objects,
+    fences,
+    analytics,
+    project.plot,
+    mergedInputs.householdSize,
+    mergedInputs.climateZone,
+    mergedInputs.crops,
+  );
 
   for (const item of unplaced) {
     warnings.unshift({
