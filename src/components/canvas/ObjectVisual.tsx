@@ -20,6 +20,23 @@ function lShapePoints(width: number, height: number): string {
     .join(' ');
 }
 
+const MIN_LABEL_FONT = 0.55;
+const MAX_LABEL_FONT = 1.6;
+const CHAR_WIDTH_RATIO = 0.56; // rough average glyph width as a fraction of font size
+
+// Font size that keeps the label's estimated width inside the shape, or null
+// if even the smallest legible size wouldn't fit — callers then caption the
+// label just outside the shape (or omit it) instead of letting it overflow
+// straight through a small icon with center alignment, which reads as broken.
+function fitLabelFontSize(label: string, width: number, height: number): number | null {
+  const idealFont = Math.min(MAX_LABEL_FONT, Math.max(MIN_LABEL_FONT, Math.min(width, height) / 4));
+  if (label.length === 0) return idealFont;
+  const availableWidth = Math.max(0, width - 0.5);
+  const widthFit = availableWidth / (label.length * CHAR_WIDTH_RATIO);
+  const fitted = Math.min(idealFont, widthFit);
+  return fitted >= MIN_LABEL_FONT ? fitted : null;
+}
+
 // Renders one object's fill shape + type-specific decorative glyph + label.
 // Shared by the interactive canvas and the static export renderer so the two
 // never visually drift apart.
@@ -34,7 +51,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
   const strokeWidth = isSelected ? 0.3 : 0.15;
   const fillOpacity = obj.locked ? 0.5 : 0.85;
   const dash = obj.locked ? '0.4,0.3' : undefined;
-  const fontSize = Math.min(1.6, Math.max(0.7, Math.min(width, height) / 4));
+  const labelFont = fitLabelFontSize(obj.label, width, height);
   // Roof-mounted equipment sits visually on top of the house's own fill, so
   // it gets an outline instead of a second opaque, category-colored block
   // covering part of the roof.
@@ -55,11 +72,11 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
           rx={0.1}
         />
         {entry && <ObjectGlyph entry={entry} width={width} height={height} stroke={style?.[themeKey].stroke ?? '#888'} season={season} />}
-        {width > 3.5 && height > 2 && (
+        {labelFont !== null && (
           <text
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={Math.min(0.8, fontSize)}
+            fontSize={labelFont}
             fill="#1c1917"
             className={textClassName ?? 'select-none'}
           >
@@ -121,8 +138,9 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
 
       <text
         textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={fontSize}
+        dominantBaseline={labelFont !== null ? 'middle' : 'hanging'}
+        y={labelFont !== null ? 0 : (obj.transform.rotationDeg % 180 !== 0 ? width : height) / 2 + 0.5}
+        fontSize={labelFont ?? MIN_LABEL_FONT}
         fill="#1c1917"
         className={textClassName ?? 'select-none'}
         transform={`rotate(${-obj.transform.rotationDeg})`}
