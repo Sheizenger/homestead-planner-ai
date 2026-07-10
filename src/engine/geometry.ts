@@ -108,6 +108,16 @@ export function centerOf(t: Transform): Point {
   return { x: t.x, y: t.y };
 }
 
+// Closest point on (or in) an axis-aligned box to an external point — for a
+// point outside the box this lands on its boundary, so a path can be anchored
+// to a building's edge instead of visually running into its center.
+export function nearestPointOnAabb(box: Bounds, target: Point): Point {
+  return {
+    x: clamp(target.x, box.minX, box.maxX),
+    y: clamp(target.y, box.minY, box.maxY),
+  };
+}
+
 export function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }

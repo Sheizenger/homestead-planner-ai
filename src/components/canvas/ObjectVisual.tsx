@@ -34,6 +34,41 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
   const fillOpacity = obj.locked ? 0.5 : 0.85;
   const dash = obj.locked ? '0.4,0.3' : undefined;
   const fontSize = Math.min(1.6, Math.max(0.7, Math.min(width, height) / 4));
+  // Roof-mounted equipment sits visually on top of the house's own fill, so
+  // it gets an outline instead of a second opaque, category-colored block
+  // covering part of the roof.
+  const roofMounted = obj.metadata.roofMounted === true;
+
+  if (roofMounted) {
+    return (
+      <>
+        <rect
+          x={-width / 2}
+          y={-height / 2}
+          width={width}
+          height={height}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={0.1}
+          strokeDasharray="0.3,0.2"
+          rx={0.1}
+        />
+        {entry && <ObjectGlyph entry={entry} width={width} height={height} stroke={style?.[themeKey].stroke ?? '#888'} season={season} />}
+        {width > 3.5 && height > 2 && (
+          <text
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={Math.min(0.8, fontSize)}
+            fill="#1c1917"
+            className={textClassName ?? 'select-none'}
+          >
+            {obj.label}
+          </text>
+        )}
+        {hasWarning && <circle cx={width / 2 - 0.4} cy={-height / 2 + 0.4} r={0.3} fill="#b3452e" />}
+      </>
+    );
+  }
 
   return (
     <>

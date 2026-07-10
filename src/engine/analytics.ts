@@ -24,6 +24,7 @@ export function computeAnalytics(objects: PlanObject[], zones: Zone[], plot: Plo
 
   for (const obj of objects) {
     if (!ZONE_CATEGORY_ORDER.includes(obj.category as ZoneCategory)) continue;
+    if (obj.metadata.roofMounted) continue; // shares the house's footprint, not separate ground area
     const cat = obj.category as ZoneCategory;
     const area = obj.transform.width * obj.transform.height;
     byCategoryMap.set(cat, (byCategoryMap.get(cat) ?? 0) + area);

@@ -81,9 +81,16 @@ export function lShapeVertices(width: number, height: number): [number, number][
   ];
 }
 
+// Classic architectural roof-plan symbol: a ridge along the longer axis with
+// four hip lines sloping down to the corners, rather than a plain corner-to-
+// center X — reads as an actual pitched roof instead of an abstract star.
 function RoofLines({ width, height, stroke, withDoor }: { width: number; height: number; stroke: string; withDoor: boolean }) {
   const hw = width / 2;
   const hh = height / 2;
+  const horizontal = width >= height;
+  const ridgeHalf = Math.max(0, (horizontal ? hw : hh) - Math.min(hw, hh) * 0.9);
+  const ridgeA = horizontal ? { x: -ridgeHalf, y: 0 } : { x: 0, y: -ridgeHalf };
+  const ridgeB = horizontal ? { x: ridgeHalf, y: 0 } : { x: 0, y: ridgeHalf };
   const corners = [
     { x: -hw, y: -hh },
     { x: hw, y: -hh },
@@ -91,10 +98,12 @@ function RoofLines({ width, height, stroke, withDoor }: { width: number; height:
     { x: -hw, y: hh },
   ];
   return (
-    <g opacity={0.6}>
-      {corners.map((c, i) => (
-        <line key={i} x1={c.x} y1={c.y} x2={0} y2={0} stroke={stroke} strokeWidth={0.06} />
-      ))}
+    <g opacity={0.65}>
+      <line x1={ridgeA.x} y1={ridgeA.y} x2={ridgeB.x} y2={ridgeB.y} stroke={stroke} strokeWidth={0.09} />
+      {corners.map((c, i) => {
+        const anchor = (horizontal ? c.x < 0 : c.y < 0) ? ridgeA : ridgeB;
+        return <line key={i} x1={c.x} y1={c.y} x2={anchor.x} y2={anchor.y} stroke={stroke} strokeWidth={0.06} />;
+      })}
       {withDoor && width > 3 && (
         <line x1={-0.5} y1={hh} x2={0.5} y2={hh} stroke={stroke} strokeWidth={0.35} opacity={0.9} />
       )}
@@ -126,18 +135,65 @@ function TreeGrid({ width, height, stroke, season }: { width: number; height: nu
   return (
     <g>
       {trees.map((t, i) => (
-        <g key={i} transform={`translate(${t.x} ${t.y})`}>
-          <circle
-            r={canopyR}
-            fill={showCanopyFill ? canopyFill : 'none'}
-            fillOpacity={0.3}
-            stroke={stroke}
-            strokeWidth={0.07}
-            strokeDasharray={season === 'winter' ? '0.15,0.12' : undefined}
-          />
-          {showFruitDot && <circle r={canopyR * 0.22} fill={canopyFill} fillOpacity={0.55} />}
-        </g>
+        <TreeIcon
+          key={i}
+          x={t.x}
+          y={t.y}
+          r={canopyR}
+          stroke={stroke}
+          canopyFill={canopyFill}
+          showCanopyFill={showCanopyFill}
+          showFruitDot={showFruitDot}
+          winter={season === 'winter'}
+        />
       ))}
+    </g>
+  );
+}
+
+// A trunk plus a 3-lobe overlapping-circle crown reads as an actual tree
+// (canopy + trunk) at plan-view scale, rather than a single flat dot.
+function TreeIcon({
+  x,
+  y,
+  r,
+  stroke,
+  canopyFill,
+  showCanopyFill,
+  showFruitDot,
+  winter,
+}: {
+  x: number;
+  y: number;
+  r: number;
+  stroke: string;
+  canopyFill: string;
+  showCanopyFill: boolean;
+  showFruitDot: boolean;
+  winter: boolean;
+}) {
+  const lobes = [
+    { dx: 0, dy: -r * 0.32, lr: r * 0.72 },
+    { dx: -r * 0.42, dy: r * 0.08, lr: r * 0.56 },
+    { dx: r * 0.42, dy: r * 0.08, lr: r * 0.56 },
+  ];
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <line x1={0} y1={r * 0.3} x2={0} y2={r * 0.95} stroke={stroke} strokeWidth={0.06} opacity={0.75} />
+      {lobes.map((l, i) => (
+        <circle
+          key={i}
+          cx={l.dx}
+          cy={l.dy}
+          r={l.lr}
+          fill={showCanopyFill ? canopyFill : 'none'}
+          fillOpacity={0.32}
+          stroke={stroke}
+          strokeWidth={0.06}
+          strokeDasharray={winter ? '0.14,0.11' : undefined}
+        />
+      ))}
+      {showFruitDot && <circle cy={-r * 0.25} r={r * 0.2} fill={canopyFill} fillOpacity={0.55} />}
     </g>
   );
 }

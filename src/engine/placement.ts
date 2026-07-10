@@ -4,12 +4,24 @@ import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../domain/constraints';
 import type { ProgramItem } from './sizing';
 import {
   polygonBounds,
+  polygonArea,
   rectFullyInsidePolygon,
   transformAabb,
   aabbOverlap,
   distance,
   distanceToPolygonBoundary,
 } from './geometry';
+
+// Fraction of the house footprint that's realistically usable for roof-mount
+// PV (one south-facing slope, minus dormers/chimneys/valleys) — a coarse
+// stand-in for a real roof-plane model.
+const ROOF_USABLE_FRACTION = 0.5;
+
+// Categories that read as "private/technical" and shouldn't crowd the direct
+// house-to-gate approach (the one strip of yard every visitor actually sees
+// and walks through).
+const FRONT_AVOID_CATEGORIES: ObjectCategory[] = ['utility', 'water', 'energy', 'storage', 'animal', 'leisure'];
+const SIDE_YARD_CATEGORIES: ObjectCategory[] = ['utility', 'water', 'energy'];
 
 function matchesSetback(entry: ObjectLibraryEntry, appliesTo: string[]): boolean {
   return appliesTo.includes(entry.id) || appliesTo.includes(entry.category);
@@ -81,6 +93,19 @@ export function placeObjects(
   const step = Math.max(1.2, Math.min(plotW, plotH) / 28);
   const weights = MODE_WEIGHTS[mode];
 
+  // How much slack the plot has relative to the requested program: 0 means
+  // the program nearly fills the plot (pack tight), higher means there's
+  // real room to spare. Used to relax how hard objects cling to the house
+  // and how tightly they pack against each other — the same program on a
+  // much bigger plot should read as more spread out, not identically cramped.
+  const plotArea = polygonArea(plot.boundary);
+  const programArea = program.reduce((sum, item) => sum + item.width * item.height * item.count, 0);
+  const slackRatio = plotArea > 0 ? Math.max(0, Math.min(1, (plotArea - programArea) / plotArea)) : 0;
+  const spacingPad = 1.2 + slackRatio * 5;
+  const comfortDist = 10 + slackRatio * 8;
+  const compactPullScale = 0.15 * (1 - slackRatio * 0.75);
+  const layout = { spacingPad, comfortDist, compactPullScale };
+
   const sorted = [...program].sort((a, b) => {
     const tierDiff = tierOf(a.typeId) - tierOf(b.typeId);
     if (tierDiff !== 0) return tierDiff;
@@ -107,10 +132,36 @@ export function placeObjects(
     const width = item.width;
     const height = item.height;
 
-    let best = searchBestCandidate(plot, bounds, step, width, height, entry, placed, houseCenter, weights, rand);
+    if (item.typeId === 'solar-array' && houseCenter) {
+      const roofArea = houseCenter.width * houseCenter.height * ROOF_USABLE_FRACTION;
+      if (width * height <= roofArea) {
+        const roofW = Math.min(width, houseCenter.width * 0.8);
+        const roofH = Math.min(height, houseCenter.height * 0.8);
+        placed.push({
+          id: `obj-${item.typeId}-${placed.length}-${Math.floor(rand() * 1e6)}`,
+          typeId: item.typeId,
+          category: entry.category,
+          transform: {
+            x: houseCenter.x + (houseCenter.width - roofW) * 0.2,
+            y: houseCenter.y - (houseCenter.height - roofH) * 0.2,
+            width: roofW,
+            height: roofH,
+            rotationDeg: houseCenter.rotationDeg,
+          },
+          label: entry.label,
+          locked: false,
+          layerId: entry.category,
+          metadata: { ...item.metadata, roofMounted: true },
+          rationale: `${entry.label}: roof-mounted on the house, saving yard space and keeping DC wiring runs short.`,
+        });
+        continue;
+      }
+    }
+
+    let best = searchBestCandidate(plot, bounds, step, width, height, entry, placed, houseCenter, weights, rand, layout);
     for (const shrink of [0.8, 0.6, 0.45]) {
       if (best) break;
-      best = searchBestCandidate(plot, bounds, step, width * shrink, height * shrink, entry, placed, houseCenter, weights, rand);
+      best = searchBestCandidate(plot, bounds, step, width * shrink, height * shrink, entry, placed, houseCenter, weights, rand, layout);
     }
     if (!best) {
       unplaced.push(item);
@@ -146,6 +197,7 @@ function searchBestCandidate(
   houseCenter: Transform | undefined,
   weights: { access: number; separation: number; sun: number; beauty: number },
   rand: () => number,
+  layout: { spacingPad: number; comfortDist: number; compactPullScale: number },
 ): Candidate | null {
   const orientations = width === height ? [0] : [0, 90];
   let best: Candidate | null = null;
@@ -159,7 +211,7 @@ function searchBestCandidate(
         if (!rectFullyInsidePolygon(transform, plot.boundary)) continue;
 
         const aabb = transformAabb(transform);
-        const overlaps = placed.some((p) => aabbOverlap(aabb, transformAabb(p.transform), 1.2));
+        const overlaps = placed.some((p) => aabbOverlap(aabb, transformAabb(p.transform), layout.spacingPad));
         if (overlaps) continue;
 
         const hardViolation = CONSTRAINTS.some((c) => {
@@ -173,7 +225,7 @@ function searchBestCandidate(
         });
         if (hardViolation) continue;
 
-        const { score, reasons } = scoreCandidate(transform, entry, placed, houseCenter, bounds, weights, plot.boundary);
+        const { score, reasons } = scoreCandidate(transform, entry, placed, houseCenter, bounds, weights, plot.boundary, layout);
         if (!best || score > best.score) best = { transform, score, reasons };
       }
     }
@@ -189,6 +241,7 @@ function scoreCandidate(
   bounds: ReturnType<typeof polygonBounds>,
   weights: { access: number; separation: number; sun: number; beauty: number },
   boundary: Point[],
+  layout: { spacingPad: number; comfortDist: number; compactPullScale: number },
 ): { score: number; reasons: string[] } {
   let score = 0;
   const reasons: string[] = [];
@@ -196,10 +249,56 @@ function scoreCandidate(
   if (houseCenter && !HOUSE_TYPE_IDS.includes(entry.id)) {
     const d = distance(transform, houseCenter);
     if (entry.needsAccess) {
-      score -= d * weights.access;
-      if (d < 15) reasons.push('close to the house for frequent access');
+      // Diminishing returns on closeness: within "comfortable walking
+      // distance" further shaving off a meter barely matters, so the search
+      // doesn't fight to snap every frequently-visited object flush against
+      // the house wall — beyond it, distance costs more steeply. This is
+      // what actually lets a bigger plot (same objects) read as more spread
+      // out instead of identically huddled around the house.
+      const penalty = d <= layout.comfortDist ? d * 0.3 : layout.comfortDist * 0.3 + (d - layout.comfortDist) * 1.4;
+      score -= penalty * weights.access;
+      if (d < layout.comfortDist) reasons.push('close to the house for frequent access');
     } else {
-      score -= d * weights.access * 0.15; // mild preference for compactness even for low-visit zones
+      score -= d * weights.access * layout.compactPullScale; // mild preference for compactness even for low-visit zones
+    }
+
+    // Sector siting: a house has a road-facing front (the direct approach
+    // from the gate, kept clear for entry) and a private back yard on the
+    // opposite side, per the same south/road-facing convention used for
+    // house placement itself and for the gate.
+    const relX = transform.x - houseCenter.x;
+    const relY = transform.y - houseCenter.y; // + = toward the gate/road, - = away from it (back yard)
+
+    // Layout convention, not an aesthetic-mode preference — kept independent
+    // of weights.beauty so septic-behind-the-house or patio-by-the-potatoes
+    // doesn't come back the moment someone picks Production-Maximizing.
+    const sectorWeight = 0.7 + weights.separation * 0.15;
+
+    if (entry.category === 'leisure') {
+      // Outdoor living space belongs in the private back yard, not staged
+      // between the house and the road.
+      if (relY < 0) {
+        score += Math.min(-relY, 10) * sectorWeight;
+        reasons.push('sited in the private back yard');
+      } else {
+        score -= relY * sectorWeight * 0.8;
+      }
+    } else if (FRONT_AVOID_CATEGORIES.includes(entry.category)) {
+      // Keep the direct house-to-gate approach clear of clutter (sheds,
+      // septic fields, animal pens, etc. don't belong in the front yard).
+      const frontHalfWidth = houseCenter.width / 2 + 2;
+      if (relY > 1 && Math.abs(relX) < frontHalfWidth) {
+        score -= 15 * sectorWeight;
+      }
+    }
+
+    if (SIDE_YARD_CATEGORIES.includes(entry.category)) {
+      // Technical/utility items (septic, well, water tank, solar, battery)
+      // conventionally sit in a side yard, not dead-center behind the house.
+      score += Math.min(Math.abs(relX), 12) * sectorWeight * 0.3;
+      if (Math.abs(relX) < houseCenter.width * 0.25) {
+        score -= 6 * sectorWeight;
+      }
     }
   } else if (!houseCenter) {
     // House placement: bias toward the "front" (larger y = south/road side by convention).

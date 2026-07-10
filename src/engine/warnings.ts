@@ -73,6 +73,10 @@ export function computeWarnings(
         if (related.id === subject.id) continue;
         const relatedEntry = OBJECT_LIBRARY[related.typeId];
         if (!relatedEntry || !matches(relatedEntry.id, relatedEntry.category, c.relatedTypes)) continue;
+        // Roof-mounted equipment isn't a ground-level obstacle — skip
+        // ground clearance/separation checks (adjacency, e.g. cable-run
+        // distance, still applies).
+        if ((c.kind === 'separation' || c.kind === 'safety') && (subject.metadata.roofMounted || related.metadata.roofMounted)) continue;
         const pairKey = `${c.id}:${[subject.id, related.id].sort().join('|')}`;
         if (reportedPairs.has(pairKey)) continue;
         const d = distance(subject.transform, related.transform);
@@ -140,6 +144,7 @@ export function computeWarnings(
     for (let j = i + 1; j < objects.length; j++) {
       const a = objects[i];
       const b = objects[j];
+      if (a.metadata.roofMounted || b.metadata.roofMounted) continue; // meant to overlap the house footprint
       if (aabbOverlap(transformAabb(a.transform), transformAabb(b.transform))) {
         warnings.push({
           id: `warn-overlap-${a.id}-${b.id}`,
