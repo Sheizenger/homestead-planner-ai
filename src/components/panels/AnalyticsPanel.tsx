@@ -1,8 +1,10 @@
 import { useProjectStore, getActiveVariant, categoryLabel } from '../../state/projectStore';
 import { CATEGORY_STYLES } from '../../domain/categories';
+import { t } from '../../i18n/translations';
 
 export function AnalyticsPanel() {
   const project = useProjectStore((s) => s.project);
+  const locale = useProjectStore((s) => s.locale);
   const variant = getActiveVariant(project);
   if (!variant) return null;
   const a = variant.analytics;
@@ -11,17 +13,17 @@ export function AnalyticsPanel() {
   return (
     <div className="space-y-3 p-3 text-xs">
       <div className="grid grid-cols-2 gap-2">
-        <Stat label="Total plot" value={`${a.totalAreaM2.toFixed(0)} m²`} />
-        <Stat label="Allocated" value={`${a.allocatedAreaM2.toFixed(0)} m²`} />
-        <Stat label="Unallocated" value={`${a.unallocatedAreaM2.toFixed(0)} m²`} />
-        <Stat label="Utilization" value={`${utilization.toFixed(0)}%`} />
-        <Stat label="Food production" value={`${a.estimatedFoodProductionScore.toFixed(0)} / 100`} />
-        <Stat label="Maintenance load" value={`${a.maintenanceComplexityScore.toFixed(0)} / 100`} />
+        <Stat label={t(locale, 'analytics.totalPlot')} value={`${a.totalAreaM2.toFixed(0)} m²`} />
+        <Stat label={t(locale, 'analytics.allocated')} value={`${a.allocatedAreaM2.toFixed(0)} m²`} />
+        <Stat label={t(locale, 'analytics.unallocated')} value={`${a.unallocatedAreaM2.toFixed(0)} m²`} />
+        <Stat label={t(locale, 'analytics.utilization')} value={`${utilization.toFixed(0)}%`} />
+        <Stat label={t(locale, 'analytics.foodProduction')} value={`${a.estimatedFoodProductionScore.toFixed(0)} / 100`} />
+        <Stat label={t(locale, 'analytics.maintenanceLoad')} value={`${a.maintenanceComplexityScore.toFixed(0)} / 100`} />
       </div>
 
       <div>
         <h4 className="mb-1.5 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
-          Area by category
+          {t(locale, 'analytics.areaByCategory')}
         </h4>
         <div className="space-y-1">
           {a.byCategory.map((c) => (
@@ -30,7 +32,7 @@ export function AnalyticsPanel() {
                 className="h-2.5 w-2.5 shrink-0 rounded-sm"
                 style={{ backgroundColor: CATEGORY_STYLES[c.category].light.stroke }}
               />
-              <span className="w-24 shrink-0 text-stone-600 dark:text-stone-300">{categoryLabel(c.category)}</span>
+              <span className="w-24 shrink-0 text-stone-600 dark:text-stone-300">{categoryLabel(locale, c.category)}</span>
               <div className="h-1.5 flex-1 rounded-full bg-stone-200 dark:bg-stone-800">
                 <div
                   className="h-1.5 rounded-full"

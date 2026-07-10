@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { useProjectStore, getActiveVariant } from '../../state/projectStore';
 import { StaticPlanRender } from '../canvas/StaticPlanRender';
 import { exportSvgAsPng, exportSvgAsPdf, exportProjectAsJson } from '../../engine/exporters';
+import { t } from '../../i18n/translations';
+import { planningModeLabel } from '../../i18n/labels';
 
 type Format = 'png' | 'pdf' | 'json';
 
@@ -9,6 +11,7 @@ export function ExportModal() {
   const isOpen = useProjectStore((s) => s.isExportOpen);
   const setExportOpen = useProjectStore((s) => s.setExportOpen);
   const project = useProjectStore((s) => s.project);
+  const locale = useProjectStore((s) => s.locale);
   const visualizationMode = useProjectStore((s) => s.visualizationMode);
   const season = useProjectStore((s) => s.season);
   const variant = getActiveVariant(project);
@@ -23,6 +26,7 @@ export function ExportModal() {
 
   const hasUnresolvedCritical = variant.warnings.some((w) => w.severity === 'critical');
   const baseName = project.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const modeLabel = planningModeLabel(locale, variant.mode);
 
   const handleExport = async () => {
     setExporting(true);
@@ -30,8 +34,8 @@ export function ExportModal() {
       if (format === 'json') {
         exportProjectAsJson(project, `${baseName}.json`);
       } else if (svgRef.current) {
-        if (format === 'png') await exportSvgAsPng(svgRef.current, `${baseName}-${variant.strategyLabel.toLowerCase().replace(/\s+/g, '-')}.png`);
-        else await exportSvgAsPdf(svgRef.current, `${baseName}-${variant.strategyLabel.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+        if (format === 'png') await exportSvgAsPng(svgRef.current, `${baseName}-${modeLabel.toLowerCase().replace(/\s+/g, '-')}.png`);
+        else await exportSvgAsPdf(svgRef.current, `${baseName}-${modeLabel.toLowerCase().replace(/\s+/g, '-')}.pdf`);
       }
     } finally {
       setExporting(false);
@@ -45,7 +49,7 @@ export function ExportModal() {
         className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-stone-900"
       >
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
-          <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Export — {variant.strategyLabel}</h2>
+          <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">{t(locale, 'export.title', { variant: modeLabel })}</h2>
           <button onClick={() => setExportOpen(false)} className="text-stone-500 hover:text-stone-800 dark:hover:text-stone-100">✕</button>
         </div>
 
@@ -65,15 +69,15 @@ export function ExportModal() {
 
             {format !== 'json' && (
               <div className="space-y-2">
-                <label className="flex items-center gap-2"><input type="checkbox" checked={includeLegend} onChange={(e) => setIncludeLegend(e.target.checked)} /> Legend</label>
-                <label className="flex items-center gap-2"><input type="checkbox" checked={includeRationale} onChange={(e) => setIncludeRationale(e.target.checked)} /> Rationale callouts</label>
-                <label className="flex items-center gap-2"><input type="checkbox" checked={includeWarnings} onChange={(e) => setIncludeWarnings(e.target.checked)} /> Warnings appendix</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={includeLegend} onChange={(e) => setIncludeLegend(e.target.checked)} /> {t(locale, 'export.legend')}</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={includeRationale} onChange={(e) => setIncludeRationale(e.target.checked)} /> {t(locale, 'export.rationaleCallouts')}</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={includeWarnings} onChange={(e) => setIncludeWarnings(e.target.checked)} /> {t(locale, 'export.warningsAppendix')}</label>
               </div>
             )}
 
             {hasUnresolvedCritical && (
               <p className="rounded border border-red-300 bg-red-50 p-2 text-[11px] text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-                This plan has unresolved critical warnings. They will be noted on the export.
+                {t(locale, 'export.unresolvedCritical')}
               </p>
             )}
 
@@ -82,7 +86,7 @@ export function ExportModal() {
               disabled={exporting}
               className="w-full rounded-md bg-emerald-700 py-2 font-medium text-white hover:bg-emerald-800 disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
             >
-              {exporting ? 'Exporting…' : `Download ${format.toUpperCase()}`}
+              {exporting ? t(locale, 'export.exporting') : t(locale, 'export.download', { format: format.toUpperCase() })}
             </button>
           </div>
 
@@ -96,6 +100,7 @@ export function ExportModal() {
                 ref={svgRef}
                 variant={variant}
                 plot={project.plot}
+                locale={locale}
                 showLegend={includeLegend}
                 showRationale={includeRationale}
                 showWarnings={includeWarnings}

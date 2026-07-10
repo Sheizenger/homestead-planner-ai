@@ -1,27 +1,36 @@
 import { useState } from 'react';
+import { useProjectStore } from '../../state/projectStore';
+import { t } from '../../i18n/translations';
 import { ObjectPropertiesPanel } from '../panels/ObjectPropertiesPanel';
 import { WarningsList } from '../panels/WarningsList';
 import { AnalyticsPanel } from '../panels/AnalyticsPanel';
 
 type Tab = 'properties' | 'warnings' | 'analytics';
 
+const TAB_KEYS: Record<Tab, string> = {
+  properties: 'tab.properties',
+  warnings: 'tab.warnings',
+  analytics: 'tab.analytics',
+};
+
 export function RightPanel() {
+  const locale = useProjectStore((s) => s.locale);
   const [tab, setTab] = useState<Tab>('properties');
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex border-b border-stone-200 text-xs dark:border-stone-800">
-        {(['properties', 'warnings', 'analytics'] as Tab[]).map((t) => (
+        {(['properties', 'warnings', 'analytics'] as Tab[]).map((tb) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 py-2.5 font-medium capitalize transition-colors ${
-              tab === t
+            key={tb}
+            onClick={() => setTab(tb)}
+            className={`flex-1 py-2.5 font-medium transition-colors ${
+              tab === tb
                 ? 'border-b-2 border-emerald-700 text-emerald-800 dark:border-emerald-500 dark:text-emerald-400'
                 : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
             }`}
           >
-            {t}
+            {t(locale, TAB_KEYS[tb])}
           </button>
         ))}
       </div>

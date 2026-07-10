@@ -2,11 +2,14 @@ import type { PlanObject, Season, ZoneCategory } from '../../domain/types';
 import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
 import { CATEGORY_STYLES, TYPE_STYLE_OVERRIDE } from '../../domain/categories';
 import { seasonalFillOverride } from '../../domain/seasons';
+import type { Locale } from '../../i18n/translations';
+import { objectLabel } from '../../i18n/labels';
 import { ObjectGlyph, lShapeVertices } from './objectGlyphs';
 
 export interface ObjectVisualProps {
   obj: PlanObject;
   themeKey: 'light' | 'dark';
+  locale: Locale;
   showDesignDetail?: boolean;
   hasWarning?: boolean;
   isSelected?: boolean;
@@ -40,7 +43,7 @@ function fitLabelFontSize(label: string, width: number, height: number): number 
 // Renders one object's fill shape + type-specific decorative glyph + label.
 // Shared by the interactive canvas and the static export renderer so the two
 // never visually drift apart.
-export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSelected, textClassName, season }: ObjectVisualProps) {
+export function ObjectVisual({ obj, themeKey, locale, showDesignDetail, hasWarning, isSelected, textClassName, season }: ObjectVisualProps) {
   const entry = OBJECT_LIBRARY[obj.typeId];
   const style = CATEGORY_STYLES[obj.category as ZoneCategory];
   const typeStyle = TYPE_STYLE_OVERRIDE[obj.typeId];
@@ -51,7 +54,8 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
   const strokeWidth = isSelected ? 0.3 : 0.15;
   const fillOpacity = obj.locked ? 0.5 : 0.85;
   const dash = obj.locked ? '0.4,0.3' : undefined;
-  const labelFont = fitLabelFontSize(obj.label, width, height);
+  const label = objectLabel(locale, obj.typeId);
+  const labelFont = fitLabelFontSize(label, width, height);
   // Roof-mounted equipment sits visually on top of the house's own fill, so
   // it gets an outline instead of a second opaque, category-colored block
   // covering part of the roof.
@@ -80,7 +84,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
             fill="#1c1917"
             className={textClassName ?? 'select-none'}
           >
-            {obj.label}
+            {label}
           </text>
         )}
         {hasWarning && <circle cx={width / 2 - 0.4} cy={-height / 2 + 0.4} r={0.3} fill="#b3452e" />}
@@ -145,7 +149,7 @@ export function ObjectVisual({ obj, themeKey, showDesignDetail, hasWarning, isSe
         className={textClassName ?? 'select-none'}
         transform={`rotate(${-obj.transform.rotationDeg})`}
       >
-        {obj.label}
+        {label}
       </text>
 
       {hasWarning && <circle cx={width / 2 - 0.5} cy={-height / 2 + 0.5} r={0.35} fill="#b3452e" />}

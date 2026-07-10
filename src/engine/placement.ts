@@ -151,8 +151,7 @@ export function placeObjects(
           label: entry.label,
           locked: false,
           layerId: entry.category,
-          metadata: { ...item.metadata, roofMounted: true },
-          rationale: `${entry.label}: roof-mounted on the house, saving yard space and keeping DC wiring runs short.`,
+          metadata: { ...item.metadata, roofMounted: true, rationaleTokens: ['roofMounted'] },
         });
         continue;
       }
@@ -176,8 +175,7 @@ export function placeObjects(
       label: entry.label,
       locked: false,
       layerId: entry.category,
-      metadata: item.metadata,
-      rationale: buildRationale(entry, best.reasons),
+      metadata: { ...item.metadata, rationaleTokens: [...new Set(best.reasons)] },
     };
     placed.push(obj);
     if (HOUSE_TYPE_IDS.includes(item.typeId)) houseCenter = obj.transform;
@@ -257,7 +255,7 @@ function scoreCandidate(
       // out instead of identically huddled around the house.
       const penalty = d <= layout.comfortDist ? d * 0.3 : layout.comfortDist * 0.3 + (d - layout.comfortDist) * 1.4;
       score -= penalty * weights.access;
-      if (d < layout.comfortDist) reasons.push('close to the house for frequent access');
+      if (d < layout.comfortDist) reasons.push('accessClose');
     } else {
       score -= d * weights.access * layout.compactPullScale; // mild preference for compactness even for low-visit zones
     }
@@ -279,7 +277,7 @@ function scoreCandidate(
       // between the house and the road.
       if (relY < 0) {
         score += Math.min(-relY, 10) * sectorWeight;
-        reasons.push('sited in the private back yard');
+        reasons.push('backYard');
       } else {
         score -= relY * sectorWeight * 0.8;
       }
@@ -303,7 +301,7 @@ function scoreCandidate(
   } else if (!houseCenter) {
     // House placement: bias toward the "front" (larger y = south/road side by convention).
     score += (transform.y - bounds.minY) * 1.5;
-    reasons.push('positioned toward the plot’s road-facing side');
+    reasons.push('roadFacing');
   }
 
   for (const setback of BOUNDARY_SETBACKS) {
@@ -312,7 +310,7 @@ function scoreCandidate(
     if (d < setback.minDistanceM) {
       score -= (setback.minDistanceM - d) * weights.separation * 2;
     } else {
-      reasons.push('kept clear of the property line');
+      reasons.push('boundaryClear');
     }
   }
 
@@ -324,13 +322,13 @@ function scoreCandidate(
       const d = distance(transform, p.transform);
       if ((c.kind === 'separation' || c.kind === 'safety') && c.minDistance && d < c.minDistance) {
         score -= (c.minDistance - d) * weights.separation;
-        reasons.push(`kept apart from ${p.label.toLowerCase()}`);
+        reasons.push(`apartFrom:${p.typeId}`);
       }
       if (c.kind === 'adjacency' && c.maxDistance) {
         if (d > c.maxDistance) score -= (d - c.maxDistance) * weights.access * 0.5;
         else {
           score += (c.maxDistance - d) * weights.access * 0.3;
-          reasons.push(`kept near ${p.label.toLowerCase()}`);
+          reasons.push(`near:${p.typeId}`);
         }
       }
     }
@@ -348,7 +346,7 @@ function scoreCandidate(
       return isNorthOfCandidate && withinShadowBand && closeEnough;
     });
     if (shaded) score -= 40 * weights.sun;
-    else reasons.push('full southern sun exposure, clear of shade');
+    else reasons.push('sunClear');
   }
 
   if (entry.noiseLevel === 'loud' || entry.odorLevel === 'strong') {
@@ -367,15 +365,9 @@ function scoreCandidate(
     );
     if (alignsWithExisting) {
       score += 12 * weights.beauty;
-      reasons.push('aligned with existing zones for visual order');
+      reasons.push('aligned');
     }
   }
 
   return { score, reasons };
-}
-
-function buildRationale(entry: ObjectLibraryEntry, reasons: string[]): string {
-  if (reasons.length === 0) return `${entry.label} placed within available space.`;
-  const unique = [...new Set(reasons)].slice(0, 2);
-  return `${entry.label}: ${unique.join('; ')}.`;
 }

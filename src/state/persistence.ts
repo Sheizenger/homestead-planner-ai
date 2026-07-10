@@ -59,6 +59,26 @@ export function getLastActiveProjectId(): string | null {
   return localStorage.getItem(LAST_ACTIVE_KEY);
 }
 
+const LOCALE_KEY = 'homestead-planner:locale';
+
+// The UI language is a browser-level preference, not part of any one
+// project, so it's stored separately and survives switching/creating projects.
+export function getStoredLocale(): string | null {
+  try {
+    return localStorage.getItem(LOCALE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredLocale(locale: string) {
+  try {
+    localStorage.setItem(LOCALE_KEY, locale);
+  } catch {
+    // ignore — same quota/private-browsing tolerance as project autosave
+  }
+}
+
 export function debounce<Args extends unknown[]>(fn: (...args: Args) => void, ms: number) {
   let handle: ReturnType<typeof setTimeout> | null = null;
   return (...args: Args) => {

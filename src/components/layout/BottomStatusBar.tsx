@@ -1,8 +1,11 @@
 import { useProjectStore, getActiveVariant, categoryLabel } from '../../state/projectStore';
 import { ZONE_CATEGORY_ORDER } from '../../domain/categories';
+import { t } from '../../i18n/translations';
+import { objectLabel } from '../../i18n/labels';
 
 export function BottomStatusBar() {
   const project = useProjectStore((s) => s.project);
+  const locale = useProjectStore((s) => s.locale);
   const variant = getActiveVariant(project);
   const layerVisibility = useProjectStore((s) => s.layerVisibility);
   const toggleLayerVisibility = useProjectStore((s) => s.toggleLayerVisibility);
@@ -23,16 +26,16 @@ export function BottomStatusBar() {
             key={c}
             onClick={() => toggleLayerVisibility(c)}
             className={`rounded px-1.5 py-0.5 ${layerVisibility[c] === false ? 'text-stone-400 line-through dark:text-stone-600' : 'bg-stone-100 dark:bg-stone-800'}`}
-            title={`Toggle ${categoryLabel(c)} layer`}
+            title={t(locale, 'status.toggleLayer', { category: categoryLabel(locale, c) })}
           >
-            {categoryLabel(c)}
+            {categoryLabel(locale, c)}
           </button>
         ))}
       </div>
 
       <div className="mx-1 h-4 w-px shrink-0 bg-stone-200 dark:bg-stone-800" />
 
-      <span className="shrink-0">Grid: {snapToGrid ? `${gridSize} m` : 'off'}</span>
+      <span className="shrink-0">{t(locale, 'status.grid')}: {snapToGrid ? `${gridSize} m` : t(locale, 'status.gridOff')}</span>
       <select
         value={gridSize}
         onChange={(e) => setGridSize(Number(e.target.value))}
@@ -45,16 +48,16 @@ export function BottomStatusBar() {
 
       {selected && (
         <span className="shrink-0">
-          {selected.label}: {selected.transform.width.toFixed(1)}×{selected.transform.height.toFixed(1)} m @ ({selected.transform.x.toFixed(1)}, {selected.transform.y.toFixed(1)})
+          {objectLabel(locale, selected.typeId)}: {selected.transform.width.toFixed(1)}×{selected.transform.height.toFixed(1)} m @ ({selected.transform.x.toFixed(1)}, {selected.transform.y.toFixed(1)})
         </span>
       )}
 
       <div className="ml-auto flex shrink-0 items-center gap-3">
         {variant && (
           <>
-            <span>{variant.analytics.allocatedAreaM2.toFixed(0)} / {variant.analytics.totalAreaM2.toFixed(0)} m² used</span>
-            {critical > 0 && <span className="font-medium text-red-700 dark:text-red-400">{critical} critical</span>}
-            {caution > 0 && <span className="font-medium text-amber-700 dark:text-amber-400">{caution} caution</span>}
+            <span>{t(locale, 'status.usedArea', { allocated: variant.analytics.allocatedAreaM2.toFixed(0), total: variant.analytics.totalAreaM2.toFixed(0) })}</span>
+            {critical > 0 && <span className="font-medium text-red-700 dark:text-red-400">{t(locale, 'status.critical', { count: critical })}</span>}
+            {caution > 0 && <span className="font-medium text-amber-700 dark:text-amber-400">{t(locale, 'status.caution', { count: caution })}</span>}
           </>
         )}
       </div>

@@ -4,34 +4,36 @@ import type { ClimateZone, PlanningMode } from '../../domain/types';
 import { parseFreeText } from '../../engine/textParser';
 import { polygonBounds } from '../../engine/geometry';
 import { RECOMMENDED_M2_PER_PERSON } from '../../engine/warnings';
+import { t } from '../../i18n/translations';
 
 const CROP_OPTIONS = ['potato', 'grain', 'vegetable', 'berries', 'orchard', 'vineyard', 'greenhouse', 'hydroponic', 'raised-beds'];
 const INFRA_OPTIONS = [
   'solar', 'well', 'septic', 'water-tank', 'generator', 'compost', 'cellar', 'woodshed', 'garage', 'barn',
   'pool', 'gazebo', 'apiary', 'banya', 'smokehouse', 'workshop', 'rainwater-cistern',
 ];
-const MODE_OPTIONS: { value: PlanningMode; label: string }[] = [
-  { value: 'minimum-maintenance', label: 'Minimum Maintenance' },
-  { value: 'production-max', label: 'Maximum Productivity' },
-  { value: 'beauty-balanced', label: 'Beauty + Function Balance' },
-  { value: 'safety-first', label: 'Safety First' },
+const ANIMAL_OPTIONS = ['goats', 'poultry'];
+const MODE_OPTIONS: { value: PlanningMode; key: string }[] = [
+  { value: 'minimum-maintenance', key: 'planningMode.minimum-maintenance' },
+  { value: 'production-max', key: 'planningMode.production-max' },
+  { value: 'beauty-balanced', key: 'planningMode.beauty-balanced' },
+  { value: 'safety-first', key: 'planningMode.safety-first' },
 ];
-const HOUSE_SIZE_OPTIONS: { value: 'small' | 'medium' | 'large'; label: string }[] = [
-  { value: 'small', label: 'Small' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'large', label: 'Large' },
+const HOUSE_SIZE_OPTIONS: { value: 'small' | 'medium' | 'large'; key: string }[] = [
+  { value: 'small', key: 'houseSize.small' },
+  { value: 'medium', key: 'houseSize.medium' },
+  { value: 'large', key: 'houseSize.large' },
 ];
-const HOUSE_SHAPE_OPTIONS: { value: 'rect' | 'lshape'; label: string }[] = [
-  { value: 'rect', label: 'Rectangular' },
-  { value: 'lshape', label: 'L-shaped' },
+const HOUSE_SHAPE_OPTIONS: { value: 'rect' | 'lshape'; key: string }[] = [
+  { value: 'rect', key: 'houseShape.rect' },
+  { value: 'lshape', key: 'houseShape.lshape' },
 ];
-const CLIMATE_OPTIONS: { value: ClimateZone; label: string }[] = [
-  { value: 'temperate', label: 'Temperate' },
-  { value: 'continental', label: 'Continental' },
-  { value: 'mediterranean', label: 'Mediterranean' },
-  { value: 'subtropical', label: 'Subtropical' },
-  { value: 'arid', label: 'Arid' },
-  { value: 'cold', label: 'Cold' },
+const CLIMATE_OPTIONS: { value: ClimateZone; key: string }[] = [
+  { value: 'temperate', key: 'climateZone.temperate' },
+  { value: 'continental', key: 'climateZone.continental' },
+  { value: 'mediterranean', key: 'climateZone.mediterranean' },
+  { value: 'subtropical', key: 'climateZone.subtropical' },
+  { value: 'arid', key: 'climateZone.arid' },
+  { value: 'cold', key: 'climateZone.cold' },
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -61,6 +63,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 
 export function BriefForm() {
   const project = useProjectStore((s) => s.project);
+  const locale = useProjectStore((s) => s.locale);
   const updateFreeText = useProjectStore((s) => s.updateFreeText);
   const updateStructuredInputs = useProjectStore((s) => s.updateStructuredInputs);
   const updatePlotSize = useProjectStore((s) => s.updatePlotSize);
@@ -83,28 +86,28 @@ export function BriefForm() {
   return (
     <div className="flex h-full flex-col overflow-y-auto text-sm">
       <div className="border-b border-stone-200 p-4 dark:border-stone-800">
-        <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Project Brief</h2>
+        <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">{t(locale, 'brief.title')}</h2>
         <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{project.name}</p>
       </div>
 
-      <Section title="Free-text brief">
+      <Section title={t(locale, 'brief.freeText')}>
         <textarea
           value={project.brief.freeText}
           onChange={(e) => updateFreeText(e.target.value)}
           rows={5}
-          placeholder="e.g. I want a family homestead for 3 people with potatoes, grain, orchard, berries, goats, greenhouse and solar…"
+          placeholder={t(locale, 'brief.freeTextPlaceholder')}
           className="w-full resize-none rounded-md border border-stone-300 bg-white p-2 text-xs text-stone-800 focus:border-emerald-600 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
         />
         {extraction.unrecognizedTerms.length > 0 && (
           <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-500">
-            Not yet understood: {extraction.unrecognizedTerms.join(', ')}
+            {t(locale, 'brief.notUnderstood', { terms: extraction.unrecognizedTerms.join(', ') })}
           </p>
         )}
       </Section>
 
-      <Section title="Household">
+      <Section title={t(locale, 'brief.household')}>
         <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
-          Household size
+          {t(locale, 'brief.householdSize')}
           <input
             type="number"
             min={1}
@@ -116,12 +119,12 @@ export function BriefForm() {
         </label>
         <p className={`mt-1.5 text-[11px] ${shortOfNorm ? 'text-amber-700 dark:text-amber-500' : 'text-stone-500 dark:text-stone-400'}`}>
           {shortOfNorm
-            ? `A self-sufficient homestead for ${inputs.householdSize} typically needs ~${recommendedM2.toLocaleString()} m² (~${RECOMMENDED_M2_PER_PERSON} m²/person) — this plot has ${plotAreaM2.toLocaleString()} m². Consider a larger plot or a smaller household.`
-            : `Guideline: ~${RECOMMENDED_M2_PER_PERSON} m²/person → ~${recommendedM2.toLocaleString()} m² recommended for ${inputs.householdSize}. This plot has ${plotAreaM2.toLocaleString()} m².`}
+            ? t(locale, 'brief.householdShort', { household: inputs.householdSize, recommended: recommendedM2.toLocaleString(), perPerson: RECOMMENDED_M2_PER_PERSON, area: plotAreaM2.toLocaleString() })
+            : t(locale, 'brief.householdGuideline', { perPerson: RECOMMENDED_M2_PER_PERSON, recommended: recommendedM2.toLocaleString(), household: inputs.householdSize, area: plotAreaM2.toLocaleString() })}
         </p>
       </Section>
 
-      <Section title="Climate zone">
+      <Section title={t(locale, 'brief.climateZone')}>
         <div className="flex flex-wrap gap-1.5">
           {CLIMATE_OPTIONS.map((o) => (
             <Chip
@@ -129,19 +132,17 @@ export function BriefForm() {
               active={inputs.climateZone === o.value}
               onClick={() => updateStructuredInputs({ climateZone: o.value })}
             >
-              {o.label}
+              {t(locale, o.key)}
             </Chip>
           ))}
         </div>
-        <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">
-          Used for rough crop-fit warnings (e.g. grapes in a cold zone) — not a substitute for local agronomic advice.
-        </p>
+        <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.climateHint')}</p>
       </Section>
 
-      <Section title="Plot size">
+      <Section title={t(locale, 'brief.plotSize')}>
         <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
           <label className="flex items-center gap-1.5">
-            Width
+            {t(locale, 'brief.width')}
             <input
               type="number"
               min={10}
@@ -153,7 +154,7 @@ export function BriefForm() {
             m
           </label>
           <label className="flex items-center gap-1.5">
-            Depth
+            {t(locale, 'brief.depth')}
             <input
               type="number"
               min={10}
@@ -166,11 +167,11 @@ export function BriefForm() {
           </label>
         </div>
         <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">
-          {plotAreaM2.toLocaleString()} m² (~{(plotAreaM2 / 100).toFixed(1)} sotok)
+          {t(locale, 'brief.plotAreaSummary', { area: plotAreaM2.toLocaleString(), sotok: (plotAreaM2 / 100).toFixed(1) })}
         </p>
       </Section>
 
-      <Section title="House">
+      <Section title={t(locale, 'brief.house')}>
         <div className="mb-2 flex flex-wrap gap-1.5">
           {HOUSE_SIZE_OPTIONS.map((o) => (
             <Chip
@@ -178,7 +179,7 @@ export function BriefForm() {
               active={inputs.houseSizePreset === o.value}
               onClick={() => updateStructuredInputs({ houseSizePreset: o.value })}
             >
-              {o.label}
+              {t(locale, o.key)}
             </Chip>
           ))}
         </div>
@@ -189,13 +190,13 @@ export function BriefForm() {
               active={inputs.houseShape === o.value}
               onClick={() => updateStructuredInputs({ houseShape: o.value })}
             >
-              {o.label}
+              {t(locale, o.key)}
             </Chip>
           ))}
         </div>
       </Section>
 
-      <Section title="Aesthetic preference">
+      <Section title={t(locale, 'brief.aesthetic')}>
         <input
           type="range"
           min={0}
@@ -205,12 +206,12 @@ export function BriefForm() {
           className="w-full accent-emerald-700"
         />
         <div className="flex justify-between text-[11px] text-stone-500 dark:text-stone-400">
-          <span>Utilitarian</span>
-          <span>Ornamental</span>
+          <span>{t(locale, 'brief.utilitarian')}</span>
+          <span>{t(locale, 'brief.ornamental')}</span>
         </div>
       </Section>
 
-      <Section title="Crops & growing">
+      <Section title={t(locale, 'brief.crops')}>
         <div className="flex flex-wrap gap-1.5">
           {CROP_OPTIONS.map((c) => (
             <Chip
@@ -218,15 +219,15 @@ export function BriefForm() {
               active={inputs.crops.includes(c)}
               onClick={() => updateStructuredInputs({ crops: toggleFromList(inputs.crops, c) })}
             >
-              {c.replace('-', ' ')}
+              {t(locale, `crop.${c}`)}
             </Chip>
           ))}
         </div>
       </Section>
 
-      <Section title="Animals">
+      <Section title={t(locale, 'brief.animals')}>
         <div className="space-y-2">
-          {['goats', 'poultry'].map((type) => {
+          {ANIMAL_OPTIONS.map((type) => {
             const entry = inputs.animals.find((a) => a.type === type);
             return (
               <label key={type} className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
@@ -242,7 +243,7 @@ export function BriefForm() {
                       })
                     }
                   />
-                  {type}
+                  {t(locale, `animal.${type}`)}
                 </span>
                 {entry && (
                   <input
@@ -263,7 +264,7 @@ export function BriefForm() {
         </div>
       </Section>
 
-      <Section title="Infrastructure">
+      <Section title={t(locale, 'brief.infrastructure')}>
         <div className="flex flex-wrap gap-1.5">
           {INFRA_OPTIONS.map((infra) => (
             <Chip
@@ -271,13 +272,13 @@ export function BriefForm() {
               active={inputs.infrastructure.includes(infra)}
               onClick={() => updateStructuredInputs({ infrastructure: toggleFromList(inputs.infrastructure, infra) })}
             >
-              {infra.replace('-', ' ')}
+              {t(locale, `infra.${infra}`)}
             </Chip>
           ))}
         </div>
       </Section>
 
-      <Section title="Planning mode">
+      <Section title={t(locale, 'brief.planningMode')}>
         <div className="space-y-1.5">
           {MODE_OPTIONS.map((m) => (
             <label key={m.value} className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
@@ -287,7 +288,7 @@ export function BriefForm() {
                 checked={selectedMode === m.value}
                 onChange={() => setSelectedMode(m.value)}
               />
-              {m.label}
+              {t(locale, m.key)}
             </label>
           ))}
         </div>
@@ -300,7 +301,7 @@ export function BriefForm() {
           disabled={generating}
           className="w-full rounded-md bg-emerald-700 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-800 disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
         >
-          {generating ? 'Generating…' : 'Generate Layout Variants'}
+          {generating ? t(locale, 'brief.generating') : t(locale, 'brief.generate')}
         </button>
       </div>
     </div>

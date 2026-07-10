@@ -1,17 +1,21 @@
 import { useProjectStore } from '../../state/projectStore';
 import type { VisualizationMode } from '../../domain/types';
-import { SEASONS, SEASON_LABELS } from '../../domain/seasons';
+import { SEASONS } from '../../domain/seasons';
+import { LOCALES, LOCALE_NAMES, t } from '../../i18n/translations';
+import { seasonLabel, planningModeLabel } from '../../i18n/labels';
 
-const MODES: { value: VisualizationMode; label: string }[] = [
-  { value: 'schematic', label: 'Schematic' },
-  { value: 'design', label: 'Design' },
-  { value: 'utilities', label: 'Utilities' },
-  { value: 'seasonal', label: 'Seasonal' },
-  { value: 'rationale', label: 'Rationale' },
+const MODES: { value: VisualizationMode; key: string }[] = [
+  { value: 'schematic', key: 'mode.schematic' },
+  { value: 'design', key: 'mode.design' },
+  { value: 'utilities', key: 'mode.utilities' },
+  { value: 'seasonal', key: 'mode.seasonal' },
+  { value: 'rationale', key: 'mode.rationale' },
 ];
 
 export function TopToolbar() {
   const project = useProjectStore((s) => s.project);
+  const locale = useProjectStore((s) => s.locale);
+  const setLocale = useProjectStore((s) => s.setLocale);
   const visualizationMode = useProjectStore((s) => s.visualizationMode);
   const setVisualizationMode = useProjectStore((s) => s.setVisualizationMode);
   const season = useProjectStore((s) => s.season);
@@ -59,9 +63,9 @@ export function TopToolbar() {
                 ? 'bg-emerald-700 text-white dark:bg-emerald-600'
                 : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
             }`}
-            title={v.strategyLabel}
+            title={planningModeLabel(locale, v.mode)}
           >
-            {v.strategyLabel}
+            {planningModeLabel(locale, v.mode)}
           </button>
         ))}
         <button
@@ -72,7 +76,7 @@ export function TopToolbar() {
               : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
           }`}
         >
-          Compare
+          {t(locale, 'toolbar.compare')}
         </button>
       </div>
 
@@ -81,7 +85,7 @@ export function TopToolbar() {
           onClick={() => regenerateVariant(project.activeVariantId)}
           className="rounded-md border border-stone-300 px-2 py-1 text-stone-600 hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
         >
-          Re-roll
+          {t(locale, 'toolbar.reroll')}
         </button>
       )}
 
@@ -98,7 +102,7 @@ export function TopToolbar() {
                 : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
             }`}
           >
-            {m.label}
+            {t(locale, m.key)}
           </button>
         ))}
       </div>
@@ -115,7 +119,7 @@ export function TopToolbar() {
                   : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
               }`}
             >
-              {SEASON_LABELS[s]}
+              {seasonLabel(locale, s)}
             </button>
           ))}
         </div>
@@ -124,24 +128,24 @@ export function TopToolbar() {
       <div className="mx-1 h-5 w-px bg-stone-200 dark:bg-stone-800" />
 
       <button onClick={undo} className="rounded px-2 py-1 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800">
-        Undo
+        {t(locale, 'toolbar.undo')}
       </button>
       <button onClick={redo} className="rounded px-2 py-1 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800">
-        Redo
+        {t(locale, 'toolbar.redo')}
       </button>
 
       <button
         onClick={toggleSnap}
         className={`rounded px-2 py-1 font-medium ${snapToGrid ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900' : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'}`}
       >
-        Snap
+        {t(locale, 'toolbar.snap')}
       </button>
 
       <button
         onClick={toggleLegend}
         className={`rounded px-2 py-1 font-medium ${showLegend ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900' : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'}`}
       >
-        Legend
+        {t(locale, 'toolbar.legend')}
       </button>
 
       <div className="ml-auto flex items-center gap-2">
@@ -155,25 +159,36 @@ export function TopToolbar() {
 
         <div className="mx-1 h-5 w-px bg-stone-200 dark:bg-stone-800" />
 
+        <select
+          value={locale}
+          onChange={(e) => setLocale(e.target.value as typeof locale)}
+          title={t(locale, 'toolbar.language')}
+          className="rounded border border-stone-300 bg-transparent px-1 py-1 text-stone-600 dark:border-stone-700 dark:text-stone-300"
+        >
+          {LOCALES.map((l) => (
+            <option key={l} value={l}>{LOCALE_NAMES[l]}</option>
+          ))}
+        </select>
+
         <button
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
           className="rounded px-2 py-1 text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
         >
-          {theme === 'light' ? 'Dark mode' : 'Light mode'}
+          {theme === 'light' ? t(locale, 'toolbar.darkMode') : t(locale, 'toolbar.lightMode')}
         </button>
 
         <button
           onClick={() => setCostOpen(true)}
           className="rounded-md border border-stone-300 px-3 py-1.5 font-medium text-stone-600 hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
         >
-          Cost Estimate
+          {t(locale, 'toolbar.costEstimate')}
         </button>
 
         <button
           onClick={() => setExportOpen(true)}
           className="rounded-md bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
         >
-          Export
+          {t(locale, 'toolbar.export')}
         </button>
       </div>
     </div>

@@ -11,7 +11,9 @@ import { ZONE_CATEGORY_ORDER, CATEGORY_STYLES } from '../domain/categories';
 import { distance } from './geometry';
 
 export interface CostRow {
-  label: string;
+  label: string; // English fallback; UI prefers category/special for translation
+  category?: ZoneCategory;
+  special?: 'paths' | 'fencing';
   installUsd: number;
   annualUsd: number;
 }
@@ -78,10 +80,10 @@ export function computeCostEstimate(variant: LayoutVariant, region: CostRegion):
 
   const rows: CostRow[] = ZONE_CATEGORY_ORDER.filter((c) => byCategory.has(c)).map((category) => {
     const row = byCategory.get(category)!;
-    return { label: CATEGORY_STYLES[category].label, installUsd: row.install, annualUsd: row.annual };
+    return { label: CATEGORY_STYLES[category].label, category, installUsd: row.install, annualUsd: row.annual };
   });
-  if (pathInstall > 0 || pathAnnual > 0) rows.push({ label: 'Paths', installUsd: pathInstall, annualUsd: pathAnnual });
-  if (fenceInstall > 0 || fenceAnnual > 0) rows.push({ label: 'Fencing', installUsd: fenceInstall, annualUsd: fenceAnnual });
+  if (pathInstall > 0 || pathAnnual > 0) rows.push({ label: 'Paths', special: 'paths', installUsd: pathInstall, annualUsd: pathAnnual });
+  if (fenceInstall > 0 || fenceAnnual > 0) rows.push({ label: 'Fencing', special: 'fencing', installUsd: fenceInstall, annualUsd: fenceAnnual });
 
   const constructionTotalUsd = rows.reduce((sum, r) => sum + r.installUsd, 0);
   const annualMaintenanceTotalUsd = rows.reduce((sum, r) => sum + r.annualUsd, 0);

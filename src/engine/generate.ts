@@ -45,12 +45,12 @@ export function generateVariant(project: Project, mode: PlanningMode, seed: numb
       id: `warn-unplaced-${item.typeId}-${uuid().slice(0, 8)}`,
       severity: 'critical',
       message: `Could not fit "${item.typeId.replace(/-/g, ' ')}" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.`,
+      messageKey: 'warning.unplaced',
+      messageParams: { itemType: item.typeId },
       ruleId: 'capacity-overflow',
       objectIds: [],
     });
   }
-
-  const rationaleSummary = objects.filter((o) => o.rationale && !o.locked).map((o) => o.rationale!);
 
   return {
     id: uuid(),
@@ -64,7 +64,6 @@ export function generateVariant(project: Project, mode: PlanningMode, seed: numb
     utilityNodes: [],
     analytics,
     warnings,
-    rationaleSummary,
     history: { past: [], future: [] },
   };
 }

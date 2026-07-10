@@ -4,6 +4,9 @@ import { polygonBounds } from '../../engine/geometry';
 import { computeCostEstimate, findRegion } from '../../engine/costs';
 import { CURRENCIES, CURRENCY_SYMBOLS, convertFromUsd } from '../../domain/costData';
 import type { LayoutVariant } from '../../domain/types';
+import { t } from '../../i18n/translations';
+import { planningModeLabel } from '../../i18n/labels';
+import { translateRationale } from '../../i18n/rationale';
 
 function MiniPlan({ variant, boundary, onObjectClick }: { variant: LayoutVariant; boundary: { x: number; y: number }[]; onObjectClick?: (id: string) => void }) {
   const bounds = polygonBounds(boundary);
@@ -41,6 +44,7 @@ function MiniPlan({ variant, boundary, onObjectClick }: { variant: LayoutVariant
 
 export function VariantComparisonView() {
   const project = useProjectStore((s) => s.project);
+  const locale = useProjectStore((s) => s.locale);
   const setActiveVariant = useProjectStore((s) => s.setActiveVariant);
   const setView = useProjectStore((s) => s.setView);
   const copyObjectToActive = useProjectStore((s) => s.copyObjectToActive);
@@ -53,19 +57,21 @@ export function VariantComparisonView() {
 
   return (
     <div className="h-full overflow-y-auto bg-stone-100 p-4 dark:bg-stone-950">
-      <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
-        Click an object in a non-active plan to copy it into your active variant.
-      </p>
+      <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">{t(locale, 'compare.hint')}</p>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {project.variants.map((v) => {
           const isActive = v.id === project.activeVariantId;
           const cost = computeCostEstimate(v, region);
+          const rationaleItems = v.objects
+            .filter((o) => !o.locked && Array.isArray(o.metadata.rationaleTokens))
+            .slice(0, 3)
+            .map((o) => translateRationale(locale, o.typeId, o.metadata.rationaleTokens as string[]));
           return (
             <div key={v.id} className={`rounded-lg border p-3 ${isActive ? 'border-emerald-600 bg-white dark:bg-stone-900' : 'border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900'}`}>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">{v.strategyLabel}</h3>
+                <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">{planningModeLabel(locale, v.mode)}</h3>
                 {isActive ? (
-                  <span className="rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-medium text-white dark:bg-emerald-600">Active</span>
+                  <span className="rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-medium text-white dark:bg-emerald-600">{t(locale, 'compare.active')}</span>
                 ) : (
                   <button
                     onClick={() => {
@@ -74,7 +80,7 @@ export function VariantComparisonView() {
                     }}
                     className="rounded border border-stone-300 px-2 py-0.5 text-[10px] hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
                   >
-                    Make active
+                    {t(locale, 'compare.makeActive')}
                   </button>
                 )}
               </div>
@@ -86,10 +92,10 @@ export function VariantComparisonView() {
               />
 
               <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] text-stone-600 dark:text-stone-300">
-                <span>Allocated: {v.analytics.allocatedAreaM2.toFixed(0)} m²</span>
-                <span>Food score: {v.analytics.estimatedFoodProductionScore.toFixed(0)}</span>
-                <span>Maintenance: {v.analytics.maintenanceComplexityScore.toFixed(0)}</span>
-                <span>Warnings: {v.warnings.length}</span>
+                <span>{t(locale, 'compare.allocated', { value: v.analytics.allocatedAreaM2.toFixed(0) })}</span>
+                <span>{t(locale, 'compare.foodScore', { value: v.analytics.estimatedFoodProductionScore.toFixed(0) })}</span>
+                <span>{t(locale, 'compare.maintenance', { value: v.analytics.maintenanceComplexityScore.toFixed(0) })}</span>
+                <span>{t(locale, 'compare.warnings', { value: v.warnings.length })}</span>
               </div>
 
               <button
@@ -98,9 +104,9 @@ export function VariantComparisonView() {
                   setCostOpen(true);
                 }}
                 className="mt-2 w-full rounded-md border border-stone-200 px-2 py-1.5 text-left text-[11px] hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-800"
-                title="Open full cost breakdown for this variant"
+                title={t(locale, 'compare.openCostBreakdown')}
               >
-                <span className="text-stone-500 dark:text-stone-400">Est. total upfront: </span>
+                <span className="text-stone-500 dark:text-stone-400">{t(locale, 'compare.estTotal')}</span>
                 {CURRENCIES.map((c, i) => (
                   <span key={c} className="font-medium text-stone-800 dark:text-stone-100">
                     {i > 0 && ' / '}
@@ -110,9 +116,9 @@ export function VariantComparisonView() {
                 ))}
               </button>
 
-              {v.rationaleSummary.length > 0 && (
+              {rationaleItems.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[11px] text-stone-500 dark:text-stone-400">
-                  {v.rationaleSummary.slice(0, 3).map((r, i) => (
+                  {rationaleItems.map((r, i) => (
                     <li key={i} className="line-clamp-2">• {r}</li>
                   ))}
                 </ul>

@@ -2,13 +2,6 @@ import type { Season, ZoneCategory } from './types';
 
 export const SEASONS: Season[] = ['spring', 'summer', 'autumn', 'winter'];
 
-export const SEASON_LABELS: Record<Season, string> = {
-  spring: 'Spring',
-  summer: 'Summer',
-  autumn: 'Autumn',
-  winter: 'Winter',
-};
-
 // Base-fill tint override for seasonal mode, applied only to categories
 // whose appearance genuinely changes with the season (crops/orchards).
 // `summer` intentionally returns undefined everywhere — it's the same

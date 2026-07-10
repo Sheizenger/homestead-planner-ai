@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
+import { t } from '../../i18n/translations';
 
 export function ProjectsModal() {
   const isOpen = useProjectStore((s) => s.isProjectsOpen);
   const setProjectsOpen = useProjectStore((s) => s.setProjectsOpen);
   const project = useProjectStore((s) => s.project);
+  const locale = useProjectStore((s) => s.locale);
   const getSavedProjects = useProjectStore((s) => s.getSavedProjects);
   const switchToProject = useProjectStore((s) => s.switchToProject);
   const deleteSavedProject = useProjectStore((s) => s.deleteSavedProject);
@@ -40,16 +42,16 @@ export function ProjectsModal() {
         className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-stone-900"
       >
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
-          <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Projects</h2>
+          <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-100">{t(locale, 'projects.title')}</h2>
           <button onClick={() => setProjectsOpen(false)} className="text-stone-500 hover:text-stone-800 dark:hover:text-stone-100">✕</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 text-xs">
           <div className="mb-4 rounded-md border border-stone-200 p-3 dark:border-stone-800">
-            <h3 className="mb-2 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">New project</h3>
+            <h3 className="mb-2 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">{t(locale, 'projects.newProject')}</h3>
             <div className="flex flex-wrap items-end gap-2">
               <label className="flex flex-col gap-1 text-stone-600 dark:text-stone-300">
-                Name
+                {t(locale, 'projects.name')}
                 <input
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -57,7 +59,7 @@ export function ProjectsModal() {
                 />
               </label>
               <label className="flex flex-col gap-1 text-stone-600 dark:text-stone-300">
-                Width (m)
+                {t(locale, 'projects.width')}
                 <input
                   type="number"
                   min={10}
@@ -67,7 +69,7 @@ export function ProjectsModal() {
                 />
               </label>
               <label className="flex flex-col gap-1 text-stone-600 dark:text-stone-300">
-                Depth (m)
+                {t(locale, 'projects.depth')}
                 <input
                   type="number"
                   min={10}
@@ -80,13 +82,13 @@ export function ProjectsModal() {
                 onClick={handleCreate}
                 className="rounded-md bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
               >
-                Create
+                {t(locale, 'projects.create')}
               </button>
             </div>
           </div>
 
           <div className="mb-4 rounded-md border border-stone-200 p-3 dark:border-stone-800">
-            <h3 className="mb-2 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">Import from file</h3>
+            <h3 className="mb-2 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">{t(locale, 'projects.importFromFile')}</h3>
             <input
               ref={fileInputRef}
               type="file"
@@ -103,9 +105,9 @@ export function ProjectsModal() {
 
           <div>
             <h3 className="mb-2 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
-              Saved projects ({saved.length})
+              {t(locale, 'projects.savedProjects', { count: saved.length })}
             </h3>
-            {saved.length === 0 && <p className="text-stone-500 dark:text-stone-400">Nothing saved yet.</p>}
+            {saved.length === 0 && <p className="text-stone-500 dark:text-stone-400">{t(locale, 'projects.nothingSaved')}</p>}
             <ul className="space-y-1.5">
               {saved.map((p) => (
                 <li
@@ -128,14 +130,14 @@ export function ProjectsModal() {
                         onClick={() => switchToProject(p.id)}
                         className="rounded border border-stone-300 px-2 py-1 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
                       >
-                        Open
+                        {t(locale, 'projects.open')}
                       </button>
                     )}
                     <button
                       onClick={() => deleteSavedProject(p.id)}
                       className="rounded border border-red-300 px-2 py-1 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
                     >
-                      Delete
+                      {t(locale, 'projects.delete')}
                     </button>
                   </div>
                 </li>
@@ -143,10 +145,7 @@ export function ProjectsModal() {
             </ul>
           </div>
 
-          <p className="mt-4 text-[11px] text-stone-500 dark:text-stone-400">
-            Projects autosave to this browser as you work. They aren't synced anywhere else — use Export → JSON (in the
-            Export dialog) to back up a project or move it to another browser/device, then Import it here.
-          </p>
+          <p className="mt-4 text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'projects.footerNote')}</p>
         </div>
       </div>
     </div>

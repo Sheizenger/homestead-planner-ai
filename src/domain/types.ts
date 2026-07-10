@@ -106,7 +106,6 @@ export interface PlanObject {
   locked: boolean;
   layerId: ObjectCategory;
   metadata: Record<string, unknown>;
-  rationale?: string;
 }
 
 export interface PathEntity {
@@ -151,7 +150,9 @@ export type WarningSeverity = 'info' | 'caution' | 'critical';
 export interface Warning {
   id: string;
   severity: WarningSeverity;
-  message: string;
+  message: string; // English fallback, used when messageKey is absent
+  messageKey?: string;
+  messageParams?: Record<string, string | number>;
   ruleId: string;
   objectIds: string[];
   suggestedFix?: { label: string; action: string };
@@ -187,7 +188,6 @@ export interface LayoutVariant {
   utilityNodes: UtilityNode[];
   analytics: AnalyticsSnapshot;
   warnings: Warning[];
-  rationaleSummary: string[];
   history: { past: EditSnapshot[]; future: EditSnapshot[] };
 }
 

@@ -24,9 +24,13 @@ import {
   listProjects,
   deleteProject,
   getLastActiveProjectId,
+  getStoredLocale,
+  setStoredLocale,
   debounce,
   type ProjectSummary,
 } from './persistence';
+import { type Locale, LOCALES } from '../i18n/translations';
+import { categoryLabel as translateCategoryLabel } from '../i18n/labels';
 
 const HISTORY_LIMIT = 40;
 
@@ -56,9 +60,16 @@ function applySnapshot(v: LayoutVariant, snap: EditSnapshot, project: Project): 
 
 type Theme = 'light' | 'dark';
 
+function loadInitialLocale(): Locale {
+  const stored = getStoredLocale();
+  if (stored && (LOCALES as string[]).includes(stored)) return stored as Locale;
+  return 'en';
+}
+
 interface ProjectState {
   project: Project;
   theme: Theme;
+  locale: Locale;
   visualizationMode: VisualizationMode;
   season: Season;
   selectedObjectIds: string[];
@@ -103,6 +114,7 @@ interface ProjectState {
   setVisualizationMode: (mode: VisualizationMode) => void;
   setSeason: (season: Season) => void;
   setTheme: (theme: Theme) => void;
+  setLocale: (locale: Locale) => void;
   toggleSnap: () => void;
   toggleLegend: () => void;
   setGridSize: (n: number) => void;
@@ -157,6 +169,7 @@ function isProject(value: unknown): value is Project {
 export const useProjectStore = create<ProjectState>((set, get) => ({
   project: loadInitialProject(),
   theme: 'light',
+  locale: loadInitialLocale(),
   visualizationMode: 'schematic',
   season: 'summer',
   selectedObjectIds: [],
@@ -376,6 +389,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   setVisualizationMode: (mode) => set({ visualizationMode: mode }),
   setSeason: (season) => set({ season }),
   setTheme: (theme) => set({ theme }),
+  setLocale: (locale) => {
+    setStoredLocale(locale);
+    set({ locale });
+  },
   toggleSnap: () => set((s) => ({ snapToGrid: !s.snapToGrid })),
   toggleLegend: () => set((s) => ({ showLegend: !s.showLegend })),
   setGridSize: (n) => set({ gridSize: n }),
@@ -420,9 +437,6 @@ export function getActiveVariant(project: Project): LayoutVariant | undefined {
   return project.variants.find((v) => v.id === project.activeVariantId);
 }
 
-export function categoryLabel(c: ZoneCategory): string {
-  return c
-    .split('-')
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join(' ');
+export function categoryLabel(locale: Locale, c: ZoneCategory): string {
+  return translateCategoryLabel(locale, c);
 }

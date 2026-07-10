@@ -2,6 +2,10 @@ import { forwardRef } from 'react';
 import type { LayoutVariant, Plot, Season } from '../../domain/types';
 import { CATEGORY_STYLES, ZONE_CATEGORY_ORDER } from '../../domain/categories';
 import { polygonBounds } from '../../engine/geometry';
+import { t, type Locale } from '../../i18n/translations';
+import { categoryLabel } from '../../i18n/labels';
+import { translateRationale } from '../../i18n/rationale';
+import { translateWarning } from '../../i18n/warnings';
 import { ObjectVisual } from './ObjectVisual';
 import { pathStyle } from './pathStyle';
 
@@ -11,6 +15,7 @@ const PADDING_M = 6;
 export interface StaticPlanRenderProps {
   variant: LayoutVariant;
   plot: Plot;
+  locale: Locale;
   showLegend?: boolean;
   showRationale?: boolean;
   showWarnings?: boolean;
@@ -20,7 +25,7 @@ export interface StaticPlanRenderProps {
 // Non-interactive renderer shared by the export pipeline (and structurally
 // mirroring PlanCanvas) so exports never visually drift from the live plan.
 export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>(function StaticPlanRender(
-  { variant, plot, showLegend, showRationale, showWarnings, season },
+  { variant, plot, locale, showLegend, showRationale, showWarnings, season },
   ref,
 ) {
   const bounds = polygonBounds(plot.boundary);
@@ -70,23 +75,26 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
 
       {variant.objects.map((obj) => (
         <g key={obj.id} transform={`translate(${obj.transform.x} ${obj.transform.y}) rotate(${obj.transform.rotationDeg})`}>
-          <ObjectVisual obj={obj} themeKey="light" textClassName="select-none" season={season} />
+          <ObjectVisual obj={obj} themeKey="light" locale={locale} textClassName="select-none" season={season} />
         </g>
       ))}
 
       {showRationale &&
         variant.objects
-          .filter((o) => o.rationale && !o.locked)
-          .map((o) => (
-            <text key={`r-${o.id}`} x={o.transform.x} y={o.transform.y + o.transform.height / 2 + 1.2} fontSize={0.5} textAnchor="middle" fill="#57534e">
-              {o.rationale!.length > 55 ? o.rationale!.slice(0, 52) + '…' : o.rationale}
-            </text>
-          ))}
+          .filter((o) => !o.locked && Array.isArray(o.metadata.rationaleTokens))
+          .map((o) => {
+            const rationale = translateRationale(locale, o.typeId, o.metadata.rationaleTokens as string[]);
+            return (
+              <text key={`r-${o.id}`} x={o.transform.x} y={o.transform.y + o.transform.height / 2 + 1.2} fontSize={0.5} textAnchor="middle" fill="#57534e">
+                {rationale.length > 55 ? rationale.slice(0, 52) + '…' : rationale}
+              </text>
+            );
+          })}
 
       <g transform={`translate(${bounds.maxX + PADDING_M * 0.55} ${bounds.minY + PADDING_M * 0.55}) rotate(${plot.northAngleDeg})`}>
         <circle r={1.6} fill="white" stroke="#555" strokeWidth={0.08} />
         <path d="M 0,-1.2 L 0.5,0.6 L 0,0.2 L -0.5,0.6 Z" fill="#333" />
-        <text y={-1.9} textAnchor="middle" fontSize={0.8} fill="#333">N</text>
+        <text y={-1.9} textAnchor="middle" fontSize={0.8} fill="#333">{t(locale, 'plan.north')}</text>
       </g>
 
       <g transform={`translate(${bounds.minX} ${bounds.maxY + PADDING_M * 0.75})`}>
@@ -99,7 +107,7 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
           {legendCategories.map((c, i) => (
             <g key={c} transform={`translate(0, ${i * 1.8})`}>
               <rect width={1.2} height={1.2} fill={CATEGORY_STYLES[c].light.fill} stroke={CATEGORY_STYLES[c].light.stroke} strokeWidth={0.1} />
-              <text x={1.7} y={1} fontSize={0.9} fill="#292524">{CATEGORY_STYLES[c].label}</text>
+              <text x={1.7} y={1} fontSize={0.9} fill="#292524">{categoryLabel(locale, c)}</text>
             </g>
           ))}
         </g>
@@ -107,12 +115,15 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
 
       {showWarnings && variant.warnings.length > 0 && (
         <g transform={`translate(${bounds.minX + 16}, ${bounds.maxY + PADDING_M * 1.6})`}>
-          <text fontSize={1} fontWeight="bold" fill="#292524">Warnings</text>
-          {variant.warnings.slice(0, 6).map((w, i) => (
-            <text key={w.id} y={1.6 + i * 1.6} fontSize={0.8} fill={w.severity === 'critical' ? '#b91c1c' : w.severity === 'caution' ? '#b45309' : '#57534e'}>
-              {w.message.length > 70 ? w.message.slice(0, 67) + '…' : w.message}
-            </text>
-          ))}
+          <text fontSize={1} fontWeight="bold" fill="#292524">{t(locale, 'plan.warnings')}</text>
+          {variant.warnings.slice(0, 6).map((w, i) => {
+            const message = translateWarning(locale, w);
+            return (
+              <text key={w.id} y={1.6 + i * 1.6} fontSize={0.8} fill={w.severity === 'critical' ? '#b91c1c' : w.severity === 'caution' ? '#b45309' : '#57534e'}>
+                {message.length > 70 ? message.slice(0, 67) + '…' : message}
+              </text>
+            );
+          })}
         </g>
       )}
     </svg>

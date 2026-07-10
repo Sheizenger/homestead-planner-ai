@@ -4,6 +4,9 @@ import { CATEGORY_STYLES, ZONE_CATEGORY_ORDER } from '../../domain/categories';
 import { OBJECT_LIBRARY } from '../../domain/objectLibrary';
 import type { LayoutVariant, PlanObject, Point, Transform, ZoneCategory } from '../../domain/types';
 import { polygonBounds, rectCorners, resizeFromCorner } from '../../engine/geometry';
+import { t, type Locale } from '../../i18n/translations';
+import { categoryLabel } from '../../i18n/labels';
+import { translateRationale } from '../../i18n/rationale';
 import { ObjectVisual } from './ObjectVisual';
 import { pathStyle } from './pathStyle';
 
@@ -28,6 +31,7 @@ export function PlanCanvas() {
   const variant = getActiveVariant(project);
   const theme = useProjectStore((s) => s.theme);
   const themeKey = theme === 'dark' ? 'dark' : 'light';
+  const locale = useProjectStore((s) => s.locale);
   const visualizationMode = useProjectStore((s) => s.visualizationMode);
   const season = useProjectStore((s) => s.season);
   const showLegend = useProjectStore((s) => s.showLegend);
@@ -196,7 +200,7 @@ export function PlanCanvas() {
   const activeSeason = visualizationMode === 'seasonal' ? season : undefined;
 
   if (!variant) {
-    return <div className="flex h-full items-center justify-center text-sm text-stone-500">No layout generated yet.</div>;
+    return <div className="flex h-full items-center justify-center text-sm text-stone-500">{t(locale, 'plan.noLayout')}</div>;
   }
 
   return (
@@ -283,6 +287,7 @@ export function PlanCanvas() {
                 <ObjectVisual
                   obj={obj}
                   themeKey={themeKey}
+                  locale={locale}
                   showDesignDetail={showDesignDetail}
                   hasWarning={hasWarning}
                   isSelected={isSelected}
@@ -291,9 +296,12 @@ export function PlanCanvas() {
                 />
               </g>
 
-              {showRationale && obj.rationale && !obj.locked && (
+              {showRationale && !obj.locked && Array.isArray(obj.metadata.rationaleTokens) && (
                 <text x={obj.transform.x} y={obj.transform.y + obj.transform.height / 2 + 1.2} fontSize={0.55} textAnchor="middle" className="fill-stone-600">
-                  {obj.rationale.length > 60 ? obj.rationale.slice(0, 57) + '…' : obj.rationale}
+                  {(() => {
+                    const rationale = translateRationale(locale, obj.typeId, obj.metadata.rationaleTokens as string[]);
+                    return rationale.length > 60 ? rationale.slice(0, 57) + '…' : rationale;
+                  })()}
                 </text>
               )}
 
@@ -347,23 +355,23 @@ export function PlanCanvas() {
           />
         )}
 
-        <NorthArrow bounds={bounds} northAngleDeg={project.plot.northAngleDeg} />
+        <NorthArrow bounds={bounds} northAngleDeg={project.plot.northAngleDeg} locale={locale} />
         <ScaleBar bounds={bounds} />
       </svg>
     </div>
-      {showLegend && <PlanLegend variant={variant} themeKey={themeKey} />}
+      {showLegend && <PlanLegend variant={variant} themeKey={themeKey} locale={locale} />}
     </div>
   );
 }
 
-function NorthArrow({ bounds, northAngleDeg }: { bounds: ReturnType<typeof polygonBounds>; northAngleDeg: number }) {
+function NorthArrow({ bounds, northAngleDeg, locale }: { bounds: ReturnType<typeof polygonBounds>; northAngleDeg: number; locale: Locale }) {
   const x = bounds.maxX + PADDING_M * 0.55;
   const y = bounds.minY + PADDING_M * 0.55;
   return (
     <g transform={`translate(${x} ${y}) rotate(${northAngleDeg})`}>
       <circle r={1.6} fill="white" fillOpacity={0.8} stroke="#555" strokeWidth={0.08} />
       <path d="M 0,-1.2 L 0.5,0.6 L 0,0.2 L -0.5,0.6 Z" fill="#333" />
-      <text y={-1.9} textAnchor="middle" fontSize={0.8} fill="#333">N</text>
+      <text y={-1.9} textAnchor="middle" fontSize={0.8} fill="#333">{t(locale, 'plan.north')}</text>
     </g>
   );
 }
@@ -382,14 +390,14 @@ function ScaleBar({ bounds }: { bounds: ReturnType<typeof polygonBounds> }) {
   );
 }
 
-function PlanLegend({ variant, themeKey }: { variant: LayoutVariant; themeKey: 'light' | 'dark' }) {
+function PlanLegend({ variant, themeKey, locale }: { variant: LayoutVariant; themeKey: 'light' | 'dark'; locale: Locale }) {
   const used = ZONE_CATEGORY_ORDER.filter(
     (c) => variant.objects.some((o) => o.category === c) || variant.zones.some((z) => z.category === c),
   );
   if (used.length === 0) return null;
   return (
     <div className="pointer-events-none absolute right-3 bottom-3 rounded-md border border-stone-300 bg-white/95 p-2.5 text-[11px] shadow-sm dark:border-stone-700 dark:bg-stone-900/95">
-      <div className="mb-1 font-semibold text-stone-600 dark:text-stone-300">Legend</div>
+      <div className="mb-1 font-semibold text-stone-600 dark:text-stone-300">{t(locale, 'plan.legend')}</div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1">
         {used.map((c) => (
           <div key={c} className="flex items-center gap-1.5">
@@ -397,7 +405,7 @@ function PlanLegend({ variant, themeKey }: { variant: LayoutVariant; themeKey: '
               className="h-2.5 w-2.5 shrink-0 rounded-sm border"
               style={{ backgroundColor: CATEGORY_STYLES[c][themeKey].fill, borderColor: CATEGORY_STYLES[c][themeKey].stroke }}
             />
-            <span className="text-stone-600 dark:text-stone-300">{CATEGORY_STYLES[c].label}</span>
+            <span className="text-stone-600 dark:text-stone-300">{categoryLabel(locale, c)}</span>
           </div>
         ))}
       </div>
