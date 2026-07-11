@@ -18,7 +18,8 @@ type DragMode =
   | { kind: 'move'; startPointer: Point; startTransforms: Record<string, Transform> }
   | { kind: 'resize'; objectId: string; cornerIndex: number; fixedCorner: Point; cornerSign: Point; rotationDeg: number }
   | { kind: 'rotate'; objectId: string; center: Point }
-  | { kind: 'marquee'; startPointer: Point; currentPointer: Point };
+  | { kind: 'marquee'; startPointer: Point; currentPointer: Point }
+  | { kind: 'plotVertex'; index: number };
 
 const CORNER_SIGNS: Point[] = [
   { x: -1, y: -1 },
@@ -43,10 +44,13 @@ export function PlanCanvas() {
   const selectedObjectIds = useProjectStore((s) => s.selectedObjectIds);
   const select = useProjectStore((s) => s.select);
   const moveObjects = useProjectStore((s) => s.moveObjects);
+  const editingPlotShape = useProjectStore((s) => s.editingPlotShape);
+  const updatePlotBoundary = useProjectStore((s) => s.updatePlotBoundary);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [drag, setDrag] = useState<DragMode | null>(null);
   const [liveTransforms, setLiveTransforms] = useState<Record<string, Transform>>({});
+  const [liveBoundary, setLiveBoundary] = useState<Point[] | null>(null);
 
   const bounds = useMemo(() => polygonBounds(project.plot.boundary), [project.plot.boundary]);
   const worldW = bounds.maxX - bounds.minX + PADDING_M * 2;
@@ -115,17 +119,44 @@ export function PlanCanvas() {
   };
 
   const handleBackgroundPointerDown = (e: React.PointerEvent) => {
+    if (editingPlotShape) return;
     const p = toWorld(e.clientX, e.clientY);
     setDrag({ kind: 'marquee', startPointer: p, currentPointer: p });
     if (!e.shiftKey) select([]);
   };
 
+  const handlePlotVertexPointerDown = (e: React.PointerEvent, index: number) => {
+    e.stopPropagation();
+    setLiveBoundary([...project.plot.boundary]);
+    setDrag({ kind: 'plotVertex', index });
+  };
+
+  const handlePlotVertexDoubleClick = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    if (project.plot.boundary.length <= 3) return;
+    updatePlotBoundary(project.plot.boundary.filter((_, i) => i !== index));
+  };
+
+  const handlePlotEdgeInsert = (e: React.PointerEvent, afterIndex: number) => {
+    e.stopPropagation();
+    const boundary = project.plot.boundary;
+    const a = boundary[afterIndex];
+    const b = boundary[(afterIndex + 1) % boundary.length];
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    updatePlotBoundary([...boundary.slice(0, afterIndex + 1), mid, ...boundary.slice(afterIndex + 1)]);
+  };
+
   useEffect(() => {
-    if (!drag || !variant) return;
+    if (!drag || (!variant && drag.kind !== 'plotVertex')) return;
 
     const handleMove = (e: PointerEvent) => {
       const p = toWorld(e.clientX, e.clientY);
-      if (drag.kind === 'move') {
+      if (drag.kind === 'plotVertex') {
+        setLiveBoundary((prev) => {
+          const base = prev ?? project.plot.boundary;
+          return base.map((pt, i) => (i === drag.index ? { x: snap(p.x), y: snap(p.y) } : pt));
+        });
+      } else if (drag.kind === 'move') {
         const dx = snap(p.x - drag.startPointer.x);
         const dy = snap(p.y - drag.startPointer.y);
         const next: Record<string, Transform> = {};
@@ -133,7 +164,7 @@ export function PlanCanvas() {
           next[id] = { ...t, x: t.x + dx, y: t.y + dy };
         }
         setLiveTransforms(next);
-      } else if (drag.kind === 'resize') {
+      } else if (drag.kind === 'resize' && variant) {
         const entry = OBJECT_LIBRARY[variant.objects.find((o) => o.id === drag.objectId)?.typeId ?? ''];
         const t = resizeFromCorner(
           drag.fixedCorner,
@@ -144,7 +175,7 @@ export function PlanCanvas() {
           entry?.minHeight ?? 1,
         );
         setLiveTransforms({ [drag.objectId]: { x: snap(t.x), y: snap(t.y), width: snap(t.width), height: snap(t.height), rotationDeg: t.rotationDeg } });
-      } else if (drag.kind === 'rotate') {
+      } else if (drag.kind === 'rotate' && variant) {
         const angle = (Math.atan2(p.y - drag.center.y, p.x - drag.center.x) * 180) / Math.PI + 90;
         const obj = variant.objects.find((o) => o.id === drag.objectId);
         if (obj) setLiveTransforms({ [drag.objectId]: { ...obj.transform, rotationDeg: Math.round(angle / 5) * 5 } });
@@ -154,10 +185,13 @@ export function PlanCanvas() {
     };
 
     const handleUp = () => {
-      if (drag.kind === 'move' || drag.kind === 'resize' || drag.kind === 'rotate') {
+      if (drag.kind === 'plotVertex') {
+        if (liveBoundary) updatePlotBoundary(liveBoundary);
+        setLiveBoundary(null);
+      } else if (drag.kind === 'move' || drag.kind === 'resize' || drag.kind === 'rotate') {
         const updates = Object.entries(liveTransforms).map(([id, transform]) => ({ id, transform }));
         if (updates.length > 0) moveObjects(updates);
-      } else if (drag.kind === 'marquee') {
+      } else if (drag.kind === 'marquee' && variant) {
         const minX = Math.min(drag.startPointer.x, drag.currentPointer.x);
         const maxX = Math.max(drag.startPointer.x, drag.currentPointer.x);
         const minY = Math.min(drag.startPointer.y, drag.currentPointer.y);
@@ -178,7 +212,7 @@ export function PlanCanvas() {
       window.removeEventListener('pointerup', handleUp);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drag, liveTransforms, snap, toWorld, moveObjects, select, variant]);
+  }, [drag, liveTransforms, liveBoundary, snap, toWorld, moveObjects, select, variant, updatePlotBoundary, project.plot.boundary]);
 
   const gridLines = useMemo(() => {
     const lines: ReactElement[] = [];
@@ -268,12 +302,51 @@ export function PlanCanvas() {
 
         {/* Plot boundary */}
         <polygon
-          points={project.plot.boundary.map((p) => `${p.x},${p.y}`).join(' ')}
+          points={(liveBoundary ?? project.plot.boundary).map((p) => `${p.x},${p.y}`).join(' ')}
           fill="none"
           stroke="currentColor"
           className="text-stone-800 dark:text-stone-200"
           strokeWidth={0.25}
         />
+
+        {editingPlotShape && (() => {
+          const poly = liveBoundary ?? project.plot.boundary;
+          return (
+            <g>
+              {poly.map((p, i) => {
+                const next = poly[(i + 1) % poly.length];
+                const mid = { x: (p.x + next.x) / 2, y: (p.y + next.y) / 2 };
+                return (
+                  <rect
+                    key={`plot-edge-${i}`}
+                    x={mid.x - 0.35}
+                    y={mid.y - 0.35}
+                    width={0.7}
+                    height={0.7}
+                    fill="#2b6cb0"
+                    fillOpacity={0.45}
+                    className="cursor-copy"
+                    onPointerDown={(e) => handlePlotEdgeInsert(e, i)}
+                  />
+                );
+              })}
+              {poly.map((p, i) => (
+                <circle
+                  key={`plot-vertex-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={0.55}
+                  fill="#c0392b"
+                  stroke="white"
+                  strokeWidth={0.1}
+                  className="cursor-grab"
+                  onPointerDown={(e) => handlePlotVertexPointerDown(e, i)}
+                  onDoubleClick={(e) => handlePlotVertexDoubleClick(e, i)}
+                />
+              ))}
+            </g>
+          );
+        })()}
 
         {/* Objects */}
         {objects.map((obj) => {
@@ -285,7 +358,11 @@ export function PlanCanvas() {
           const corners = rectCorners(obj.transform);
 
           return (
-            <g key={obj.id} onPointerDown={(e) => handleObjectPointerDown(e, obj)} className="cursor-move">
+            <g
+              key={obj.id}
+              onPointerDown={(e) => !editingPlotShape && handleObjectPointerDown(e, obj)}
+              className={editingPlotShape ? '' : 'cursor-move'}
+            >
               <g transform={`translate(${obj.transform.x} ${obj.transform.y}) rotate(${obj.transform.rotationDeg})`}>
                 <ObjectVisual
                   obj={obj}
@@ -308,7 +385,7 @@ export function PlanCanvas() {
                 </text>
               )}
 
-              {isSelected && !obj.locked && (
+              {isSelected && !obj.locked && !editingPlotShape && (
                 <g>
                   {corners.map((c, i) => (
                     <rect

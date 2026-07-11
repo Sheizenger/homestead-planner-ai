@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useProjectStore } from '../../state/projectStore';
 import type { ClimateZone, PlanningMode, WaterfrontEdge, WaterfrontType } from '../../domain/types';
 import { parseFreeText } from '../../engine/textParser';
-import { polygonBounds } from '../../engine/geometry';
+import { polygonArea, polygonBounds } from '../../engine/geometry';
+import { buildLShapeBoundary, buildRectBoundary, PLOT_CORNERS, type PlotCorner } from '../../engine/plotShapes';
 import { RECOMMENDED_M2_PER_PERSON } from '../../engine/warnings';
 import { t } from '../../i18n/translations';
 
@@ -41,6 +42,11 @@ const HOUSE_SHAPE_OPTIONS: { value: 'rect' | 'lshape'; key: string }[] = [
   { value: 'rect', key: 'houseShape.rect' },
   { value: 'lshape', key: 'houseShape.lshape' },
 ];
+const PLOT_SHAPE_OPTIONS: { value: 'rect' | 'lshape'; key: string }[] = [
+  { value: 'rect', key: 'plotShape.rect' },
+  { value: 'lshape', key: 'plotShape.lshape' },
+];
+const CORNER_OPTIONS: { value: PlotCorner; key: string }[] = PLOT_CORNERS.map((c) => ({ value: c, key: `corner.${c}` }));
 const CLIMATE_OPTIONS: { value: ClimateZone; key: string }[] = [
   { value: 'temperate', key: 'climateZone.temperate' },
   { value: 'continental', key: 'climateZone.continental' },
@@ -81,10 +87,25 @@ export function BriefForm() {
   const updateFreeText = useProjectStore((s) => s.updateFreeText);
   const updateStructuredInputs = useProjectStore((s) => s.updateStructuredInputs);
   const updatePlotSize = useProjectStore((s) => s.updatePlotSize);
+  const updatePlotBoundary = useProjectStore((s) => s.updatePlotBoundary);
+  const editingPlotShape = useProjectStore((s) => s.editingPlotShape);
+  const toggleEditingPlotShape = useProjectStore((s) => s.toggleEditingPlotShape);
   const updateWaterfront = useProjectStore((s) => s.updateWaterfront);
   const generate = useProjectStore((s) => s.generate);
   const generating = useProjectStore((s) => s.generating);
   const [selectedMode, setSelectedMode] = useState<PlanningMode>('beauty-balanced');
+  const [plotShapePreset, setPlotShapePreset] = useState<'rect' | 'lshape'>('rect');
+  const [notchWidth, setNotchWidth] = useState(12);
+  const [notchHeight, setNotchHeight] = useState(10);
+  const [notchCorner, setNotchCorner] = useState<PlotCorner>('ne');
+
+  useEffect(() => {
+    setPlotShapePreset(project.plot.boundary.length === 4 ? 'rect' : 'lshape');
+    // Only re-detect the preset when switching to a different saved project,
+    // not on every boundary edit within the same project (that would fight
+    // the user's own preset/corner picks).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.id]);
 
   const inputs = project.brief.structuredInputs;
   const waterfront = project.plot.waterfront;
@@ -92,7 +113,19 @@ export function BriefForm() {
   const bounds = polygonBounds(project.plot.boundary);
   const plotWidth = Math.round(bounds.maxX - bounds.minX);
   const plotHeight = Math.round(bounds.maxY - bounds.minY);
-  const plotAreaM2 = plotWidth * plotHeight;
+  const plotAreaM2 = Math.round(polygonArea(project.plot.boundary));
+
+  const applyLShape = (patch: Partial<{ width: number; height: number; notchWidth: number; notchHeight: number; corner: PlotCorner }>) => {
+    const width = patch.width ?? plotWidth;
+    const height = patch.height ?? plotHeight;
+    const nw = patch.notchWidth ?? notchWidth;
+    const nh = patch.notchHeight ?? notchHeight;
+    const corner = patch.corner ?? notchCorner;
+    setNotchWidth(nw);
+    setNotchHeight(nh);
+    setNotchCorner(corner);
+    updatePlotBoundary(buildLShapeBoundary(width, height, nw, nh, corner));
+  };
   const recommendedM2 = inputs.householdSize * RECOMMENDED_M2_PER_PERSON;
   const shortOfNorm = plotAreaM2 < recommendedM2;
   const infraOptions = waterfront ? [...INFRA_OPTIONS, ...WATERFRONT_INFRA_OPTIONS] : INFRA_OPTIONS;
@@ -157,6 +190,21 @@ export function BriefForm() {
       </Section>
 
       <Section title={t(locale, 'brief.plotSize')}>
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {PLOT_SHAPE_OPTIONS.map((o) => (
+            <Chip
+              key={o.value}
+              active={plotShapePreset === o.value}
+              onClick={() => {
+                setPlotShapePreset(o.value);
+                if (o.value === 'rect') updatePlotBoundary(buildRectBoundary(plotWidth, plotHeight));
+                else applyLShape({});
+              }}
+            >
+              {t(locale, o.key)}
+            </Chip>
+          ))}
+        </div>
         <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
           <label className="flex items-center gap-1.5">
             {t(locale, 'brief.width')}
@@ -165,7 +213,11 @@ export function BriefForm() {
               min={10}
               step={1}
               value={plotWidth}
-              onChange={(e) => updatePlotSize(Number(e.target.value), plotHeight)}
+              onChange={(e) => {
+                const w = Number(e.target.value);
+                if (plotShapePreset === 'rect') updatePlotSize(w, plotHeight);
+                else applyLShape({ width: w });
+              }}
               className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
             />
             m
@@ -177,15 +229,69 @@ export function BriefForm() {
               min={10}
               step={1}
               value={plotHeight}
-              onChange={(e) => updatePlotSize(plotWidth, Number(e.target.value))}
+              onChange={(e) => {
+                const h = Number(e.target.value);
+                if (plotShapePreset === 'rect') updatePlotSize(plotWidth, h);
+                else applyLShape({ height: h });
+              }}
               className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
             />
             m
           </label>
         </div>
+
+        {plotShapePreset === 'lshape' && (
+          <div className="mt-2 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {CORNER_OPTIONS.map((o) => (
+                <Chip key={o.value} active={notchCorner === o.value} onClick={() => applyLShape({ corner: o.value })}>
+                  {t(locale, o.key)}
+                </Chip>
+              ))}
+            </div>
+            <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
+              {t(locale, 'brief.notchWidth')}
+              <input
+                type="number"
+                min={2}
+                step={1}
+                value={notchWidth}
+                onChange={(e) => applyLShape({ notchWidth: Number(e.target.value) })}
+                className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+              />
+            </label>
+            <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
+              {t(locale, 'brief.notchHeight')}
+              <input
+                type="number"
+                min={2}
+                step={1}
+                value={notchHeight}
+                onChange={(e) => applyLShape({ notchHeight: Number(e.target.value) })}
+                className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+              />
+            </label>
+          </div>
+        )}
+
         <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">
           {t(locale, 'brief.plotAreaSummary', { area: plotAreaM2.toLocaleString(), sotok: (plotAreaM2 / 100).toFixed(1) })}
         </p>
+
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={toggleEditingPlotShape}
+            className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+              editingPlotShape
+                ? 'border-emerald-700 bg-emerald-700 text-white dark:border-emerald-600 dark:bg-emerald-600'
+                : 'border-stone-300 text-stone-600 hover:border-stone-400 dark:border-stone-700 dark:text-stone-300'
+            }`}
+          >
+            {t(locale, editingPlotShape ? 'brief.plotShapeEditingOn' : 'brief.plotShapeEdit')}
+          </button>
+          <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.plotShapeEditHint')}</p>
+        </div>
       </Section>
 
       <Section title={t(locale, 'brief.waterfront')}>

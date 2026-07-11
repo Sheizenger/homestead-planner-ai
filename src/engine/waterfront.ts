@@ -1,5 +1,5 @@
 import type { Plot, Zone } from '../domain/types';
-import { polygonBounds, type Bounds } from './geometry';
+import { polygonBounds, clipPolygonToRect, type Bounds } from './geometry';
 
 // The waterfront strip is modelled as a slice of the plot itself (inset from
 // one boundary edge by widthM) rather than land beyond the property line —
@@ -26,15 +26,21 @@ export function computeWaterfrontZone(plot: Plot): Zone | null {
   const wf = plot.waterfront;
   const bounds = computeWaterfrontBounds(plot);
   if (!wf || !bounds) return null;
+  // The strip itself is derived from the plot's bounding box (see above), so
+  // on a non-rectangular plot (L-shaped, custom) it can extend past the
+  // actual land — clip it against the real boundary so water never renders
+  // outside the property.
+  const clipped = clipPolygonToRect(plot.boundary, bounds);
+  const boundary = clipped.length >= 3 ? clipped : [
+    { x: bounds.minX, y: bounds.minY },
+    { x: bounds.maxX, y: bounds.minY },
+    { x: bounds.maxX, y: bounds.maxY },
+    { x: bounds.minX, y: bounds.maxY },
+  ];
   return {
     id: 'zone-waterfront',
     category: 'water',
-    boundary: [
-      { x: bounds.minX, y: bounds.minY },
-      { x: bounds.maxX, y: bounds.minY },
-      { x: bounds.maxX, y: bounds.maxY },
-      { x: bounds.minX, y: bounds.maxY },
-    ],
+    boundary,
     label: wf.type,
     metadata: { waterfrontType: wf.type },
     locked: true,

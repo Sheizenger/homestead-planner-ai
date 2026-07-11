@@ -6,7 +6,7 @@ import { placeObjects } from './placement';
 import { synthesizePaths, synthesizeFences } from './pathsAndFences';
 import { computeAnalytics } from './analytics';
 import { computeWarnings } from './warnings';
-import { polygonBounds, transformAabb, aabbOverlap, polygonArea } from './geometry';
+import { polygonBounds, transformAabb, aabbOverlap, polygonArea, rectFullyInsidePolygon } from './geometry';
 
 const STRATEGY_LABELS: Record<PlanningMode, string> = {
   'minimum-maintenance': 'Compact & Efficient',
@@ -101,6 +101,7 @@ function buildFutureExpansionZone(plot: Plot, objects: PlanObject[], mode: Plann
 
       for (const c of candidates) {
         const aabb = { minX: c.x - w / 2, minY: c.y - h / 2, maxX: c.x + w / 2, maxY: c.y + h / 2 };
+        if (!rectFullyInsidePolygon({ x: c.x, y: c.y, width: w, height: h, rotationDeg: 0 }, plot.boundary)) continue;
         const overlaps = objects.some((o) => aabbOverlap(aabb, transformAabb(o.transform), 1));
         if (overlaps) continue;
         return [

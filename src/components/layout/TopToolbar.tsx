@@ -29,6 +29,8 @@ export function TopToolbar() {
   const toggleSnap = useProjectStore((s) => s.toggleSnap);
   const showLegend = useProjectStore((s) => s.showLegend);
   const toggleLegend = useProjectStore((s) => s.toggleLegend);
+  const editingPlotShape = useProjectStore((s) => s.editingPlotShape);
+  const toggleEditingPlotShape = useProjectStore((s) => s.toggleEditingPlotShape);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
   const theme = useProjectStore((s) => s.theme);
@@ -146,6 +148,14 @@ export function TopToolbar() {
         className={`rounded px-2 py-1 font-medium ${showLegend ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900' : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'}`}
       >
         {t(locale, 'toolbar.legend')}
+      </button>
+
+      <button
+        onClick={toggleEditingPlotShape}
+        title={t(locale, 'toolbar.editPlotShapeHint')}
+        className={`rounded px-2 py-1 font-medium ${editingPlotShape ? 'bg-emerald-700 text-white dark:bg-emerald-600' : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'}`}
+      >
+        {t(locale, 'toolbar.editPlotShape')}
       </button>
 
       <div className="ml-auto flex items-center gap-2">

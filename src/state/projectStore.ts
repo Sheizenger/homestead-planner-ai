@@ -6,6 +6,7 @@ import type {
   LayoutVariant,
   ObjectCategory,
   PlanningMode,
+  Point,
   Project,
   Season,
   Transform,
@@ -99,6 +100,9 @@ interface ProjectState {
   updateFreeText: (text: string) => void;
   updateStructuredInputs: (patch: Partial<Project['brief']['structuredInputs']>) => void;
   updatePlotSize: (width: number, height: number) => void;
+  updatePlotBoundary: (boundary: Point[]) => void;
+  editingPlotShape: boolean;
+  toggleEditingPlotShape: () => void;
   updateWaterfront: (waterfront: Waterfront | null) => void;
   generate: (mode?: PlanningMode) => void;
   regenerateVariant: (variantId: string) => void;
@@ -189,6 +193,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   customLandPriceUsd: 5,
   isProjectsOpen: false,
   generating: false,
+  editingPlotShape: false,
 
   loadSample: () => {
     const project = createSampleProject();
@@ -269,6 +274,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         },
       },
     })),
+
+  updatePlotBoundary: (boundary) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        updatedAt: new Date().toISOString(),
+        plot: { ...state.project.plot, boundary },
+      },
+    })),
+
+  toggleEditingPlotShape: () => set((s) => ({ editingPlotShape: !s.editingPlotShape })),
 
   updateWaterfront: (waterfront) =>
     set((state) => ({

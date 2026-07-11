@@ -73,8 +73,75 @@ export function aabbOverlap(a: Bounds, b: Bounds, margin = 0): boolean {
   );
 }
 
+// True if segments a1-a2 and b1-b2 cross at an interior point of both. Shared
+// endpoints or collinear/touching edges are deliberately NOT reported as an
+// intersection (all cross-product signs land at/near zero), since candidates
+// routinely sit flush against — or share a corner with — the polygon boundary.
+export function segmentsIntersect(a1: Point, a2: Point, b1: Point, b2: Point): boolean {
+  const cross = (o: Point, p: Point, q: Point) => (p.x - o.x) * (q.y - o.y) - (p.y - o.y) * (q.x - o.x);
+  const d1 = cross(b1, b2, a1);
+  const d2 = cross(b1, b2, a2);
+  const d3 = cross(a1, a2, b1);
+  const d4 = cross(a1, a2, b2);
+  return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+}
+
+// Corner-in-polygon alone is unsound for a concave boundary (e.g. an L-shaped
+// plot): a rectangle can have all 4 corners inside the L while still
+// bridging straight across the missing notch. So also reject any candidate
+// whose own edges cross a polygon edge, which catches that bridging case.
 export function rectFullyInsidePolygon(t: Transform, polygon: Point[]): boolean {
-  return rectCorners(t).every((c) => pointInPolygon(c, polygon));
+  const corners = rectCorners(t);
+  if (!corners.every((c) => pointInPolygon(c, polygon))) return false;
+  for (let i = 0; i < corners.length; i++) {
+    const a = corners[i];
+    const b = corners[(i + 1) % corners.length];
+    for (let j = 0; j < polygon.length; j++) {
+      if (segmentsIntersect(a, b, polygon[j], polygon[(j + 1) % polygon.length])) return false;
+    }
+  }
+  return true;
+}
+
+// Sutherland-Hodgman polygon clip: intersects `subject` (any polygon, convex
+// or concave) against an axis-aligned rectangle `clip`. Used to keep a
+// bounds-derived shape (e.g. the waterfront strip) from rendering outside
+// the plot's real boundary once that boundary isn't a plain rectangle.
+export function clipPolygonToRect(subject: Point[], clip: Bounds): Point[] {
+  const edges: [Point, Point][] = [
+    [{ x: clip.minX, y: clip.minY }, { x: clip.maxX, y: clip.minY }],
+    [{ x: clip.maxX, y: clip.minY }, { x: clip.maxX, y: clip.maxY }],
+    [{ x: clip.maxX, y: clip.maxY }, { x: clip.minX, y: clip.maxY }],
+    [{ x: clip.minX, y: clip.maxY }, { x: clip.minX, y: clip.minY }],
+  ];
+  let output = subject;
+  for (const [e1, e2] of edges) {
+    if (output.length === 0) break;
+    const input = output;
+    output = [];
+    const inside = (p: Point) => (e2.x - e1.x) * (p.y - e1.y) - (e2.y - e1.y) * (p.x - e1.x) >= 0;
+    const intersect = (p: Point, q: Point): Point => {
+      const a1 = e2.x - e1.x, a2 = e2.y - e1.y;
+      const b1 = q.x - p.x, b2 = q.y - p.y;
+      const denom = a1 * b2 - a2 * b1;
+      if (Math.abs(denom) < 1e-9) return p;
+      const t = ((p.x - e1.x) * b2 - (p.y - e1.y) * b1) / denom;
+      return { x: e1.x + a1 * t, y: e1.y + a2 * t };
+    };
+    for (let i = 0; i < input.length; i++) {
+      const curr = input[i];
+      const prev = input[(i - 1 + input.length) % input.length];
+      const currIn = inside(curr);
+      const prevIn = inside(prev);
+      if (currIn) {
+        if (!prevIn) output.push(intersect(prev, curr));
+        output.push(curr);
+      } else if (prevIn) {
+        output.push(intersect(prev, curr));
+      }
+    }
+  }
+  return output;
 }
 
 export function distance(a: Point, b: Point): number {
