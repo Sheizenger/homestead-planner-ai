@@ -82,6 +82,8 @@ export function ObjectGlyph({ entry, width, height, stroke, season }: GlyphProps
       );
     case 'barn':
       return <BarnDoor width={width} height={height} stroke={stroke} />;
+    case 'garage':
+      return <GarageIcon width={width} height={height} stroke={stroke} />;
     case 'woodshed':
       return (
         <>
@@ -110,7 +112,7 @@ export function ObjectGlyph({ entry, width, height, stroke, season }: GlyphProps
       return <TurbineIcon width={width} height={height} stroke={stroke} />;
     default:
       if (entry.shape === 'rect') {
-        return <RoofLines width={width} height={height} stroke={stroke} withDoor={['house', 'garage', 'shed'].includes(entry.id)} />;
+        return <RoofLines width={width} height={height} stroke={stroke} withDoor={['house', 'shed'].includes(entry.id)} />;
       }
       return null;
   }
@@ -775,6 +777,48 @@ function BarnDoor({ width, height, stroke }: { width: number; height: number; st
       <RoofLines width={width} height={height} stroke={stroke} withDoor={false} />
       <rect x={-doorW / 2} y={hh - doorH} width={doorW} height={doorH} fill="none" stroke={stroke} strokeWidth={0.08} />
       <line x1={0} y1={hh - doorH} x2={0} y2={hh} stroke={stroke} strokeWidth={0.06} />
+    </g>
+  );
+}
+
+// A wide segmented "up-and-over" door on the road-facing edge plus a simple
+// top-down parked-car silhouette — makes it unambiguous that this box is a
+// vehicle garage (and where the driveway is meant to lead), not just another
+// tool shed.
+function GarageIcon({ width, height, stroke }: { width: number; height: number; stroke: string }) {
+  const hh = height / 2;
+  const doorW = Math.min(width * 0.72, 4.2);
+  const doorH = Math.min(height * 0.3, 1.2);
+  const panels = 4;
+  const panelW = doorW / panels;
+  const carW = Math.min(doorW * 0.75, width * 0.55);
+  const carH = Math.min(height * 0.5, height - doorH - 0.6);
+  return (
+    <g opacity={0.75}>
+      <RoofLines width={width} height={height} stroke={stroke} withDoor={false} />
+      <rect x={-doorW / 2} y={hh - doorH} width={doorW} height={doorH} fill="none" stroke={stroke} strokeWidth={0.08} />
+      {Array.from({ length: panels - 1 }, (_, i) => {
+        const x = -doorW / 2 + panelW * (i + 1);
+        return <line key={i} x1={x} y1={hh - doorH} x2={x} y2={hh} stroke={stroke} strokeWidth={0.05} />;
+      })}
+      {carW > 1.3 && carH > 1.8 && (
+        <g transform={`translate(0 ${hh - doorH - carH / 2 - 0.3})`} opacity={0.85}>
+          <rect x={-carW / 2} y={-carH / 2} width={carW} height={carH} rx={carW * 0.28} fill="none" stroke={stroke} strokeWidth={0.09} />
+          {[-1, 1].flatMap((sx) =>
+            [-1, 1].map((sy) => (
+              <circle
+                key={`${sx}-${sy}`}
+                cx={sx * carW * 0.32}
+                cy={sy * carH * 0.3}
+                r={Math.min(0.22, carW * 0.12)}
+                fill="none"
+                stroke={stroke}
+                strokeWidth={0.07}
+              />
+            )),
+          )}
+        </g>
+      )}
     </g>
   );
 }

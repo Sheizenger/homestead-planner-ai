@@ -74,12 +74,12 @@ function App() {
   return (
     <div className="flex h-screen w-screen flex-col bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
       <TopToolbar />
-      <div className="flex min-h-0 flex-1">
-        <aside className="w-72 shrink-0 border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="w-72 min-w-[13rem] max-w-[32vw] shrink border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
           <BriefForm />
         </aside>
         <main className="min-w-0 flex-1">{view === 'workspace' ? <PlanCanvas /> : <VariantComparisonView />}</main>
-        <aside className="w-72 shrink-0 border-l border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
+        <aside className="w-72 min-w-[13rem] max-w-[32vw] shrink border-l border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
           <RightPanel />
         </aside>
       </div>

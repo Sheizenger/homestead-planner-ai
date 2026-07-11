@@ -4,6 +4,7 @@ import { parseFreeText, mergeFreeTextIntoStructured } from './textParser';
 import { buildProgram } from './sizing';
 import { placeObjects } from './placement';
 import { synthesizePaths, synthesizeFences } from './pathsAndFences';
+import { computeUtilityNodes } from './utilityConnections';
 import { computeAnalytics } from './analytics';
 import { computeWarnings } from './warnings';
 import { polygonBounds, transformAabb, aabbOverlap, polygonArea, rectFullyInsidePolygon } from './geometry';
@@ -61,7 +62,7 @@ export function generateVariant(project: Project, mode: PlanningMode, seed: numb
     objects,
     paths,
     fences,
-    utilityNodes: [],
+    utilityNodes: computeUtilityNodes(objects),
     analytics,
     warnings,
     history: { past: [], future: [] },

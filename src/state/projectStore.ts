@@ -356,7 +356,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         const objects = withHistory.objects.filter((o) => !ids.includes(o.id) || o.locked);
         const fences = withHistory.fences.filter((f) => !ids.some((id) => f.id === `fence-${id}`));
         const paths = withHistory.paths.filter((p) => !ids.some((id) => p.id === `path-${id}`));
-        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects, fences, paths }, project);
+        const remainingNodes = withHistory.utilityNodes.filter((n) => !ids.includes(n.objectId));
+        const remainingIds = new Set(remainingNodes.map((n) => n.id));
+        const utilityNodes = remainingNodes.map((n) => ({ ...n, connections: n.connections.filter((id) => remainingIds.has(id)) }));
+        return applySnapshot(withHistory, { ...snapshotOf(withHistory), objects, fences, paths, utilityNodes }, project);
       }),
     })),
 

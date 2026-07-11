@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo.svg" alt="Homestead Planner AI" width="96" height="96" /></p>
+
 # Homestead Planner AI
 
 A desktop-first web app that turns a natural-language + structured brief about

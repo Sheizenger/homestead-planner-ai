@@ -137,9 +137,10 @@ export interface Fence {
 
 export interface UtilityNode {
   id: string;
-  type: 'well' | 'septic' | 'power-meter' | 'water-tank' | 'solar-array' | 'battery-room' | 'inverter' | 'generator';
-  position: Point;
-  connections: string[]; // UtilityNode ids
+  objectId: string; // PlanObject id this node represents — position is resolved live from it, not stored, so a dragged object keeps its connection lines attached
+  type: string; // the object's typeId, e.g. 'solar-array', 'well', 'pump'
+  kind: 'power' | 'water';
+  connections: string[]; // UtilityNode ids this one has a direct hookup line to
 }
 
 export type ConstraintKind = 'adjacency' | 'separation' | 'sunlight' | 'access' | 'safety';

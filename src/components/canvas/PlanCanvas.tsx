@@ -9,6 +9,7 @@ import { categoryLabel } from '../../i18n/labels';
 import { translateRationale } from '../../i18n/rationale';
 import { ObjectVisual } from './ObjectVisual';
 import { WaterfrontZone } from './WaterfrontZone';
+import { GateGlyph } from './GateGlyph';
 import { pathStyle } from './pathStyle';
 
 const PX_PER_METER = 12;
@@ -75,6 +76,23 @@ export function PlanCanvas() {
   }, [bounds, worldW, worldH]);
 
   const objects = variant ? variant.objects.map((o) => (liveTransforms[o.id] ? { ...o, transform: liveTransforms[o.id] } : o)) : [];
+
+  // Physical utility hookups (power cable / water pipe runs). Positions are
+  // resolved live from `objects` (not stored on the node) so a line stays
+  // attached to its object while it's being dragged, instead of freezing at
+  // wherever it was when the plan was generated.
+  const utilityLines = variant
+    ? variant.utilityNodes.flatMap((n) => {
+        const from = objects.find((o) => o.id === n.objectId);
+        if (!from) return [];
+        return n.connections.flatMap((targetId) => {
+          const target = variant.utilityNodes.find((t) => t.id === targetId);
+          const to = target && objects.find((o) => o.id === target.objectId);
+          if (!to) return [];
+          return [{ id: `${n.id}-${targetId}`, kind: n.kind, x1: from.transform.x, y1: from.transform.y, x2: to.transform.x, y2: to.transform.y }];
+        });
+      })
+    : [];
 
   const handleObjectPointerDown = (e: React.PointerEvent, obj: PlanObject) => {
     e.stopPropagation();
@@ -286,19 +304,59 @@ export function PlanCanvas() {
           !showUtilities &&
           variant.paths.map((p) => {
             const style = pathStyle(p);
+            const pointsAttr = p.points.map((pt) => `${pt.x},${pt.y}`).join(' ');
             return (
-              <polyline
-                key={p.id}
-                points={p.points.map((pt) => `${pt.x},${pt.y}`).join(' ')}
-                fill="none"
-                stroke={style.stroke}
-                strokeWidth={style.strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={style.dasharray}
-                opacity={style.opacity}
-              />
+              <g key={p.id}>
+                <polyline
+                  points={pointsAttr}
+                  fill="none"
+                  stroke={style.stroke}
+                  strokeWidth={style.strokeWidth}
+                  strokeLinecap="butt"
+                  strokeDasharray={style.dasharray}
+                  opacity={style.opacity}
+                />
+                {p.category === 'service' && (
+                  <polyline
+                    points={pointsAttr}
+                    fill="none"
+                    stroke="#e8dfc8"
+                    strokeWidth={0.08}
+                    strokeDasharray="0.5,0.6"
+                    strokeLinecap="butt"
+                    opacity={0.8}
+                  />
+                )}
+              </g>
             );
           })}
+
+        {/* Gate: where the driveway/entrance path crosses the property line */}
+        {layerVisibility.fence !== false && !showUtilities && variant.paths.find((p) => p.id === 'path-entrance') && (
+          <GateGlyph
+            plot={project.plot}
+            point={variant.paths.find((p) => p.id === 'path-entrance')!.points[0]}
+            bgColor={themeKey === 'dark' ? '#0c0a09' : '#fafaf9'}
+          />
+        )}
+
+        {/* Utility hookups: power cable runs (amber) and water pipe runs (blue) */}
+        {utilityLines
+          .filter((l) => layerVisibility[l.kind === 'power' ? 'energy' : 'water'] !== false)
+          .map((l) => (
+            <line
+              key={l.id}
+              x1={l.x1}
+              y1={l.y1}
+              x2={l.x2}
+              y2={l.y2}
+              stroke={l.kind === 'power' ? '#b45309' : '#1d4ed8'}
+              strokeWidth={l.kind === 'power' ? 0.14 : 0.11}
+              strokeDasharray={l.kind === 'power' ? '0.5,0.35' : '0.12,0.3'}
+              strokeLinecap="round"
+              opacity={0.75}
+            />
+          ))}
 
         {/* Plot boundary */}
         <polygon

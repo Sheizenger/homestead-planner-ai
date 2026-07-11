@@ -43,8 +43,13 @@ const PLACEMENT_TIERS: string[][] = [
   ['house', 'house-l'],
   ['garage', 'shed', 'barn', 'cellar', 'woodshed', 'workshop'],
   ['well', 'pump', 'septic', 'water-tank', 'rainwater-cistern', 'solar-array', 'battery-room', 'inverter-room', 'generator', 'micro-hydro', 'dock'],
+  // Greenhouses/hydroponics need both sun AND close utility hookups — placed
+  // in their own tier right after utilities (rather than lumped in with the
+  // big annual fields below) so they get first pick of a spot satisfying
+  // both, instead of large fields claiming all the good ground first.
+  ['greenhouse', 'hydroponic-tower'],
   ['goat-shelter', 'goat-paddock', 'poultry-coop', 'apiary'],
-  ['raised-beds', 'greenhouse', 'hydroponic-tower', 'vegetable-area', 'potato-area', 'grain-field', 'orchard-trees', 'berry-rows', 'vineyard'],
+  ['raised-beds', 'vegetable-area', 'potato-area', 'grain-field', 'orchard-trees', 'berry-rows', 'vineyard'],
   ['compost', 'patio', 'pool', 'gazebo', 'banya', 'smokehouse'],
 ];
 
@@ -238,10 +243,19 @@ function searchBestCandidate(
 
         const hardViolation = CONSTRAINTS.some((c) => {
           if (!c.hard || (c.kind !== 'separation' && c.kind !== 'safety') || !c.minDistance) return false;
-          if (!matches(entry, c.subjectTypes)) return false;
+          // Checked both ways: a pair like well/septic must not end up close
+          // together regardless of which of the two happens to get placed
+          // first — matching subjectTypes-only would silently stop enforcing
+          // this the moment the "related" side (e.g. septic) is placed
+          // before the "subject" side (well) ever exists to check against.
+          const asSubject = matches(entry, c.subjectTypes);
+          const asRelated = matches(entry, c.relatedTypes);
+          if (!asSubject && !asRelated) return false;
           return placed.some((p) => {
             const otherEntry = OBJECT_LIBRARY[p.typeId];
-            if (!otherEntry || !matches(otherEntry, c.relatedTypes)) return false;
+            if (!otherEntry) return false;
+            const otherMatches = asSubject ? matches(otherEntry, c.relatedTypes) : matches(otherEntry, c.subjectTypes);
+            if (!otherMatches) return false;
             return distance(transform, p.transform) < c.minDistance!;
           });
         });
@@ -339,19 +353,37 @@ function scoreCandidate(
   }
 
   for (const c of CONSTRAINTS) {
-    if (!matches(entry, c.subjectTypes)) continue;
+    // Checked both ways — see the matching comment in searchBestCandidate's
+    // hardViolation check: a directional subjectTypes/relatedTypes match
+    // would only ever influence placement of whichever side of the pair
+    // happens to be placed second, silently doing nothing the rest of the
+    // time (e.g. solar-battery-adjacency never pulling the battery room
+    // toward the solar array if the battery room is placed first).
+    const asSubject = matches(entry, c.subjectTypes);
+    const asRelated = matches(entry, c.relatedTypes);
+    if (!asSubject && !asRelated) continue;
     for (const p of placed) {
       const otherEntry = OBJECT_LIBRARY[p.typeId];
-      if (!otherEntry || !matches(otherEntry, c.relatedTypes)) continue;
+      if (!otherEntry) continue;
+      const otherMatches = asSubject ? matches(otherEntry, c.relatedTypes) : matches(otherEntry, c.subjectTypes);
+      if (!otherMatches) continue;
       const d = distance(transform, p.transform);
       if ((c.kind === 'separation' || c.kind === 'safety') && c.minDistance && d < c.minDistance) {
         score -= (c.minDistance - d) * weights.separation;
         reasons.push(`apartFrom:${p.typeId}`);
       }
       if (c.kind === 'adjacency' && c.maxDistance) {
-        if (d > c.maxDistance) score -= (d - c.maxDistance) * weights.access * 0.5;
+        // Adjacency (well-to-pump, solar-to-battery, greenhouse-to-utilities,
+        // etc.) is a functional requirement, not an aesthetic taste — keep it
+        // meaningfully strong even in modes that otherwise weight "access"
+        // low (production-max, safety-first), so a plan doesn't rack up
+        // avoidable adjacency warnings just because the active mode happens
+        // to deprioritize walking distance. Every mode should still try to
+        // satisfy these; they should just differ in everything else.
+        const adjacencyPull = Math.max(weights.access, 1.3);
+        if (d > c.maxDistance) score -= (d - c.maxDistance) * adjacencyPull * 1.8;
         else {
-          score += (c.maxDistance - d) * weights.access * 0.3;
+          score += (c.maxDistance - d) * adjacencyPull * 0.6;
           reasons.push(`near:${p.typeId}`);
         }
       }

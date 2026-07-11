@@ -33,4 +33,18 @@ describe('generateVariants', () => {
     const critical = variant.warnings.filter((w) => w.severity === 'critical');
     expect(critical.every((w) => typeof w.message === 'string')).toBe(true);
   });
+
+  it('satisfies adjacency constraints (well-pump, solar-battery, greenhouse-utility) in every mode', () => {
+    // Adjacency constraints are directional (subjectTypes vs relatedTypes)
+    // and only ever influenced placement of whichever side of the pair got
+    // placed second — regardless of mode, on a plot with real slack these
+    // should be satisfiable and shouldn't surface as warnings just because
+    // the greedy placement order happened to place the "subject" first.
+    const project = createSampleProject();
+    for (const mode of ['minimum-maintenance', 'production-max', 'beauty-balanced', 'safety-first'] as const) {
+      const [variant] = generateVariants(project, mode);
+      const adjacencyWarnings = variant.warnings.filter((w) => w.ruleId?.includes('adjacency'));
+      expect(adjacencyWarnings).toEqual([]);
+    }
+  });
 });

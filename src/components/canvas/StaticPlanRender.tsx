@@ -8,6 +8,7 @@ import { translateRationale } from '../../i18n/rationale';
 import { translateWarning } from '../../i18n/warnings';
 import { ObjectVisual } from './ObjectVisual';
 import { WaterfrontZone } from './WaterfrontZone';
+import { GateGlyph } from './GateGlyph';
 import { pathStyle } from './pathStyle';
 
 const PX_PER_METER = 12;
@@ -60,18 +61,51 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
 
       {variant.paths.map((p) => {
         const style = pathStyle(p);
+        const pointsAttr = p.points.map((pt) => `${pt.x},${pt.y}`).join(' ');
         return (
-          <polyline
-            key={p.id}
-            points={p.points.map((pt) => `${pt.x},${pt.y}`).join(' ')}
-            fill="none"
-            stroke={style.stroke}
-            strokeWidth={style.strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={style.dasharray}
-            opacity={style.opacity}
-          />
+          <g key={p.id}>
+            <polyline
+              points={pointsAttr}
+              fill="none"
+              stroke={style.stroke}
+              strokeWidth={style.strokeWidth}
+              strokeLinecap="butt"
+              strokeDasharray={style.dasharray}
+              opacity={style.opacity}
+            />
+            {p.category === 'service' && (
+              <polyline points={pointsAttr} fill="none" stroke="#e8dfc8" strokeWidth={0.08} strokeDasharray="0.5,0.6" strokeLinecap="butt" opacity={0.8} />
+            )}
+          </g>
         );
+      })}
+
+      {variant.paths.find((p) => p.id === 'path-entrance') && (
+        <GateGlyph plot={plot} point={variant.paths.find((p) => p.id === 'path-entrance')!.points[0]} bgColor="#fafaf9" />
+      )}
+
+      {variant.utilityNodes.flatMap((n) => {
+        const from = variant.objects.find((o) => o.id === n.objectId);
+        if (!from) return [];
+        return n.connections.flatMap((targetId) => {
+          const target = variant.utilityNodes.find((t) => t.id === targetId);
+          const to = target && variant.objects.find((o) => o.id === target.objectId);
+          if (!to) return [];
+          return [
+            <line
+              key={`${n.id}-${targetId}`}
+              x1={from.transform.x}
+              y1={from.transform.y}
+              x2={to.transform.x}
+              y2={to.transform.y}
+              stroke={n.kind === 'power' ? '#b45309' : '#1d4ed8'}
+              strokeWidth={n.kind === 'power' ? 0.14 : 0.11}
+              strokeDasharray={n.kind === 'power' ? '0.5,0.35' : '0.12,0.3'}
+              strokeLinecap="round"
+              opacity={0.75}
+            />,
+          ];
+        });
       })}
 
       <polygon points={plot.boundary.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#292524" strokeWidth={0.25} />
