@@ -13,6 +13,7 @@ import {
   type Bounds,
 } from './geometry';
 import { computeWaterfrontBounds } from './waterfront';
+import { elevationAt } from './elevation';
 
 // Fraction of the house footprint that's realistically usable for roof-mount
 // PV (one south-facing slope, minus dormers/chimneys/valleys) — a coarse
@@ -261,7 +262,7 @@ function searchBestCandidate(
         });
         if (hardViolation) continue;
 
-        const { score, reasons } = scoreCandidate(transform, entry, placed, houseCenter, bounds, weights, plot.boundary, layout);
+        const { score, reasons } = scoreCandidate(transform, entry, placed, houseCenter, bounds, weights, plot.boundary, layout, plot);
         if (!best || score > best.score) best = { transform, score, reasons };
       }
     }
@@ -278,6 +279,7 @@ function scoreCandidate(
   weights: { access: number; separation: number; sun: number; beauty: number },
   boundary: Point[],
   layout: { spacingPad: number; comfortDist: number; compactPullScale: number },
+  plot: Plot,
 ): { score: number; reasons: string[] } {
   let score = 0;
   const reasons: string[] = [];
@@ -387,6 +389,19 @@ function scoreCandidate(
           reasons.push(`near:${p.typeId}`);
         }
       }
+    }
+  }
+
+  if (entry.id === 'septic' && houseCenter && plot.elevation) {
+    // Gravity drainage: a septic system should sit downhill of the house so
+    // waste flows there on its own rather than needing a lift pump.
+    const septicElevation = elevationAt(plot, transform);
+    const houseElevation = elevationAt(plot, houseCenter);
+    if (septicElevation < houseElevation - 0.05) {
+      score += (houseElevation - septicElevation) * 4;
+      reasons.push('downhill');
+    } else if (septicElevation > houseElevation + 0.05) {
+      score -= (septicElevation - houseElevation) * 6;
     }
   }
 

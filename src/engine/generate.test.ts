@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSampleProject } from '../data/sampleProject';
 import { generateVariants } from './generate';
+import { elevationAt } from './elevation';
 
 describe('generateVariants', () => {
   it('produces 3 distinct variants with placed objects and no crash', () => {
@@ -46,5 +47,19 @@ describe('generateVariants', () => {
       const adjacencyWarnings = variant.warnings.filter((w) => w.ruleId?.includes('adjacency'));
       expect(adjacencyWarnings).toEqual([]);
     }
+  });
+
+  it('sites the septic system downhill of the house on a sloped plot', () => {
+    const project = createSampleProject();
+    project.plot.elevation = { highEdge: 'north', dropM: 6 };
+    const [variant] = generateVariants(project);
+    const house = variant.objects.find((o) => o.typeId === 'house' || o.typeId === 'house-l');
+    const septic = variant.objects.find((o) => o.typeId === 'septic');
+    expect(house).toBeDefined();
+    expect(septic).toBeDefined();
+    const houseElevation = elevationAt(project.plot, house!.transform);
+    const septicElevation = elevationAt(project.plot, septic!.transform);
+    expect(septicElevation).toBeLessThanOrEqual(houseElevation + 0.05);
+    expect(variant.warnings.some((w) => w.ruleId === 'septic-uphill')).toBe(false);
   });
 });

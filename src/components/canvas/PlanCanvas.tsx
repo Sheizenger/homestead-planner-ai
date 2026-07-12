@@ -9,6 +9,7 @@ import { categoryLabel } from '../../i18n/labels';
 import { translateRationale } from '../../i18n/rationale';
 import { ObjectVisual } from './ObjectVisual';
 import { WaterfrontZone } from './WaterfrontZone';
+import { ContourLines } from './ContourLines';
 import { GateGlyph } from './GateGlyph';
 import { pathStyle } from './pathStyle';
 
@@ -268,6 +269,8 @@ export function PlanCanvas() {
         className="block"
       >
         <g>{gridLines}</g>
+
+        <ContourLines plot={project.plot} themeKey={themeKey} />
 
         {layerVisibility.water !== false && <WaterfrontZone plot={project.plot} themeKey={themeKey} locale={locale} />}
 

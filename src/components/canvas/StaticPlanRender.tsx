@@ -8,6 +8,7 @@ import { translateRationale } from '../../i18n/rationale';
 import { translateWarning } from '../../i18n/warnings';
 import { ObjectVisual } from './ObjectVisual';
 import { WaterfrontZone } from './WaterfrontZone';
+import { ContourLines } from './ContourLines';
 import { GateGlyph } from './GateGlyph';
 import { pathStyle } from './pathStyle';
 
@@ -49,6 +50,7 @@ export const StaticPlanRender = forwardRef<SVGSVGElement, StaticPlanRenderProps>
     >
       <rect x={bounds.minX - PADDING_M} y={bounds.minY - PADDING_M} width={worldW} height={worldH} fill="#fafaf9" />
 
+      <ContourLines plot={plot} themeKey="light" />
       <WaterfrontZone plot={plot} themeKey="light" locale={locale} />
 
       {variant.zones.map((z) => (

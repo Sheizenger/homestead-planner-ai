@@ -48,6 +48,16 @@ export interface Waterfront {
   elevationDropM?: number; // river/lake outlet — for micro-hydro feasibility
 }
 
+// A single linear grade across the plot (elevation 0 at the edge opposite
+// `highEdge`, rising to `dropM` at `highEdge`) — a coarse stand-in for a
+// real survey/contour map, but enough to drive gravity-drainage siting
+// (septic downhill of the house) and a real elevation-drop figure for
+// waterfront micro-hydro instead of a purely manual guess.
+export interface PlotElevation {
+  highEdge: WaterfrontEdge;
+  dropM: number;
+}
+
 export interface StructuredInputs {
   householdSize: number;
   climateZone: ClimateZone;
@@ -87,6 +97,7 @@ export interface Plot {
   waterSources: string[];
   gridPower: boolean;
   waterfront?: Waterfront;
+  elevation?: PlotElevation;
   existingObjects: PlotObject_Existing[];
 }
 

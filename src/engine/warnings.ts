@@ -1,9 +1,10 @@
 import type { AnalyticsSnapshot, ClimateZone, Fence, PlanObject, Plot, Warning } from '../domain/types';
 import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../domain/constraints';
 import { CROP_CLIMATE_NOTES } from '../domain/climateData';
-import { OBJECT_LIBRARY } from '../domain/objectLibrary';
+import { OBJECT_LIBRARY, HOUSE_TYPE_IDS } from '../domain/objectLibrary';
 import { distance, distanceToPolygonBoundary, transformAabb, aabbOverlap } from './geometry';
 import { isHydroFeasible } from './waterfront';
+import { elevationAt } from './elevation';
 
 export function computeHydroFeasibilityWarnings(plot: Plot, objects: PlanObject[]): Warning[] {
   const turbine = objects.find((o) => o.typeId === 'micro-hydro');
@@ -17,6 +18,27 @@ export function computeHydroFeasibilityWarnings(plot: Plot, objects: PlanObject[
       messageKey: 'warning.hydroInfeasible',
       ruleId: 'hydro-infeasible',
       objectIds: [turbine.id],
+    },
+  ];
+}
+
+export function computeDrainageWarnings(plot: Plot, objects: PlanObject[]): Warning[] {
+  if (!plot.elevation || plot.elevation.dropM <= 0) return [];
+  const house = objects.find((o) => HOUSE_TYPE_IDS.includes(o.typeId));
+  const septic = objects.find((o) => o.typeId === 'septic');
+  if (!house || !septic) return [];
+  const houseElevation = elevationAt(plot, house.transform);
+  const septicElevation = elevationAt(plot, septic.transform);
+  if (septicElevation <= houseElevation + 0.05) return [];
+  return [
+    {
+      id: 'warn-septic-uphill',
+      severity: 'caution',
+      message: `The septic system sits about ${(septicElevation - houseElevation).toFixed(1)} m uphill of the house on the configured slope — waste won't drain there by gravity and would need a lift pump.`,
+      messageKey: 'warning.septicUphill',
+      messageParams: { drop: (septicElevation - houseElevation).toFixed(1) },
+      ruleId: 'septic-uphill',
+      objectIds: [house.id, septic.id],
     },
   ];
 }
@@ -85,6 +107,7 @@ export function computeWarnings(
   if (householdWarning) warnings.push(householdWarning);
   warnings.push(...computeClimateCropWarnings(climateZone, crops));
   warnings.push(...computeHydroFeasibilityWarnings(plot, objects));
+  warnings.push(...computeDrainageWarnings(plot, objects));
 
   // subjectTypes/relatedTypes can be the same list (e.g. "any two
   // outbuildings"), which would otherwise match a pair in both directions

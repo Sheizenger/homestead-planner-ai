@@ -30,6 +30,8 @@ export function translateRationale(locale: Locale, typeId: string, tokens: strin
         return t(locale, 'rationale.backYard');
       case 'roofMounted':
         return t(locale, 'rationale.roofMounted');
+      case 'downhill':
+        return t(locale, 'rationale.downhill');
       default:
         return kind;
     }

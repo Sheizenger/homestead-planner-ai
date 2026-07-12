@@ -6,6 +6,7 @@ import type {
   LayoutVariant,
   ObjectCategory,
   PlanningMode,
+  PlotElevation,
   Point,
   Project,
   Season,
@@ -106,6 +107,7 @@ interface ProjectState {
   editingPlotShape: boolean;
   toggleEditingPlotShape: () => void;
   updateWaterfront: (waterfront: Waterfront | null) => void;
+  updateElevation: (elevation: PlotElevation | null) => void;
   generate: (mode?: PlanningMode) => void;
   regenerateVariant: (variantId: string) => void;
   setActiveVariant: (id: string) => void;
@@ -302,6 +304,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         ...state.project,
         updatedAt: new Date().toISOString(),
         plot: { ...state.project.plot, waterfront: waterfront ?? undefined },
+      },
+    })),
+
+  updateElevation: (elevation) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        updatedAt: new Date().toISOString(),
+        plot: { ...state.project.plot, elevation: elevation ?? undefined },
       },
     })),
 

@@ -4,6 +4,7 @@ import type { ClimateZone, PlanningMode, WaterfrontEdge, WaterfrontType } from '
 import { parseFreeText } from '../../engine/textParser';
 import { polygonArea, polygonBounds } from '../../engine/geometry';
 import { buildLShapeBoundary, buildRectBoundary, PLOT_CORNERS, type PlotCorner } from '../../engine/plotShapes';
+import { elevationAt } from '../../engine/elevation';
 import { RECOMMENDED_M2_PER_PERSON } from '../../engine/warnings';
 import { t } from '../../i18n/translations';
 
@@ -91,6 +92,7 @@ export function BriefForm() {
   const editingPlotShape = useProjectStore((s) => s.editingPlotShape);
   const toggleEditingPlotShape = useProjectStore((s) => s.toggleEditingPlotShape);
   const updateWaterfront = useProjectStore((s) => s.updateWaterfront);
+  const updateElevation = useProjectStore((s) => s.updateElevation);
   const generate = useProjectStore((s) => s.generate);
   const generating = useProjectStore((s) => s.generating);
   const [selectedMode, setSelectedMode] = useState<PlanningMode>('beauty-balanced');
@@ -109,6 +111,18 @@ export function BriefForm() {
 
   const inputs = project.brief.structuredInputs;
   const waterfront = project.plot.waterfront;
+  const elevation = project.plot.elevation;
+  const terrainDropHint = (() => {
+    if (!elevation || !waterfront) return null;
+    const b = polygonBounds(project.plot.boundary);
+    const edge = waterfront.edge;
+    const isVertical = edge === 'north' || edge === 'south';
+    const x = edge === 'west' ? b.minX : edge === 'east' ? b.maxX : (b.minX + b.maxX) / 2;
+    const y = edge === 'north' ? b.minY : edge === 'south' ? b.maxY : (b.minY + b.maxY) / 2;
+    const a = isVertical ? { x: b.minX, y } : { x, y: b.minY };
+    const c = isVertical ? { x: b.maxX, y } : { x, y: b.maxY };
+    return Math.abs(elevationAt(project.plot, a) - elevationAt(project.plot, c));
+  })();
   const extraction = parseFreeText(project.brief.freeText);
   const bounds = polygonBounds(project.plot.boundary);
   const plotWidth = Math.round(bounds.maxX - bounds.minX);
@@ -364,7 +378,54 @@ export function BriefForm() {
                 />
               </label>
             )}
+            {waterfront.type !== 'pond' && terrainDropHint !== null && (
+              <p className="text-[11px] text-stone-500 dark:text-stone-400">
+                {t(locale, 'brief.terrainDropHint', { drop: terrainDropHint.toFixed(1) })}{' '}
+                <button
+                  type="button"
+                  onClick={() => updateWaterfront({ ...waterfront, elevationDropM: Number(terrainDropHint.toFixed(1)) })}
+                  className="font-medium text-emerald-700 underline hover:text-emerald-800 dark:text-emerald-400"
+                >
+                  {t(locale, 'brief.useThisValue')}
+                </button>
+              </p>
+            )}
             <p className="text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.waterfrontHint')}</p>
+          </div>
+        )}
+      </Section>
+
+      <Section title={t(locale, 'brief.elevation')}>
+        <div className="flex flex-wrap gap-1.5">
+          <Chip active={!elevation} onClick={() => updateElevation(null)}>
+            {t(locale, 'elevation.none')}
+          </Chip>
+          <Chip active={!!elevation} onClick={() => updateElevation({ highEdge: elevation?.highEdge ?? 'north', dropM: elevation?.dropM ?? 2 })}>
+            {t(locale, 'elevation.sloped')}
+          </Chip>
+        </div>
+
+        {elevation && (
+          <div className="mt-2 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {WATERFRONT_EDGE_OPTIONS.map((o) => (
+                <Chip key={o.value} active={elevation.highEdge === o.value} onClick={() => updateElevation({ ...elevation, highEdge: o.value })}>
+                  {t(locale, o.key)}
+                </Chip>
+              ))}
+            </div>
+            <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
+              {t(locale, 'brief.elevationDrop')}
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={elevation.dropM}
+                onChange={(e) => updateElevation({ ...elevation, dropM: Number(e.target.value) })}
+                className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+              />
+            </label>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.elevationHint')}</p>
           </div>
         )}
       </Section>
