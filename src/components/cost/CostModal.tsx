@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useProjectStore, getActiveVariant } from '../../state/projectStore';
 import { computeCostEstimate, findRegion } from '../../engine/costs';
+import { computeMaterialsTakeoff } from '../../engine/materials';
 import { COST_REGIONS, CURRENCIES, CURRENCY_SYMBOLS, convertFromUsd, regionLabel, type CurrencyCode } from '../../domain/costData';
 import { t } from '../../i18n/translations';
-import { categoryLabel, planningModeLabel } from '../../i18n/labels';
+import { categoryLabel, planningModeLabel, objectLabel } from '../../i18n/labels';
 
 function formatMoney(usd: number, currency: CurrencyCode): string {
   const value = convertFromUsd(usd, currency);
@@ -29,8 +30,9 @@ export function CostModal() {
   }, [costRegionId, customLandPriceUsd]);
 
   const estimate = useMemo(() => (variant ? computeCostEstimate(variant, region) : null), [variant, region]);
+  const takeoff = useMemo(() => (variant ? computeMaterialsTakeoff(variant) : null), [variant]);
 
-  if (!isOpen || !variant || !estimate) return null;
+  if (!isOpen || !variant || !estimate || !takeoff) return null;
 
   const countries = [...new Set(COST_REGIONS.filter((r) => r.id !== 'custom').map((r) => r.country))];
   const regionText = costRegionId === 'custom' ? t(locale, 'cost.customLocation') : regionLabel(region);
@@ -128,6 +130,82 @@ export function CostModal() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <h3 className="mt-5 mb-2 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+            {t(locale, 'materials.title')}
+          </h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="overflow-hidden rounded-md border border-stone-200 dark:border-stone-800">
+              <table className="w-full text-left">
+                <thead className="bg-stone-100 text-[11px] uppercase tracking-wide text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+                  <tr>
+                    <th className="px-2.5 py-1.5 font-medium">{t(locale, 'materials.fencing')}</th>
+                    <th className="px-2.5 py-1.5 text-right font-medium">{t(locale, 'materials.lengthM')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                  {takeoff.fences.map((f) => (
+                    <tr key={f.fenceType}>
+                      <td className="px-2.5 py-1.5 text-stone-700 dark:text-stone-200">{t(locale, `fenceType.${f.fenceType}`)}</td>
+                      <td className="px-2.5 py-1.5 text-right text-stone-700 dark:text-stone-200">{f.lengthM.toFixed(0)}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-medium">
+                    <td className="px-2.5 py-1.5 text-stone-800 dark:text-stone-100">{t(locale, 'materials.total')}</td>
+                    <td className="px-2.5 py-1.5 text-right text-stone-800 dark:text-stone-100">{takeoff.totalFenceLengthM.toFixed(0)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-hidden rounded-md border border-stone-200 dark:border-stone-800">
+              <table className="w-full text-left">
+                <thead className="bg-stone-100 text-[11px] uppercase tracking-wide text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+                  <tr>
+                    <th className="px-2.5 py-1.5 font-medium">{t(locale, 'materials.pathsAndDriveway')}</th>
+                    <th className="px-2.5 py-1.5 text-right font-medium">{t(locale, 'materials.areaM2')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                  {takeoff.paths.map((p) => (
+                    <tr key={p.group}>
+                      <td className="px-2.5 py-1.5 text-stone-700 dark:text-stone-200">{t(locale, `materials.pathGroup.${p.group}`)}</td>
+                      <td className="px-2.5 py-1.5 text-right text-stone-700 dark:text-stone-200">{p.areaM2.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-medium">
+                    <td className="px-2.5 py-1.5 text-stone-800 dark:text-stone-100">{t(locale, 'materials.paved')}</td>
+                    <td className="px-2.5 py-1.5 text-right text-stone-800 dark:text-stone-100">{takeoff.totalPavedAreaM2.toFixed(1)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-hidden rounded-md border border-stone-200 dark:border-stone-800 sm:col-span-1">
+              <table className="w-full text-left">
+                <thead className="bg-stone-100 text-[11px] uppercase tracking-wide text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+                  <tr>
+                    <th className="px-2.5 py-1.5 font-medium">{t(locale, 'materials.structure')}</th>
+                    <th className="px-2.5 py-1.5 text-right font-medium">{t(locale, 'materials.areaM2')}</th>
+                  </tr>
+                </thead>
+              </table>
+              <div className="max-h-40 overflow-y-auto">
+                <table className="w-full text-left">
+                  <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {takeoff.structures.map((s, i) => (
+                      <tr key={`${s.typeId}-${i}`}>
+                        <td className="px-2.5 py-1.5 text-stone-700 dark:text-stone-200">
+                          {objectLabel(locale, s.typeId)} <span className="text-stone-400 dark:text-stone-500">({s.widthM.toFixed(1)}×{s.heightM.toFixed(1)})</span>
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right text-stone-700 dark:text-stone-200">{s.areaM2.toFixed(1)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <p className="mt-3 text-[11px] text-stone-500 dark:text-stone-400">
