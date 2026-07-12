@@ -10,6 +10,7 @@ import { translateRationale } from '../../i18n/rationale';
 import { ObjectVisual } from './ObjectVisual';
 import { WaterfrontZone } from './WaterfrontZone';
 import { ContourLines } from './ContourLines';
+import { TraceImageLayer } from './TraceImageLayer';
 import { GateGlyph } from './GateGlyph';
 import { pathStyle } from './pathStyle';
 
@@ -47,6 +48,7 @@ export function PlanCanvas() {
   const select = useProjectStore((s) => s.select);
   const moveObjects = useProjectStore((s) => s.moveObjects);
   const editingPlotShape = useProjectStore((s) => s.editingPlotShape);
+  const traceImage = useProjectStore((s) => s.traceImage);
   const updatePlotBoundary = useProjectStore((s) => s.updatePlotBoundary);
 
   const svgRef = useRef<SVGSVGElement>(null);
@@ -268,6 +270,8 @@ export function PlanCanvas() {
         onPointerDown={handleBackgroundPointerDown}
         className="block"
       >
+        <TraceImageLayer image={traceImage} />
+
         <g>{gridLines}</g>
 
         <ContourLines plot={project.plot} themeKey={themeKey} />

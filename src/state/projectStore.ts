@@ -21,7 +21,7 @@ import { PROJECT_TEMPLATES, buildProjectFromTemplate } from '../data/templates';
 import { generateVariants, generateVariant } from '../engine/generate';
 import { computeAnalytics } from '../engine/analytics';
 import { computeWarnings } from '../engine/warnings';
-import { transformAabb, aabbOverlap } from '../engine/geometry';
+import { transformAabb, aabbOverlap, polygonBounds } from '../engine/geometry';
 import {
   saveProject,
   loadProject,
@@ -63,6 +63,22 @@ function applySnapshot(v: LayoutVariant, snap: EditSnapshot, project: Project): 
 }
 
 type Theme = 'light' | 'dark';
+
+// A user-uploaded reference image (e.g. a satellite/map screenshot) shown as
+// a positionable, scalable backdrop on the canvas so the plot boundary can
+// be traced over it with the existing polygon vertex editor. Deliberately
+// NOT part of Project/Plot — it's a session-only tracing aid (kept out of
+// the persisted/autosaved project so a large data URL never bloats
+// localStorage), not plan data.
+export interface TraceImage {
+  dataUrl: string;
+  naturalWidthPx: number;
+  naturalHeightPx: number;
+  xM: number;
+  yM: number;
+  widthM: number;
+  opacity: number;
+}
 
 function loadInitialLocale(): Locale {
   const stored = getStoredLocale();
@@ -106,6 +122,10 @@ interface ProjectState {
   updatePlotBoundary: (boundary: Point[]) => void;
   editingPlotShape: boolean;
   toggleEditingPlotShape: () => void;
+  traceImage: TraceImage | null;
+  setTraceImage: (image: { dataUrl: string; naturalWidthPx: number; naturalHeightPx: number }) => void;
+  updateTraceImage: (patch: Partial<Pick<TraceImage, 'xM' | 'yM' | 'widthM' | 'opacity'>>) => void;
+  clearTraceImage: () => void;
   updateWaterfront: (waterfront: Waterfront | null) => void;
   updateElevation: (elevation: PlotElevation | null) => void;
   generate: (mode?: PlanningMode) => void;
@@ -198,6 +218,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   isProjectsOpen: false,
   generating: false,
   editingPlotShape: false,
+  traceImage: null,
 
   loadSample: () => {
     const project = createSampleProject();
@@ -297,6 +318,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     })),
 
   toggleEditingPlotShape: () => set((s) => ({ editingPlotShape: !s.editingPlotShape })),
+
+  setTraceImage: (image) =>
+    set((state) => {
+      const bounds = polygonBounds(state.project.plot.boundary);
+      return {
+        traceImage: {
+          ...image,
+          xM: bounds.minX,
+          yM: bounds.minY,
+          widthM: bounds.maxX - bounds.minX,
+          opacity: 0.6,
+        },
+      };
+    }),
+
+  updateTraceImage: (patch) => set((state) => (state.traceImage ? { traceImage: { ...state.traceImage, ...patch } } : {})),
+
+  clearTraceImage: () => set({ traceImage: null }),
 
   updateWaterfront: (waterfront) =>
     set((state) => ({

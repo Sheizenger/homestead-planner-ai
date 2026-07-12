@@ -91,6 +91,10 @@ export function BriefForm() {
   const updatePlotBoundary = useProjectStore((s) => s.updatePlotBoundary);
   const editingPlotShape = useProjectStore((s) => s.editingPlotShape);
   const toggleEditingPlotShape = useProjectStore((s) => s.toggleEditingPlotShape);
+  const traceImage = useProjectStore((s) => s.traceImage);
+  const setTraceImage = useProjectStore((s) => s.setTraceImage);
+  const updateTraceImage = useProjectStore((s) => s.updateTraceImage);
+  const clearTraceImage = useProjectStore((s) => s.clearTraceImage);
   const updateWaterfront = useProjectStore((s) => s.updateWaterfront);
   const updateElevation = useProjectStore((s) => s.updateElevation);
   const generate = useProjectStore((s) => s.generate);
@@ -140,6 +144,21 @@ export function BriefForm() {
     setNotchCorner(corner);
     updatePlotBoundary(buildLShapeBoundary(width, height, nw, nh, corner));
   };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => setTraceImage({ dataUrl, naturalWidthPx: img.naturalWidth, naturalHeightPx: img.naturalHeight });
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const recommendedM2 = inputs.householdSize * RECOMMENDED_M2_PER_PERSON;
   const shortOfNorm = plotAreaM2 < recommendedM2;
   const infraOptions = waterfront ? [...INFRA_OPTIONS, ...WATERFRONT_INFRA_OPTIONS] : INFRA_OPTIONS;
@@ -305,6 +324,81 @@ export function BriefForm() {
             {t(locale, editingPlotShape ? 'brief.plotShapeEditingOn' : 'brief.plotShapeEdit')}
           </button>
           <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.plotShapeEditHint')}</p>
+        </div>
+
+        <div className="mt-3 border-t border-stone-200 pt-3 dark:border-stone-800">
+          <div className="mb-1.5 text-[11px] font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+            {t(locale, 'brief.traceImage')}
+          </div>
+          {!traceImage ? (
+            <>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="block w-full text-[11px] text-stone-600 dark:text-stone-300"
+              />
+              <p className="mt-1.5 text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.traceImageHint')}</p>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <label className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-300">
+                {t(locale, 'brief.traceImageWidth')}
+                <input
+                  type="number"
+                  min={1}
+                  step={0.5}
+                  value={traceImage.widthM}
+                  onChange={(e) => updateTraceImage({ widthM: Number(e.target.value) })}
+                  className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+                />
+              </label>
+              <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+                <label className="flex items-center gap-1.5">
+                  X
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={traceImage.xM}
+                    onChange={(e) => updateTraceImage({ xM: Number(e.target.value) })}
+                    className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+                  />
+                  m
+                </label>
+                <label className="flex items-center gap-1.5">
+                  Y
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={traceImage.yM}
+                    onChange={(e) => updateTraceImage({ yM: Number(e.target.value) })}
+                    className="w-16 rounded border border-stone-300 px-1.5 py-0.5 text-right dark:border-stone-700 dark:bg-stone-900"
+                  />
+                  m
+                </label>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+                {t(locale, 'brief.traceImageOpacity')}
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={traceImage.opacity}
+                  onChange={(e) => updateTraceImage({ opacity: Number(e.target.value) })}
+                  className="flex-1 accent-emerald-700"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={clearTraceImage}
+                className="rounded-md border border-red-300 px-2.5 py-1 text-[11px] text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+              >
+                {t(locale, 'brief.traceImageRemove')}
+              </button>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400">{t(locale, 'brief.traceImageHint2')}</p>
+            </div>
+          )}
         </div>
       </Section>
 
