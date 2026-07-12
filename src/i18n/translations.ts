@@ -47,6 +47,17 @@ const en: Dict = {
   'tab.properties': 'Properties',
   'tab.warnings': 'Warnings',
   'tab.analytics': 'Analytics',
+  'tab.edit': 'Edit',
+
+  // Quick edit (bounded-vocabulary text commands on the active plan)
+  'quickEdit.hint': 'Type a short command to edit the active plan — e.g. move, resize, delete, duplicate, rotate, lock/unlock an object type.',
+  'quickEdit.placeholder': 'e.g. move the greenhouse near the well',
+  'quickEdit.apply': 'Apply',
+  'quickEdit.examplesTitle': 'Try one of these',
+  'quickEdit.notUnderstood': "Didn't understand that command — try one of the examples below.",
+  'quickEdit.noMatch': "That object type isn't in the current plan.",
+  'quickEdit.noRoom': "Couldn't find room to move it there without overlapping something else.",
+  'quickEdit.applied': 'Done — updated {subject} ({count}).',
 
   // Object properties panel
   'props.selectPrompt': 'Select an object on the plan to inspect and edit it.',
@@ -423,6 +434,16 @@ const ru: Dict = {
   'tab.properties': 'Свойства',
   'tab.warnings': 'Предупреждения',
   'tab.analytics': 'Аналитика',
+  'tab.edit': 'Правка',
+
+  'quickEdit.hint': 'Введите короткую команду для редактирования активного плана — например, переместить, изменить размер, удалить, дублировать, повернуть, заблокировать/разблокировать тип объекта.',
+  'quickEdit.placeholder': 'например: передвинь теплицу ближе к колодцу',
+  'quickEdit.apply': 'Применить',
+  'quickEdit.examplesTitle': 'Попробуйте один из примеров',
+  'quickEdit.notUnderstood': 'Команда не распознана — попробуйте один из примеров ниже.',
+  'quickEdit.noMatch': 'Такого типа объекта нет в текущем плане.',
+  'quickEdit.noRoom': 'Не удалось найти место для переноса без пересечения с другими объектами.',
+  'quickEdit.applied': 'Готово — обновлено: {subject} ({count}).',
 
   'props.selectPrompt': 'Выберите объект на плане, чтобы посмотреть и изменить его параметры.',
   'props.multiSelected': 'Выбрано объектов: {count}',
@@ -776,6 +797,16 @@ const de: Dict = {
   'tab.properties': 'Eigenschaften',
   'tab.warnings': 'Warnungen',
   'tab.analytics': 'Analyse',
+  'tab.edit': 'Bearbeiten',
+
+  'quickEdit.hint': 'Geben Sie einen kurzen Befehl ein, um den aktiven Plan zu bearbeiten — z. B. einen Objekttyp verschieben, vergrößern/verkleinern, löschen, duplizieren, drehen, sperren/entsperren.',
+  'quickEdit.placeholder': 'z. B. das Gewächshaus näher an den Brunnen verschieben',
+  'quickEdit.apply': 'Anwenden',
+  'quickEdit.examplesTitle': 'Probieren Sie eines davon',
+  'quickEdit.notUnderstood': 'Befehl nicht verstanden — probieren Sie eines der Beispiele unten.',
+  'quickEdit.noMatch': 'Dieser Objekttyp ist im aktuellen Plan nicht vorhanden.',
+  'quickEdit.noRoom': 'Kein Platz gefunden, um es dorthin zu verschieben, ohne etwas zu überlappen.',
+  'quickEdit.applied': 'Erledigt — aktualisiert: {subject} ({count}).',
 
   'props.selectPrompt': 'Wählen Sie ein Objekt im Plan aus, um es zu prüfen und zu bearbeiten.',
   'props.multiSelected': '{count} Objekte ausgewählt',
@@ -1129,6 +1160,16 @@ const es: Dict = {
   'tab.properties': 'Propiedades',
   'tab.warnings': 'Avisos',
   'tab.analytics': 'Análisis',
+  'tab.edit': 'Editar',
+
+  'quickEdit.hint': 'Escriba un comando corto para editar el plano activo — por ejemplo, mover, redimensionar, eliminar, duplicar, rotar, bloquear/desbloquear un tipo de objeto.',
+  'quickEdit.placeholder': 'p. ej. mover el invernadero cerca del pozo',
+  'quickEdit.apply': 'Aplicar',
+  'quickEdit.examplesTitle': 'Pruebe uno de estos',
+  'quickEdit.notUnderstood': 'No se entendió ese comando — pruebe uno de los ejemplos de abajo.',
+  'quickEdit.noMatch': 'Ese tipo de objeto no está en el plano actual.',
+  'quickEdit.noRoom': 'No se encontró espacio para moverlo sin superponerse con otra cosa.',
+  'quickEdit.applied': 'Hecho — actualizado: {subject} ({count}).',
 
   'props.selectPrompt': 'Seleccione un objeto en el plano para verlo y editarlo.',
   'props.multiSelected': '{count} objetos seleccionados',
@@ -1482,6 +1523,16 @@ const fr: Dict = {
   'tab.properties': 'Propriétés',
   'tab.warnings': 'Avertissements',
   'tab.analytics': 'Analyse',
+  'tab.edit': 'Modifier',
+
+  'quickEdit.hint': 'Tapez une courte commande pour modifier le plan actif — par ex. déplacer, redimensionner, supprimer, dupliquer, faire pivoter, verrouiller/déverrouiller un type d’objet.',
+  'quickEdit.placeholder': "ex. déplacer la serre près du puits",
+  'quickEdit.apply': 'Appliquer',
+  'quickEdit.examplesTitle': "Essayez l'un de ceux-ci",
+  'quickEdit.notUnderstood': "Commande non comprise — essayez l'un des exemples ci-dessous.",
+  'quickEdit.noMatch': "Ce type d'objet n'est pas dans le plan actuel.",
+  'quickEdit.noRoom': "Impossible de trouver de la place pour le déplacer sans chevaucher autre chose.",
+  'quickEdit.applied': 'Terminé — mis à jour : {subject} ({count}).',
 
   'props.selectPrompt': 'Sélectionnez un objet sur le plan pour l’inspecter et le modifier.',
   'props.multiSelected': '{count} objets sélectionnés',

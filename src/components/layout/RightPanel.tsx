@@ -4,13 +4,15 @@ import { t } from '../../i18n/translations';
 import { ObjectPropertiesPanel } from '../panels/ObjectPropertiesPanel';
 import { WarningsList } from '../panels/WarningsList';
 import { AnalyticsPanel } from '../panels/AnalyticsPanel';
+import { QuickEditPanel } from '../panels/QuickEditPanel';
 
-type Tab = 'properties' | 'warnings' | 'analytics';
+type Tab = 'properties' | 'warnings' | 'analytics' | 'edit';
 
 const TAB_KEYS: Record<Tab, string> = {
   properties: 'tab.properties',
   warnings: 'tab.warnings',
   analytics: 'tab.analytics',
+  edit: 'tab.edit',
 };
 
 export function RightPanel() {
@@ -20,7 +22,7 @@ export function RightPanel() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex border-b border-stone-200 text-xs dark:border-stone-800">
-        {(['properties', 'warnings', 'analytics'] as Tab[]).map((tb) => (
+        {(['properties', 'warnings', 'analytics', 'edit'] as Tab[]).map((tb) => (
           <button
             key={tb}
             onClick={() => setTab(tb)}
@@ -38,6 +40,7 @@ export function RightPanel() {
         {tab === 'properties' && <ObjectPropertiesPanel />}
         {tab === 'warnings' && <WarningsList />}
         {tab === 'analytics' && <AnalyticsPanel />}
+        {tab === 'edit' && <QuickEditPanel />}
       </div>
     </div>
   );
