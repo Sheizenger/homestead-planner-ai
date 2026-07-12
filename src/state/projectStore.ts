@@ -16,6 +16,7 @@ import type {
 } from '../domain/types';
 import { ZONE_CATEGORY_ORDER } from '../domain/categories';
 import { createBlankProject, createSampleProject } from '../data/sampleProject';
+import { PROJECT_TEMPLATES, buildProjectFromTemplate } from '../data/templates';
 import { generateVariants, generateVariant } from '../engine/generate';
 import { computeAnalytics } from '../engine/analytics';
 import { computeWarnings } from '../engine/warnings';
@@ -92,6 +93,7 @@ interface ProjectState {
 
   loadSample: () => void;
   newProject: (name: string, width: number, height: number) => void;
+  newProjectFromTemplate: (templateId: string, name: string, width: number, height: number) => void;
   switchToProject: (id: string) => void;
   deleteSavedProject: (id: string) => void;
   importProjectFromJson: (json: string) => { ok: true } | { ok: false; error: string };
@@ -203,6 +205,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   newProject: (name, width, height) => {
     const project = createBlankProject(name, width, height);
+    set({ project, selectedObjectIds: [], isProjectsOpen: false });
+  },
+
+  newProjectFromTemplate: (templateId, name, width, height) => {
+    const template = PROJECT_TEMPLATES.find((t) => t.id === templateId);
+    const project = template
+      ? buildProjectFromTemplate(template, name, width, height)
+      : createBlankProject(name, width, height);
     set({ project, selectedObjectIds: [], isProjectsOpen: false });
   },
 
