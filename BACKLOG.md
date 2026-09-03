@@ -7,16 +7,19 @@ govern how these are built.
 
 In order — each stage assumes the previous one landed.
 
-1. **Fixtures.** Node script over the TypeScript engine: matrix of plot
-   shapes (rect, L-shape, waterfront, sloped, undersized), all four planning
-   modes, several seeds. Dumps objects with transforms, paths, fences,
-   utility nodes, warnings, and analytics to `fixtures/`. Regenerated in CI
-   so drift between the two engines shows up as a failing job.
-2. **Domain and geometry.** Swift types, `geometry`, `plotShapes`. Existing
-   `*.test.ts` cases port to swift-testing alongside. `mulberry32` and the
-   `jsRound` half-breaking rule are done and pinned against the fixtures.
-3. **Planner.** `sizing`, `placement`, `pathsAndFences`, `generate`. Done
-   when every fixture matches.
+1. ~~**Fixtures.**~~ Done. 48 in `fixtures/`, six scenarios across four modes
+   and two seeds, plus `rng.json` and `objectLibrary.json`. `npm run fixtures`
+   regenerates; CI fails if the result differs from what is committed.
+2. ~~**Domain and geometry.**~~ Done. Types, `mulberry32`, `jsRound`,
+   polygons, transforms, plot shapes and the object catalog, each pinned
+   against the reference data.
+3. **Planner.** `sizing`, `placement`, `pathsAndFences`, `generate`,
+   `textParser`, `utilityConnections`. Nothing ported yet — this is the next
+   stage, and the largest. Done when every fixture matches.
+
+   Watch the seven `.sort()` calls with tying comparators: JavaScript's sort
+   is stable and Swift's is not, so ties need an explicit id tie-break or
+   placement silently shifts. The fixtures exist to catch exactly this.
 4. **Rules and analytics.** `analytics`, `warnings`, `constraints`, `costs`,
    `materials`, `elevation`, `waterfront`. Built with the fixes below folded
    in rather than ported and corrected afterwards:
