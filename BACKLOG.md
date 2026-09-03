@@ -77,6 +77,23 @@ being fixed in `src/`.
 - `persistence.ts:26` serialises every variant's 40-deep history into
   `localStorage`, and swallows the quota error, so autosave dies silently.
 
+**Geometry the port deliberately diverges from**
+
+Both are wrong in `src/`, both are reachable from the UI, and neither is
+covered by a test — which is how they survived. The Swift implementations are
+correct and say so at the call site; fixtures avoid the affected inputs so the
+divergence cannot mask a genuine porting error.
+
+- `buildLShapeBoundary` (`engine/plotShapes.ts:30`) builds the `sw` case as a
+  `notchWidth × (height - notchHeight)` bite out of the *north*-west. A 60×45
+  plot with a 20×15 notch comes out at 2100 m² instead of 2400, with the
+  missing corner on the wrong side. The other three corners are right.
+- `resizeFromCorner` (`engine/geometry.ts:195`) offsets the new centre by
+  `-cornerSign`, walking away from the corner being dragged. Dragging the
+  bottom-right of an 8×4 at (10,10) out to (20,16) lands the rect at corners
+  (-8,0)…(6,8): it flies up and left, and the corner meant to stay pinned
+  becomes the opposite one. Every resize in the web app does this.
+
 **Missing and dead**
 
 - No way to add an object: the store has `duplicateObjects` and no
