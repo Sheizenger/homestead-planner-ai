@@ -12,6 +12,7 @@
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Brief, LayoutVariant, PlanningMode, Plot, Project } from '../src/domain/types';
+import { OBJECT_LIBRARY } from '../src/domain/objectLibrary';
 import { generateVariant } from '../src/engine/generate';
 import { mulberry32 } from '../src/engine/placement';
 import { buildLShapeBoundary, buildRectBoundary } from '../src/engine/plotShapes';
@@ -216,6 +217,12 @@ function main() {
     }),
   );
   writeFileSync(join(OUT_DIR, 'rng.json'), JSON.stringify({ mulberry32: rng }, null, 1) + '\n');
+
+  // The object catalog is data, and the Swift copy is hand-owned code that
+  // will evolve past this one. Emitting it here gives the port a parity test,
+  // so a transcription slip in 30 entries of dimensions and flags fails
+  // loudly instead of quietly mis-sizing a paddock.
+  writeFileSync(join(OUT_DIR, 'objectLibrary.json'), JSON.stringify(OBJECT_LIBRARY, null, 1) + '\n');
 
   console.log(`Wrote ${index.length} fixtures to ${OUT_DIR}`);
 }
