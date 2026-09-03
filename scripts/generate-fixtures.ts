@@ -13,6 +13,7 @@ import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Brief, LayoutVariant, PlanningMode, Plot, Project } from '../src/domain/types';
 import { generateVariant } from '../src/engine/generate';
+import { mulberry32 } from '../src/engine/placement';
 import { buildLShapeBoundary, buildRectBoundary } from '../src/engine/plotShapes';
 
 const OUT_DIR = join(import.meta.dirname, '..', 'fixtures');
@@ -203,6 +204,19 @@ function main() {
   }
 
   writeFileSync(join(OUT_DIR, 'index.json'), JSON.stringify({ fixtures: index }, null, 1) + '\n');
+
+  // Every placement decision is downstream of this generator, so a Swift port
+  // that diverges here diverges everywhere. Reference draws are emitted
+  // separately from the layouts so the failure points at the cause rather
+  // than at 48 mismatched plans.
+  const rng = Object.fromEntries(
+    [42, 59, 0, 1, 2147483647, 123456789].map((seed) => {
+      const rand = mulberry32(seed);
+      return [String(seed), Array.from({ length: 8 }, () => rand())];
+    }),
+  );
+  writeFileSync(join(OUT_DIR, 'rng.json'), JSON.stringify({ mulberry32: rng }, null, 1) + '\n');
+
   console.log(`Wrote ${index.length} fixtures to ${OUT_DIR}`);
 }
 

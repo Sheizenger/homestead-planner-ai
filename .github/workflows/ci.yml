@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  # The frozen web app. Its tests still run because it is the reference
+  # implementation the Swift port is verified against — a regression here
+  # would silently invalidate the golden fixtures.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      # Regenerating must reproduce the committed fixtures byte for byte.
+      # A diff here means the TypeScript engine changed and the Swift port is
+      # now being verified against a stale reference.
+      - name: Fixtures are reproducible
+        run: |
+          npm run fixtures
+          git diff --exit-code --stat fixtures/ || {
+            echo "::error::Committed fixtures no longer match the engine that generates them. Run 'npm run fixtures' and commit the result."
+            exit 1
+          }
+
+  engine:
+    runs-on: ubuntu-latest
+    container: swift:6.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        working-directory: swift
+        run: swift build --build-tests
+      - name: Test
+        working-directory: swift
+        run: swift test

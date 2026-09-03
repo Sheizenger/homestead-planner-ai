@@ -12,8 +12,9 @@ In order — each stage assumes the previous one landed.
    modes, several seeds. Dumps objects with transforms, paths, fences,
    utility nodes, warnings, and analytics to `fixtures/`. Regenerated in CI
    so drift between the two engines shows up as a failing job.
-2. **Domain and geometry.** Swift types, `mulberry32`, `geometry`,
-   `plotShapes`. Existing `*.test.ts` cases port to XCTest alongside.
+2. **Domain and geometry.** Swift types, `geometry`, `plotShapes`. Existing
+   `*.test.ts` cases port to swift-testing alongside. `mulberry32` and the
+   `jsRound` half-breaking rule are done and pinned against the fixtures.
 3. **Planner.** `sizing`, `placement`, `pathsAndFences`, `generate`. Done
    when every fixture matches.
 4. **Rules and analytics.** `analytics`, `warnings`, `constraints`, `costs`,

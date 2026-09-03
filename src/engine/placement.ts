@@ -59,7 +59,7 @@ function tierOf(typeId: string): number {
   return idx === -1 ? PLACEMENT_TIERS.length : idx;
 }
 
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let a = seed;
   return function rand() {
     a |= 0;
