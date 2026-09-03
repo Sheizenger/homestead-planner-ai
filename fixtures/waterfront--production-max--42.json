@@ -1,0 +1,556 @@
+{
+ "covers": "Water edge plus the infrastructure only a waterfront unlocks.",
+ "input": {
+  "plot": {
+   "id": "plot-fixture",
+   "northAngleDeg": 0,
+   "climateZone": "temperate",
+   "terrainSlope": "flat",
+   "soilType": "loam",
+   "waterSources": [],
+   "gridPower": true,
+   "existingObjects": [],
+   "boundary": [
+    {
+     "x": 0,
+     "y": 0
+    },
+    {
+     "x": 50,
+     "y": 0
+    },
+    {
+     "x": 50,
+     "y": 42
+    },
+    {
+     "x": 0,
+     "y": 42
+    }
+   ],
+   "waterfront": {
+    "type": "river",
+    "edge": "west",
+    "widthM": 10,
+    "flowSpeedMps": 0.8,
+    "elevationDropM": 1.5
+   }
+  },
+  "brief": {
+   "freeText": "",
+   "structuredInputs": {
+    "householdSize": 3,
+    "climateZone": "temperate",
+    "terrainSlope": "flat",
+    "soilType": "loam",
+    "waterSources": [],
+    "gridPower": true,
+    "priorities": [
+     "beauty-balanced"
+    ],
+    "animals": [],
+    "crops": [
+     "vegetable",
+     "berries"
+    ],
+    "infrastructure": [
+     "dock",
+     "micro-hydro",
+     "water-tank",
+     "banya"
+    ],
+    "aestheticPreference": 50,
+    "houseSizePreset": "medium",
+    "houseShape": "rect"
+   }
+  },
+  "mode": "production-max",
+  "seed": 42
+ },
+ "output": {
+  "strategyLabel": "Production-Maximizing",
+  "mode": "production-max",
+  "seed": 42,
+  "zones": [],
+  "objects": [
+   {
+    "id": "obj-house-0-822788",
+    "typeId": "house",
+    "category": "residential",
+    "transform": {
+     "x": 27.037256803025958,
+     "y": 36.72470679411199,
+     "width": 12,
+     "height": 10,
+     "rotationDeg": 0
+    },
+    "label": "House",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "roadFacing",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-shed-1-753821",
+    "typeId": "shed",
+    "category": "storage",
+    "transform": {
+     "x": 25.83245682505658,
+     "y": 24.159743037668523,
+     "width": 3,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Tool Shed",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-dock-2-613416",
+    "typeId": "dock",
+    "category": "leisure",
+    "transform": {
+     "x": 8.780077958921902,
+     "y": 26.99574843153823,
+     "width": 6,
+     "height": 2.5,
+     "rotationDeg": 0
+    },
+    "label": "Dock",
+    "locked": false,
+    "layerId": "leisure",
+    "metadata": {
+     "rationaleTokens": [
+      "backYard"
+     ]
+    }
+   },
+   {
+    "id": "obj-water-tank-3-436140",
+    "typeId": "water-tank",
+    "category": "water",
+    "transform": {
+     "x": 13.593795110844075,
+     "y": 35.85346754308557,
+     "width": 3,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Water Tank",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": []
+    }
+   },
+   {
+    "id": "obj-micro-hydro-4-607215",
+    "typeId": "micro-hydro",
+    "category": "energy",
+    "transform": {
+     "x": 5.606355400918983,
+     "y": 35.669643012993035,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Micro-Hydro Turbine",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": []
+    }
+   },
+   {
+    "id": "obj-vegetable-area-5-8270",
+    "typeId": "vegetable-area",
+    "category": "food-annual",
+    "transform": {
+     "x": 43.43817836267408,
+     "y": 35.01588581812102,
+     "width": 10,
+     "height": 12,
+     "rotationDeg": 0
+    },
+    "label": "Vegetable Area",
+    "locked": false,
+    "layerId": "food-annual",
+    "metadata": {
+     "rationaleTokens": [
+      "sunClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-berry-rows-6-375682",
+    "typeId": "berry-rows",
+    "category": "food-perennial",
+    "transform": {
+     "x": 38.79916754530708,
+     "y": 19.981013993711926,
+     "width": 11.401754250991381,
+     "height": 6.841052550594828,
+     "rotationDeg": 0
+    },
+    "label": "Berry Rows",
+    "locked": false,
+    "layerId": "food-perennial",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "sunClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-patio-7-334799",
+    "typeId": "patio",
+    "category": "leisure",
+    "transform": {
+     "x": 15.217267797421664,
+     "y": 17.714047847199254,
+     "width": 6,
+     "height": 5,
+     "rotationDeg": 0
+    },
+    "label": "Patio",
+    "locked": false,
+    "layerId": "leisure",
+    "metadata": {
+     "rationaleTokens": [
+      "backYard"
+     ]
+    }
+   },
+   {
+    "id": "obj-banya-8-48573",
+    "typeId": "banya",
+    "category": "leisure",
+    "transform": {
+     "x": 26.676835039735305,
+     "y": 9.302140259754378,
+     "width": 5,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Banya",
+    "locked": false,
+    "layerId": "leisure",
+    "metadata": {
+     "rationaleTokens": [
+      "backYard",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-compost-9-512770",
+    "typeId": "compost",
+    "category": "utility",
+    "transform": {
+     "x": 36.54827058481751,
+     "y": 9.095190597872715,
+     "width": 4,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Compost Yard",
+    "locked": false,
+    "layerId": "utility",
+    "metadata": {
+     "rationaleTokens": []
+    }
+   }
+  ],
+  "paths": [
+   {
+    "id": "path-entrance",
+    "points": [
+     {
+      "x": 27.037256803025958,
+      "y": 42
+     },
+     {
+      "x": 27.037256803025958,
+      "y": 41.72470679411199
+     }
+    ],
+    "widthM": 1.4,
+    "surfaceType": "paved",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-shed-1-753821",
+    "points": [
+     {
+      "x": 27.037256803025958,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 27.037256803025958,
+      "y": 26.159743037668523
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-dock-2-613416",
+    "points": [
+     {
+      "x": 21.037256803025958,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 11.780077958921902,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 11.780077958921902,
+      "y": 28.24574843153823
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-micro-hydro-4-607215",
+    "points": [
+     {
+      "x": 21.037256803025958,
+      "y": 36.669643012993035
+     },
+     {
+      "x": 6.606355400918983,
+      "y": 36.669643012993035
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-vegetable-area-5-8270",
+    "points": [
+     {
+      "x": 33.037256803025954,
+      "y": 36.72470679411199
+     },
+     {
+      "x": 38.43817836267408,
+      "y": 36.72470679411199
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-berry-rows-6-375682",
+    "points": [
+     {
+      "x": 33.037256803025954,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 33.09829041981139,
+      "y": 23.401540269009338
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-patio-7-334799",
+    "points": [
+     {
+      "x": 21.037256803025958,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 18.217267797421663,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 18.217267797421663,
+      "y": 20.214047847199254
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-banya-8-48573",
+    "points": [
+     {
+      "x": 27.037256803025958,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 27.037256803025958,
+      "y": 11.302140259754378
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-compost-9-512770",
+    "points": [
+     {
+      "x": 33.037256803025954,
+      "y": 31.724706794111988
+     },
+     {
+      "x": 33.037256803025954,
+      "y": 10.595190597872715
+     },
+     {
+      "x": 34.54827058481751,
+      "y": 10.595190597872715
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   }
+  ],
+  "fences": [
+   {
+    "id": "fence-perimeter",
+    "points": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 50,
+      "y": 0
+     },
+     {
+      "x": 50,
+      "y": 42
+     },
+     {
+      "x": 0,
+      "y": 42
+     }
+    ],
+    "fenceType": "perimeter",
+    "gated": true
+   },
+   {
+    "id": "fence-obj-water-tank-3-436140",
+    "points": [
+     {
+      "x": 11.493795110844076,
+      "y": 33.75346754308557
+     },
+     {
+      "x": 15.693795110844075,
+      "y": 33.75346754308557
+     },
+     {
+      "x": 15.693795110844075,
+      "y": 37.95346754308557
+     },
+     {
+      "x": 11.493795110844076,
+      "y": 37.95346754308557
+     }
+    ],
+    "fenceType": "decorative",
+    "gated": false
+   },
+   {
+    "id": "fence-obj-micro-hydro-4-607215",
+    "points": [
+     {
+      "x": 4.0063554009189835,
+      "y": 34.06964301299303
+     },
+     {
+      "x": 7.206355400918983,
+      "y": 34.06964301299303
+     },
+     {
+      "x": 7.206355400918983,
+      "y": 37.269643012993036
+     },
+     {
+      "x": 4.0063554009189835,
+      "y": 37.269643012993036
+     }
+    ],
+    "fenceType": "garden",
+    "gated": false
+   }
+  ],
+  "utilityNodes": [],
+  "warnings": [],
+  "analytics": {
+   "totalAreaM2": 2100,
+   "allocatedAreaM2": 420,
+   "unallocatedAreaM2": 1680,
+   "byCategory": [
+    {
+     "category": "residential",
+     "areaM2": 120,
+     "percent": 5.714285714285714
+    },
+    {
+     "category": "food-annual",
+     "areaM2": 120,
+     "percent": 5.714285714285714
+    },
+    {
+     "category": "food-perennial",
+     "areaM2": 78.00000000000001,
+     "percent": 3.7142857142857153
+    },
+    {
+     "category": "utility",
+     "areaM2": 12,
+     "percent": 0.5714285714285714
+    },
+    {
+     "category": "water",
+     "areaM2": 9,
+     "percent": 0.4285714285714286
+    },
+    {
+     "category": "energy",
+     "areaM2": 4,
+     "percent": 0.19047619047619047
+    },
+    {
+     "category": "storage",
+     "areaM2": 12,
+     "percent": 0.5714285714285714
+    },
+    {
+     "category": "leisure",
+     "areaM2": 65,
+     "percent": 3.0952380952380953
+    }
+   ],
+   "estimatedFoodProductionScore": 20.742857142857144,
+   "maintenanceComplexityScore": 3.1828571428571424
+  }
+ }
+}

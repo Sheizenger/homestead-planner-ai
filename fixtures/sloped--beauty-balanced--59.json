@@ -1,0 +1,726 @@
+{
+ "covers": "Elevation model engaged — terrain-sensitive placement and contour-driven rules.",
+ "input": {
+  "plot": {
+   "id": "plot-fixture",
+   "northAngleDeg": 0,
+   "climateZone": "temperate",
+   "terrainSlope": "gentle",
+   "soilType": "loam",
+   "waterSources": [],
+   "gridPower": true,
+   "existingObjects": [],
+   "boundary": [
+    {
+     "x": 0,
+     "y": 0
+    },
+    {
+     "x": 50,
+     "y": 0
+    },
+    {
+     "x": 50,
+     "y": 42
+    },
+    {
+     "x": 0,
+     "y": 42
+    }
+   ],
+   "elevation": {
+    "highEdge": "north",
+    "dropM": 3
+   }
+  },
+  "brief": {
+   "freeText": "",
+   "structuredInputs": {
+    "householdSize": 4,
+    "climateZone": "temperate",
+    "terrainSlope": "gentle",
+    "soilType": "loam",
+    "waterSources": [],
+    "gridPower": true,
+    "priorities": [
+     "beauty-balanced"
+    ],
+    "animals": [],
+    "crops": [
+     "potato",
+     "raised-beds",
+     "orchard"
+    ],
+    "infrastructure": [
+     "solar",
+     "well",
+     "rainwater-cistern"
+    ],
+    "aestheticPreference": 50,
+    "houseSizePreset": "medium",
+    "houseShape": "rect"
+   }
+  },
+  "mode": "beauty-balanced",
+  "seed": 59
+ },
+ "output": {
+  "strategyLabel": "Beauty-Balanced",
+  "mode": "beauty-balanced",
+  "seed": 59,
+  "zones": [
+   {
+    "id": "zone-future-expansion",
+    "category": "future-expansion",
+    "boundary": [
+     {
+      "x": 36,
+      "y": 0
+     },
+     {
+      "x": 46,
+      "y": 0
+     },
+     {
+      "x": 46,
+      "y": 8.4
+     },
+     {
+      "x": 36,
+      "y": 8.4
+     }
+    ],
+    "label": "Future Expansion",
+    "metadata": {
+     "reservedForm": "user-defined future use"
+    },
+    "locked": false
+   }
+  ],
+  "objects": [
+   {
+    "id": "obj-house-0-564163",
+    "typeId": "house",
+    "category": "residential",
+    "transform": {
+     "x": 9.028862233855762,
+     "y": 36.69235089091817,
+     "width": 12,
+     "height": 10,
+     "rotationDeg": 0
+    },
+    "label": "House",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "roadFacing",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-shed-1-949134",
+    "typeId": "shed",
+    "category": "storage",
+    "transform": {
+     "x": 9.284474739374128,
+     "y": 25.704784603149164,
+     "width": 4,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Tool Shed",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-solar-array-2-825557",
+    "typeId": "solar-array",
+    "category": "energy",
+    "transform": {
+     "x": 9.828862233855762,
+     "y": 35.69235089091817,
+     "width": 8,
+     "height": 5,
+     "rotationDeg": 0
+    },
+    "label": "Solar Panels",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "roofMounted": true,
+     "rationaleTokens": [
+      "roofMounted"
+     ]
+    }
+   },
+   {
+    "id": "obj-battery-room-3-683287",
+    "typeId": "battery-room",
+    "category": "energy",
+    "transform": {
+     "x": 21.158961799868848,
+     "y": 37.31552396033658,
+     "width": 3,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Battery Room",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "near:solar-array",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-rainwater-cistern-4-696206",
+    "typeId": "rainwater-cistern",
+    "category": "water",
+    "transform": {
+     "x": 1.3718922241474503,
+     "y": 25.436057158187033,
+     "width": 2.5,
+     "height": 2.5,
+     "rotationDeg": 0
+    },
+    "label": "Rainwater Cistern",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-inverter-room-5-6916",
+    "typeId": "inverter-room",
+    "category": "energy",
+    "transform": {
+     "x": 21.937209227331913,
+     "y": 29.45724768000655,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Inverter Room",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-well-6-674909",
+    "typeId": "well",
+    "category": "water",
+    "transform": {
+     "x": 21.786533747287468,
+     "y": 21.882808904652485,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Well",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-pump-7-249292",
+    "typeId": "pump",
+    "category": "water",
+    "transform": {
+     "x": 21.811954110185617,
+     "y": 14.577985512721352,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Pump House",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "near:well",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-orchard-trees-8-818689",
+    "typeId": "orchard-trees",
+    "category": "food-perennial",
+    "transform": {
+     "x": 34.53306823797757,
+     "y": 30.900181534409057,
+     "width": 14,
+     "height": 18,
+     "rotationDeg": 0
+    },
+    "label": "Orchard",
+    "locked": false,
+    "layerId": "food-perennial",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "sunClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-potato-area-9-822471",
+    "typeId": "potato-area",
+    "category": "food-annual",
+    "transform": {
+     "x": 9.983894814968478,
+     "y": 10.27924814401483,
+     "width": 11.547005383792515,
+     "height": 17.32050807568877,
+     "rotationDeg": 0
+    },
+    "label": "Potato Field",
+    "locked": false,
+    "layerId": "food-annual",
+    "metadata": {
+     "rationaleTokens": [
+      "sunClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-raised-beds-10-204837",
+    "typeId": "raised-beds",
+    "category": "food-annual",
+    "transform": {
+     "x": 32.53132077754708,
+     "y": 13.669177844084334,
+     "width": 8,
+     "height": 6,
+     "rotationDeg": 0
+    },
+    "label": "Raised Beds",
+    "locked": false,
+    "layerId": "food-annual",
+    "metadata": {
+     "rationaleTokens": [
+      "sunClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-patio-11-179961",
+    "typeId": "patio",
+    "category": "leisure",
+    "transform": {
+     "x": 31.562987058714498,
+     "y": 2.521706221322529,
+     "width": 6,
+     "height": 5,
+     "rotationDeg": 0
+    },
+    "label": "Patio",
+    "locked": false,
+    "layerId": "leisure",
+    "metadata": {
+     "rationaleTokens": [
+      "backYard",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-compost-12-175319",
+    "typeId": "compost",
+    "category": "utility",
+    "transform": {
+     "x": 42.523996618168894,
+     "y": 14.961542601557449,
+     "width": 3,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Compost Yard",
+    "locked": false,
+    "layerId": "utility",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   }
+  ],
+  "paths": [
+   {
+    "id": "path-entrance",
+    "points": [
+     {
+      "x": 9.028862233855762,
+      "y": 42
+     },
+     {
+      "x": 9.028862233855762,
+      "y": 41.69235089091817
+     }
+    ],
+    "widthM": 1.4,
+    "surfaceType": "paved",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-shed-1-949134",
+    "points": [
+     {
+      "x": 9.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 9.028862233855762,
+      "y": 27.204784603149164
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-battery-room-3-683287",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 36.69235089091817
+     },
+     {
+      "x": 19.658961799868848,
+      "y": 36.69235089091817
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-inverter-room-5-6916",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 20.937209227331913,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 20.937209227331913,
+      "y": 30.45724768000655
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-raised-beds-10-204837",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 28.53132077754708,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 28.53132077754708,
+      "y": 16.669177844084334
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-patio-11-179961",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 15.028862233855762,
+      "y": 5.021706221322529
+     },
+     {
+      "x": 28.562987058714498,
+      "y": 5.021706221322529
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-compost-12-175319",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 41.023996618168894,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 41.023996618168894,
+      "y": 16.961542601557447
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   }
+  ],
+  "fences": [
+   {
+    "id": "fence-perimeter",
+    "points": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 50,
+      "y": 0
+     },
+     {
+      "x": 50,
+      "y": 42
+     },
+     {
+      "x": 0,
+      "y": 42
+     }
+    ],
+    "fenceType": "perimeter",
+    "gated": true
+   },
+   {
+    "id": "fence-obj-rainwater-cistern-4-696206",
+    "points": [
+     {
+      "x": -0.4781077758525497,
+      "y": 23.58605715818703
+     },
+     {
+      "x": 3.2218922241474504,
+      "y": 23.58605715818703
+     },
+     {
+      "x": 3.2218922241474504,
+      "y": 27.286057158187035
+     },
+     {
+      "x": -0.4781077758525497,
+      "y": 27.286057158187035
+     }
+    ],
+    "fenceType": "decorative",
+    "gated": false
+   },
+   {
+    "id": "fence-obj-well-6-674909",
+    "points": [
+     {
+      "x": 20.186533747287466,
+      "y": 20.282808904652484
+     },
+     {
+      "x": 23.38653374728747,
+      "y": 20.282808904652484
+     },
+     {
+      "x": 23.38653374728747,
+      "y": 23.482808904652487
+     },
+     {
+      "x": 20.186533747287466,
+      "y": 23.482808904652487
+     }
+    ],
+    "fenceType": "decorative",
+    "gated": false
+   }
+  ],
+  "utilityNodes": [
+   {
+    "id": "util-obj-solar-array-2-825557",
+    "objectId": "obj-solar-array-2-825557",
+    "type": "solar-array",
+    "kind": "power",
+    "connections": [
+     "util-obj-battery-room-3-683287"
+    ]
+   },
+   {
+    "id": "util-obj-battery-room-3-683287",
+    "objectId": "obj-battery-room-3-683287",
+    "type": "battery-room",
+    "kind": "power",
+    "connections": [
+     "util-obj-inverter-room-5-6916"
+    ]
+   },
+   {
+    "id": "util-obj-inverter-room-5-6916",
+    "objectId": "obj-inverter-room-5-6916",
+    "type": "inverter-room",
+    "kind": "power",
+    "connections": []
+   },
+   {
+    "id": "util-obj-well-6-674909",
+    "objectId": "obj-well-6-674909",
+    "type": "well",
+    "kind": "water",
+    "connections": [
+     "util-obj-pump-7-249292"
+    ]
+   },
+   {
+    "id": "util-obj-pump-7-249292",
+    "objectId": "obj-pump-7-249292",
+    "type": "pump",
+    "kind": "water",
+    "connections": [
+     "util-obj-rainwater-cistern-4-696206"
+    ]
+   },
+   {
+    "id": "util-obj-rainwater-cistern-4-696206",
+    "objectId": "obj-rainwater-cistern-4-696206",
+    "type": "rainwater-cistern",
+    "kind": "water",
+    "connections": []
+   }
+  ],
+  "warnings": [
+   {
+    "id": "warn-kitchen-garden-adjacency-obj-raised-beds-10-204837-obj-house-0-564163",
+    "severity": "info",
+    "message": "Raised Beds and House: Kitchen garden is far from the house, adding daily walking distance.",
+    "messageKey": "warning.pair",
+    "messageParams": {
+     "ruleId": "kitchen-garden-adjacency",
+     "subjectType": "raised-beds",
+     "relatedType": "house"
+    },
+    "ruleId": "kitchen-garden-adjacency",
+    "objectIds": [
+     "obj-raised-beds-10-204837",
+     "obj-house-0-564163"
+    ],
+    "suggestedFix": {
+     "label": "Move closer",
+     "action": "decrease-separation"
+    }
+   },
+   {
+    "id": "warn-cistern-house-adjacency-obj-rainwater-cistern-4-696206-obj-house-0-564163",
+    "severity": "info",
+    "message": "Rainwater Cistern and House: Rainwater cistern is far from the house, requiring a longer downspout/gutter run.",
+    "messageKey": "warning.pair",
+    "messageParams": {
+     "ruleId": "cistern-house-adjacency",
+     "subjectType": "rainwater-cistern",
+     "relatedType": "house"
+    },
+    "ruleId": "cistern-house-adjacency",
+    "objectIds": [
+     "obj-rainwater-cistern-4-696206",
+     "obj-house-0-564163"
+    ],
+    "suggestedFix": {
+     "label": "Move closer",
+     "action": "decrease-separation"
+    }
+   }
+  ],
+  "analytics": {
+   "totalAreaM2": 2100,
+   "allocatedAreaM2": 785.25,
+   "unallocatedAreaM2": 1314.75,
+   "byCategory": [
+    {
+     "category": "residential",
+     "areaM2": 120,
+     "percent": 5.714285714285714
+    },
+    {
+     "category": "food-annual",
+     "areaM2": 247.99999999999997,
+     "percent": 11.809523809523808
+    },
+    {
+     "category": "food-perennial",
+     "areaM2": 252,
+     "percent": 12
+    },
+    {
+     "category": "utility",
+     "areaM2": 12,
+     "percent": 0.5714285714285714
+    },
+    {
+     "category": "water",
+     "areaM2": 14.25,
+     "percent": 0.6785714285714286
+    },
+    {
+     "category": "energy",
+     "areaM2": 13,
+     "percent": 0.6190476190476191
+    },
+    {
+     "category": "storage",
+     "areaM2": 12,
+     "percent": 0.5714285714285714
+    },
+    {
+     "category": "leisure",
+     "areaM2": 30,
+     "percent": 1.4285714285714286
+    },
+    {
+     "category": "future-expansion",
+     "areaM2": 84,
+     "percent": 4
+    }
+   ],
+   "estimatedFoodProductionScore": 52.38095238095238,
+   "maintenanceComplexityScore": 6.3378571428571435
+  }
+ }
+}

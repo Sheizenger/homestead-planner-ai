@@ -1,0 +1,292 @@
+{
+ "fixtures": [
+  {
+   "file": "minimal--minimum-maintenance--42.json",
+   "scenario": "minimal",
+   "mode": "minimum-maintenance",
+   "seed": 42
+  },
+  {
+   "file": "minimal--minimum-maintenance--59.json",
+   "scenario": "minimal",
+   "mode": "minimum-maintenance",
+   "seed": 59
+  },
+  {
+   "file": "minimal--production-max--42.json",
+   "scenario": "minimal",
+   "mode": "production-max",
+   "seed": 42
+  },
+  {
+   "file": "minimal--production-max--59.json",
+   "scenario": "minimal",
+   "mode": "production-max",
+   "seed": 59
+  },
+  {
+   "file": "minimal--beauty-balanced--42.json",
+   "scenario": "minimal",
+   "mode": "beauty-balanced",
+   "seed": 42
+  },
+  {
+   "file": "minimal--beauty-balanced--59.json",
+   "scenario": "minimal",
+   "mode": "beauty-balanced",
+   "seed": 59
+  },
+  {
+   "file": "minimal--safety-first--42.json",
+   "scenario": "minimal",
+   "mode": "safety-first",
+   "seed": 42
+  },
+  {
+   "file": "minimal--safety-first--59.json",
+   "scenario": "minimal",
+   "mode": "safety-first",
+   "seed": 59
+  },
+  {
+   "file": "family--minimum-maintenance--42.json",
+   "scenario": "family",
+   "mode": "minimum-maintenance",
+   "seed": 42
+  },
+  {
+   "file": "family--minimum-maintenance--59.json",
+   "scenario": "family",
+   "mode": "minimum-maintenance",
+   "seed": 59
+  },
+  {
+   "file": "family--production-max--42.json",
+   "scenario": "family",
+   "mode": "production-max",
+   "seed": 42
+  },
+  {
+   "file": "family--production-max--59.json",
+   "scenario": "family",
+   "mode": "production-max",
+   "seed": 59
+  },
+  {
+   "file": "family--beauty-balanced--42.json",
+   "scenario": "family",
+   "mode": "beauty-balanced",
+   "seed": 42
+  },
+  {
+   "file": "family--beauty-balanced--59.json",
+   "scenario": "family",
+   "mode": "beauty-balanced",
+   "seed": 59
+  },
+  {
+   "file": "family--safety-first--42.json",
+   "scenario": "family",
+   "mode": "safety-first",
+   "seed": 42
+  },
+  {
+   "file": "family--safety-first--59.json",
+   "scenario": "family",
+   "mode": "safety-first",
+   "seed": 59
+  },
+  {
+   "file": "lshape--minimum-maintenance--42.json",
+   "scenario": "lshape",
+   "mode": "minimum-maintenance",
+   "seed": 42
+  },
+  {
+   "file": "lshape--minimum-maintenance--59.json",
+   "scenario": "lshape",
+   "mode": "minimum-maintenance",
+   "seed": 59
+  },
+  {
+   "file": "lshape--production-max--42.json",
+   "scenario": "lshape",
+   "mode": "production-max",
+   "seed": 42
+  },
+  {
+   "file": "lshape--production-max--59.json",
+   "scenario": "lshape",
+   "mode": "production-max",
+   "seed": 59
+  },
+  {
+   "file": "lshape--beauty-balanced--42.json",
+   "scenario": "lshape",
+   "mode": "beauty-balanced",
+   "seed": 42
+  },
+  {
+   "file": "lshape--beauty-balanced--59.json",
+   "scenario": "lshape",
+   "mode": "beauty-balanced",
+   "seed": 59
+  },
+  {
+   "file": "lshape--safety-first--42.json",
+   "scenario": "lshape",
+   "mode": "safety-first",
+   "seed": 42
+  },
+  {
+   "file": "lshape--safety-first--59.json",
+   "scenario": "lshape",
+   "mode": "safety-first",
+   "seed": 59
+  },
+  {
+   "file": "waterfront--minimum-maintenance--42.json",
+   "scenario": "waterfront",
+   "mode": "minimum-maintenance",
+   "seed": 42
+  },
+  {
+   "file": "waterfront--minimum-maintenance--59.json",
+   "scenario": "waterfront",
+   "mode": "minimum-maintenance",
+   "seed": 59
+  },
+  {
+   "file": "waterfront--production-max--42.json",
+   "scenario": "waterfront",
+   "mode": "production-max",
+   "seed": 42
+  },
+  {
+   "file": "waterfront--production-max--59.json",
+   "scenario": "waterfront",
+   "mode": "production-max",
+   "seed": 59
+  },
+  {
+   "file": "waterfront--beauty-balanced--42.json",
+   "scenario": "waterfront",
+   "mode": "beauty-balanced",
+   "seed": 42
+  },
+  {
+   "file": "waterfront--beauty-balanced--59.json",
+   "scenario": "waterfront",
+   "mode": "beauty-balanced",
+   "seed": 59
+  },
+  {
+   "file": "waterfront--safety-first--42.json",
+   "scenario": "waterfront",
+   "mode": "safety-first",
+   "seed": 42
+  },
+  {
+   "file": "waterfront--safety-first--59.json",
+   "scenario": "waterfront",
+   "mode": "safety-first",
+   "seed": 59
+  },
+  {
+   "file": "sloped--minimum-maintenance--42.json",
+   "scenario": "sloped",
+   "mode": "minimum-maintenance",
+   "seed": 42
+  },
+  {
+   "file": "sloped--minimum-maintenance--59.json",
+   "scenario": "sloped",
+   "mode": "minimum-maintenance",
+   "seed": 59
+  },
+  {
+   "file": "sloped--production-max--42.json",
+   "scenario": "sloped",
+   "mode": "production-max",
+   "seed": 42
+  },
+  {
+   "file": "sloped--production-max--59.json",
+   "scenario": "sloped",
+   "mode": "production-max",
+   "seed": 59
+  },
+  {
+   "file": "sloped--beauty-balanced--42.json",
+   "scenario": "sloped",
+   "mode": "beauty-balanced",
+   "seed": 42
+  },
+  {
+   "file": "sloped--beauty-balanced--59.json",
+   "scenario": "sloped",
+   "mode": "beauty-balanced",
+   "seed": 59
+  },
+  {
+   "file": "sloped--safety-first--42.json",
+   "scenario": "sloped",
+   "mode": "safety-first",
+   "seed": 42
+  },
+  {
+   "file": "sloped--safety-first--59.json",
+   "scenario": "sloped",
+   "mode": "safety-first",
+   "seed": 59
+  },
+  {
+   "file": "overloaded--minimum-maintenance--42.json",
+   "scenario": "overloaded",
+   "mode": "minimum-maintenance",
+   "seed": 42
+  },
+  {
+   "file": "overloaded--minimum-maintenance--59.json",
+   "scenario": "overloaded",
+   "mode": "minimum-maintenance",
+   "seed": 59
+  },
+  {
+   "file": "overloaded--production-max--42.json",
+   "scenario": "overloaded",
+   "mode": "production-max",
+   "seed": 42
+  },
+  {
+   "file": "overloaded--production-max--59.json",
+   "scenario": "overloaded",
+   "mode": "production-max",
+   "seed": 59
+  },
+  {
+   "file": "overloaded--beauty-balanced--42.json",
+   "scenario": "overloaded",
+   "mode": "beauty-balanced",
+   "seed": 42
+  },
+  {
+   "file": "overloaded--beauty-balanced--59.json",
+   "scenario": "overloaded",
+   "mode": "beauty-balanced",
+   "seed": 59
+  },
+  {
+   "file": "overloaded--safety-first--42.json",
+   "scenario": "overloaded",
+   "mode": "safety-first",
+   "seed": 42
+  },
+  {
+   "file": "overloaded--safety-first--59.json",
+   "scenario": "overloaded",
+   "mode": "safety-first",
+   "seed": 59
+  }
+ ]
+}

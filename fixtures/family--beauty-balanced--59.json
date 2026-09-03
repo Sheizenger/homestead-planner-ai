@@ -1,0 +1,965 @@
+{
+ "covers": "The realistic middle case: animals, crops and utilities together.",
+ "input": {
+  "plot": {
+   "id": "plot-fixture",
+   "northAngleDeg": 0,
+   "climateZone": "temperate",
+   "terrainSlope": "flat",
+   "soilType": "loam",
+   "waterSources": [],
+   "gridPower": true,
+   "existingObjects": [],
+   "boundary": [
+    {
+     "x": 0,
+     "y": 0
+    },
+    {
+     "x": 50,
+     "y": 0
+    },
+    {
+     "x": 50,
+     "y": 42
+    },
+    {
+     "x": 0,
+     "y": 42
+    }
+   ]
+  },
+  "brief": {
+   "freeText": "",
+   "structuredInputs": {
+    "householdSize": 4,
+    "climateZone": "temperate",
+    "terrainSlope": "flat",
+    "soilType": "loam",
+    "waterSources": [],
+    "gridPower": true,
+    "priorities": [
+     "beauty-balanced"
+    ],
+    "animals": [
+     {
+      "type": "goats",
+      "count": 4
+     },
+     {
+      "type": "poultry",
+      "count": 6
+     }
+    ],
+    "crops": [
+     "potato",
+     "vegetable",
+     "berries",
+     "orchard"
+    ],
+    "infrastructure": [
+     "solar",
+     "well",
+     "septic",
+     "compost",
+     "woodshed"
+    ],
+    "aestheticPreference": 50,
+    "houseSizePreset": "medium",
+    "houseShape": "rect"
+   }
+  },
+  "mode": "beauty-balanced",
+  "seed": 59
+ },
+ "output": {
+  "strategyLabel": "Beauty-Balanced",
+  "mode": "beauty-balanced",
+  "seed": 59,
+  "zones": [
+   {
+    "id": "zone-future-expansion",
+    "category": "future-expansion",
+    "boundary": [
+     {
+      "x": 42.97205577711376,
+      "y": 0
+     },
+     {
+      "x": 49.99999999999999,
+      "y": 0
+     },
+     {
+      "x": 49.99999999999999,
+      "y": 8.366600265340756
+     },
+     {
+      "x": 42.97205577711376,
+      "y": 8.366600265340756
+     }
+    ],
+    "label": "Future Expansion",
+    "metadata": {
+     "reservedForm": "user-defined future use"
+    },
+    "locked": false
+   }
+  ],
+  "objects": [
+   {
+    "id": "obj-house-0-564163",
+    "typeId": "house",
+    "category": "residential",
+    "transform": {
+     "x": 9.028862233855762,
+     "y": 36.69235089091817,
+     "width": 12,
+     "height": 10,
+     "rotationDeg": 0
+    },
+    "label": "House",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "roadFacing",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-shed-1-949134",
+    "typeId": "shed",
+    "category": "storage",
+    "transform": {
+     "x": 9.284474739374128,
+     "y": 25.704784603149164,
+     "width": 4,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Tool Shed",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-woodshed-2-720720",
+    "typeId": "woodshed",
+    "category": "storage",
+    "transform": {
+     "x": 20.020647251151967,
+     "y": 35.937994951964356,
+     "width": 3,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Woodshed",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-solar-array-3-669102",
+    "typeId": "solar-array",
+    "category": "energy",
+    "transform": {
+     "x": 9.828862233855762,
+     "y": 35.69235089091817,
+     "width": 8,
+     "height": 5,
+     "rotationDeg": 0
+    },
+    "label": "Solar Panels",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "roofMounted": true,
+     "rationaleTokens": [
+      "roofMounted"
+     ]
+    }
+   },
+   {
+    "id": "obj-septic-4-806335",
+    "typeId": "septic",
+    "category": "utility",
+    "transform": {
+     "x": 20.683256418374366,
+     "y": 25.88723616922507,
+     "width": 5,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Septic System",
+    "locked": false,
+    "layerId": "utility",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-battery-room-5-438955",
+    "typeId": "battery-room",
+    "category": "energy",
+    "transform": {
+     "x": 1.6855610378435812,
+     "y": 25.352064032480122,
+     "width": 3,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Battery Room",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-inverter-room-6-870520",
+    "typeId": "inverter-room",
+    "category": "energy",
+    "transform": {
+     "x": 26.438009404356126,
+     "y": 37.01282303633634,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Inverter Room",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-well-7-561582",
+    "typeId": "well",
+    "category": "water",
+    "transform": {
+     "x": 32.45795646526385,
+     "y": 35.48446550987428,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Well",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-pump-8-319006",
+    "typeId": "pump",
+    "category": "water",
+    "transform": {
+     "x": 32.54741187853506,
+     "y": 29.69180925579276,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Pump House",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "near:well",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-goat-paddock-9-820714",
+    "typeId": "goat-paddock",
+    "category": "animal",
+    "transform": {
+     "x": 10.940706651343499,
+     "y": 13.467984642111697,
+     "width": 16,
+     "height": 12,
+     "rotationDeg": 0
+    },
+    "label": "Goat Paddock",
+    "locked": false,
+    "layerId": "animal",
+    "metadata": {
+     "animalCount": 4,
+     "animalType": "goats",
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-poultry-coop-10-251890",
+    "typeId": "poultry-coop",
+    "category": "animal",
+    "transform": {
+     "x": 25.5536232100334,
+     "y": 17.591335479076953,
+     "width": 6,
+     "height": 5,
+     "rotationDeg": 0
+    },
+    "label": "Poultry Coop & Run",
+    "locked": false,
+    "layerId": "animal",
+    "metadata": {
+     "animalCount": 6,
+     "animalType": "poultry",
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-goat-shelter-11-52195",
+    "typeId": "goat-shelter",
+    "category": "animal",
+    "transform": {
+     "x": 33.895864661031155,
+     "y": 22.814804308704744,
+     "width": 3.794733192202055,
+     "height": 4.743416490252569,
+     "rotationDeg": 0
+    },
+    "label": "Goat Shelter",
+    "locked": false,
+    "layerId": "animal",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-orchard-trees-12-157613",
+    "typeId": "orchard-trees",
+    "category": "food-perennial",
+    "transform": {
+     "x": 34.303094316611535,
+     "y": 5.739110240689479,
+     "width": 14.4,
+     "height": 11.200000000000001,
+     "rotationDeg": 0
+    },
+    "label": "Orchard",
+    "locked": false,
+    "layerId": "food-perennial",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "sunClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-potato-area-13-344642",
+    "typeId": "potato-area",
+    "category": "food-annual",
+    "transform": {
+     "x": 42.565499462910495,
+     "y": 37.78394476378742,
+     "width": 10.392304845413262,
+     "height": 6.928203230275509,
+     "rotationDeg": 0
+    },
+    "label": "Potato Field",
+    "locked": false,
+    "layerId": "food-annual",
+    "metadata": {
+     "rationaleTokens": [
+      "sunClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-vegetable-area-14-986027",
+    "typeId": "vegetable-area",
+    "category": "food-annual",
+    "transform": {
+     "x": 42.938488399795006,
+     "y": 26.15322981474163,
+     "width": 6.928203230275509,
+     "height": 8.31384387633061,
+     "rotationDeg": 0
+    },
+    "label": "Vegetable Area",
+    "locked": false,
+    "layerId": "food-annual",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-berry-rows-15-266870",
+    "typeId": "berry-rows",
+    "category": "food-perennial",
+    "transform": {
+     "x": 9.040418924298137,
+     "y": 1.8076967283734118,
+     "width": 6,
+     "height": 3.5999999999999996,
+     "rotationDeg": 0
+    },
+    "label": "Berry Rows",
+    "locked": false,
+    "layerId": "food-perennial",
+    "metadata": {
+     "rationaleTokens": [
+      "sunClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-patio-16-962516",
+    "typeId": "patio",
+    "category": "leisure",
+    "transform": {
+     "x": 47.391618836531414,
+     "y": 14.0935730752768,
+     "width": 4.800000000000001,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Patio",
+    "locked": false,
+    "layerId": "leisure",
+    "metadata": {
+     "rationaleTokens": [
+      "backYard",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-compost-17-627917",
+    "typeId": "compost",
+    "category": "utility",
+    "transform": {
+     "x": 20.196248004934752,
+     "y": 1.5362057434860616,
+     "width": 4,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Compost Yard",
+    "locked": false,
+    "layerId": "utility",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   }
+  ],
+  "paths": [
+   {
+    "id": "path-entrance",
+    "points": [
+     {
+      "x": 9.028862233855762,
+      "y": 42
+     },
+     {
+      "x": 9.028862233855762,
+      "y": 41.69235089091817
+     }
+    ],
+    "widthM": 1.4,
+    "surfaceType": "paved",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-shed-1-949134",
+    "points": [
+     {
+      "x": 9.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 9.028862233855762,
+      "y": 27.204784603149164
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-woodshed-2-720720",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 36.69235089091817
+     },
+     {
+      "x": 18.520647251151967,
+      "y": 36.69235089091817
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-battery-room-5-438955",
+    "points": [
+     {
+      "x": 3.1855610378435815,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 3.1855610378435815,
+      "y": 26.852064032480122
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-inverter-room-6-870520",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 36.69235089091817
+     },
+     {
+      "x": 25.438009404356126,
+      "y": 36.69235089091817
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-goat-paddock-9-820714",
+    "points": [
+     {
+      "x": 9.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 9.028862233855762,
+      "y": 19.467984642111695
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-poultry-coop-10-251890",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 15.028862233855762,
+      "y": 20.091335479076953
+     },
+     {
+      "x": 22.5536232100334,
+      "y": 20.091335479076953
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-goat-shelter-11-52195",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 31.99849806493013,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 31.99849806493013,
+      "y": 25.18651255383103
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-vegetable-area-14-986027",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 39.47438678465725,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 39.47438678465725,
+      "y": 30.310151752906933
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-berry-rows-15-266870",
+    "points": [
+     {
+      "x": 9.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 9.028862233855762,
+      "y": 3.6076967283734116
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-patio-16-962516",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 44.991618836531416,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 44.991618836531416,
+      "y": 16.0935730752768
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-compost-17-627917",
+    "points": [
+     {
+      "x": 15.028862233855762,
+      "y": 31.69235089091817
+     },
+     {
+      "x": 15.028862233855762,
+      "y": 3.036205743486062
+     },
+     {
+      "x": 18.196248004934752,
+      "y": 3.036205743486062
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   }
+  ],
+  "fences": [
+   {
+    "id": "fence-perimeter",
+    "points": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 50,
+      "y": 0
+     },
+     {
+      "x": 50,
+      "y": 42
+     },
+     {
+      "x": 0,
+      "y": 42
+     }
+    ],
+    "fenceType": "perimeter",
+    "gated": true
+   },
+   {
+    "id": "fence-obj-well-7-561582",
+    "points": [
+     {
+      "x": 30.857956465263847,
+      "y": 33.88446550987428
+     },
+     {
+      "x": 34.05795646526385,
+      "y": 33.88446550987428
+     },
+     {
+      "x": 34.05795646526385,
+      "y": 37.084465509874285
+     },
+     {
+      "x": 30.857956465263847,
+      "y": 37.084465509874285
+     }
+    ],
+    "fenceType": "decorative",
+    "gated": false
+   },
+   {
+    "id": "fence-obj-goat-paddock-9-820714",
+    "points": [
+     {
+      "x": 2.3407066513434986,
+      "y": 6.867984642111697
+     },
+     {
+      "x": 19.5407066513435,
+      "y": 6.867984642111697
+     },
+     {
+      "x": 19.5407066513435,
+      "y": 20.067984642111696
+     },
+     {
+      "x": 2.3407066513434986,
+      "y": 20.067984642111696
+     }
+    ],
+    "fenceType": "paddock",
+    "gated": false
+   },
+   {
+    "id": "fence-obj-poultry-coop-10-251890",
+    "points": [
+     {
+      "x": 21.9536232100334,
+      "y": 14.491335479076954
+     },
+     {
+      "x": 29.153623210033402,
+      "y": 14.491335479076954
+     },
+     {
+      "x": 29.153623210033402,
+      "y": 20.691335479076955
+     },
+     {
+      "x": 21.9536232100334,
+      "y": 20.691335479076955
+     }
+    ],
+    "fenceType": "paddock",
+    "gated": false
+   },
+   {
+    "id": "fence-obj-goat-shelter-11-52195",
+    "points": [
+     {
+      "x": 31.398498064930127,
+      "y": 19.843096063578457
+     },
+     {
+      "x": 36.393231257132186,
+      "y": 19.843096063578457
+     },
+     {
+      "x": 36.393231257132186,
+      "y": 25.78651255383103
+     },
+     {
+      "x": 31.398498064930127,
+      "y": 25.78651255383103
+     }
+    ],
+    "fenceType": "paddock",
+    "gated": false
+   }
+  ],
+  "utilityNodes": [
+   {
+    "id": "util-obj-solar-array-3-669102",
+    "objectId": "obj-solar-array-3-669102",
+    "type": "solar-array",
+    "kind": "power",
+    "connections": [
+     "util-obj-battery-room-5-438955"
+    ]
+   },
+   {
+    "id": "util-obj-battery-room-5-438955",
+    "objectId": "obj-battery-room-5-438955",
+    "type": "battery-room",
+    "kind": "power",
+    "connections": [
+     "util-obj-inverter-room-6-870520"
+    ]
+   },
+   {
+    "id": "util-obj-inverter-room-6-870520",
+    "objectId": "obj-inverter-room-6-870520",
+    "type": "inverter-room",
+    "kind": "power",
+    "connections": []
+   },
+   {
+    "id": "util-obj-well-7-561582",
+    "objectId": "obj-well-7-561582",
+    "type": "well",
+    "kind": "water",
+    "connections": [
+     "util-obj-pump-8-319006"
+    ]
+   },
+   {
+    "id": "util-obj-pump-8-319006",
+    "objectId": "obj-pump-8-319006",
+    "type": "pump",
+    "kind": "water",
+    "connections": []
+   }
+  ],
+  "warnings": [
+   {
+    "id": "warn-solar-battery-adjacency-obj-solar-array-3-669102-obj-battery-room-5-438955",
+    "severity": "caution",
+    "message": "Solar Panels and Battery Room: Solar array is far from the battery room, increasing cable losses and cost.",
+    "messageKey": "warning.pair",
+    "messageParams": {
+     "ruleId": "solar-battery-adjacency",
+     "subjectType": "solar-array",
+     "relatedType": "battery-room"
+    },
+    "ruleId": "solar-battery-adjacency",
+    "objectIds": [
+     "obj-solar-array-3-669102",
+     "obj-battery-room-5-438955"
+    ],
+    "suggestedFix": {
+     "label": "Move closer",
+     "action": "decrease-separation"
+    }
+   },
+   {
+    "id": "warn-setback-perennial-obj-berry-rows-15-266870",
+    "severity": "info",
+    "message": "Berry Rows is close enough to the boundary that mature trees/vines may overhang neighboring land.",
+    "messageKey": "warning.single",
+    "messageParams": {
+     "ruleId": "setback-perennial",
+     "subjectType": "berry-rows"
+    },
+    "ruleId": "setback-perennial",
+    "objectIds": [
+     "obj-berry-rows-15-266870"
+    ],
+    "suggestedFix": {
+     "label": "Move away from boundary",
+     "action": "increase-separation"
+    }
+   }
+  ],
+  "analytics": {
+   "totalAreaM2": 2100,
+   "allocatedAreaM2": 827.48,
+   "unallocatedAreaM2": 1272.52,
+   "byCategory": [
+    {
+     "category": "residential",
+     "areaM2": 120,
+     "percent": 5.714285714285714
+    },
+    {
+     "category": "food-annual",
+     "areaM2": 129.59999999999997,
+     "percent": 6.17142857142857
+    },
+    {
+     "category": "food-perennial",
+     "areaM2": 182.88000000000002,
+     "percent": 8.70857142857143
+    },
+    {
+     "category": "animal",
+     "areaM2": 240,
+     "percent": 11.428571428571429
+    },
+    {
+     "category": "utility",
+     "areaM2": 32,
+     "percent": 1.5238095238095237
+    },
+    {
+     "category": "water",
+     "areaM2": 8,
+     "percent": 0.38095238095238093
+    },
+    {
+     "category": "energy",
+     "areaM2": 13,
+     "percent": 0.6190476190476191
+    },
+    {
+     "category": "storage",
+     "areaM2": 24,
+     "percent": 1.1428571428571428
+    },
+    {
+     "category": "leisure",
+     "areaM2": 19.200000000000003,
+     "percent": 0.9142857142857144
+    },
+    {
+     "category": "future-expansion",
+     "areaM2": 58.80000000000001,
+     "percent": 2.8000000000000003
+    }
+   ],
+   "estimatedFoodProductionScore": 32.736000000000004,
+   "maintenanceComplexityScore": 8.813028571428571
+  }
+ }
+}

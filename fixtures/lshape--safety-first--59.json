@@ -1,0 +1,582 @@
+{
+ "covers": "Non-convex boundary — placement must respect the notch, not the bounding box.",
+ "input": {
+  "plot": {
+   "id": "plot-fixture",
+   "northAngleDeg": 0,
+   "climateZone": "temperate",
+   "terrainSlope": "flat",
+   "soilType": "loam",
+   "waterSources": [],
+   "gridPower": true,
+   "existingObjects": [],
+   "boundary": [
+    {
+     "x": 0,
+     "y": 0
+    },
+    {
+     "x": 40,
+     "y": 0
+    },
+    {
+     "x": 40,
+     "y": 15
+    },
+    {
+     "x": 60,
+     "y": 15
+    },
+    {
+     "x": 60,
+     "y": 45
+    },
+    {
+     "x": 0,
+     "y": 45
+    }
+   ]
+  },
+  "brief": {
+   "freeText": "",
+   "structuredInputs": {
+    "householdSize": 3,
+    "climateZone": "temperate",
+    "terrainSlope": "flat",
+    "soilType": "loam",
+    "waterSources": [],
+    "gridPower": true,
+    "priorities": [
+     "beauty-balanced"
+    ],
+    "animals": [],
+    "crops": [
+     "orchard",
+     "greenhouse",
+     "vineyard"
+    ],
+    "infrastructure": [
+     "well",
+     "cellar",
+     "garage"
+    ],
+    "aestheticPreference": 50,
+    "houseSizePreset": "medium",
+    "houseShape": "rect"
+   }
+  },
+  "mode": "safety-first",
+  "seed": 59
+ },
+ "output": {
+  "strategyLabel": "Safety-First",
+  "mode": "safety-first",
+  "seed": 59,
+  "zones": [
+   {
+    "id": "zone-future-expansion",
+    "category": "future-expansion",
+    "boundary": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 13.856406460551018,
+      "y": 0
+     },
+     {
+      "x": 13.856406460551018,
+      "y": 10.392304845413264
+     },
+     {
+      "x": 0,
+      "y": 10.392304845413264
+     }
+    ],
+    "label": "Future Expansion",
+    "metadata": {
+     "reservedForm": "user-defined future use"
+    },
+    "locked": false
+   }
+  ],
+  "objects": [
+   {
+    "id": "obj-house-0-746678",
+    "typeId": "house",
+    "category": "residential",
+    "transform": {
+     "x": 52.61430893970201,
+     "y": 38.981431033566224,
+     "width": 10,
+     "height": 12,
+     "rotationDeg": 0
+    },
+    "label": "House",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "roadFacing",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-garage-1-435444",
+    "typeId": "garage",
+    "category": "residential",
+    "transform": {
+     "x": 39.74830249922732,
+     "y": 38.34007713775333,
+     "width": 6,
+     "height": 6,
+     "rotationDeg": 0
+    },
+    "label": "Garage",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose"
+     ]
+    }
+   },
+   {
+    "id": "obj-cellar-2-610002",
+    "typeId": "cellar",
+    "category": "storage",
+    "transform": {
+     "x": 53.2716166799447,
+     "y": 25.926395004453042,
+     "width": 4,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Root Cellar",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-shed-3-179491",
+    "typeId": "shed",
+    "category": "storage",
+    "transform": {
+     "x": 40.70639656387252,
+     "y": 28.70922895732968,
+     "width": 4,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Tool Shed",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-well-4-875659",
+    "typeId": "well",
+    "category": "water",
+    "transform": {
+     "x": 30.083039274834203,
+     "y": 37.788781507065444,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Well",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-pump-5-438955",
+    "typeId": "pump",
+    "category": "water",
+    "transform": {
+     "x": 30.07613975531838,
+     "y": 29.973629613352912,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Pump House",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "near:well"
+     ]
+    }
+   },
+   {
+    "id": "obj-greenhouse-6-89931",
+    "typeId": "greenhouse",
+    "category": "greenhouse",
+    "transform": {
+     "x": 21.576741102500808,
+     "y": 39.56396398590367,
+     "width": 4.743416490252569,
+     "height": 7.58946638440411,
+     "rotationDeg": 0
+    },
+    "label": "Greenhouse",
+    "locked": false,
+    "layerId": "greenhouse",
+    "metadata": {
+     "rationaleTokens": [
+      "near:well",
+      "near:pump",
+      "sunClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-orchard-trees-7-346774",
+    "typeId": "orchard-trees",
+    "category": "food-perennial",
+    "transform": {
+     "x": 15.028152728443892,
+     "y": 24.151172498869894,
+     "width": 17.076299364909246,
+     "height": 13.281566172707192,
+     "rotationDeg": 0
+    },
+    "label": "Orchard",
+    "locked": false,
+    "layerId": "food-perennial",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "sunClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-vineyard-8-432066",
+    "typeId": "vineyard",
+    "category": "food-perennial",
+    "transform": {
+     "x": 34.87147027919332,
+     "y": 14.602202302297089,
+     "width": 9.486832980505138,
+     "height": 15.17893276880822,
+     "rotationDeg": 0
+    },
+    "label": "Vineyard",
+    "locked": false,
+    "layerId": "food-perennial",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "sunClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-patio-9-245627",
+    "typeId": "patio",
+    "category": "leisure",
+    "transform": {
+     "x": 22.44779544108315,
+     "y": 8.890838311332379,
+     "width": 5,
+     "height": 6,
+     "rotationDeg": 0
+    },
+    "label": "Patio",
+    "locked": false,
+    "layerId": "leisure",
+    "metadata": {
+     "rationaleTokens": [
+      "backYard"
+     ]
+    }
+   },
+   {
+    "id": "obj-compost-10-247421",
+    "typeId": "compost",
+    "category": "utility",
+    "transform": {
+     "x": 56.72111802400568,
+     "y": 17.471486808977456,
+     "width": 4,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Compost Yard",
+    "locked": false,
+    "layerId": "utility",
+    "metadata": {
+     "rationaleTokens": []
+    }
+   }
+  ],
+  "paths": [
+   {
+    "id": "path-driveway",
+    "points": [
+     {
+      "x": 52.61430893970201,
+      "y": 45
+     },
+     {
+      "x": 42.74830249922732,
+      "y": 45
+     },
+     {
+      "x": 42.74830249922732,
+      "y": 41.34007713775333
+     }
+    ],
+    "widthM": 3,
+    "surfaceType": "paved",
+    "category": "service"
+   },
+   {
+    "id": "path-entrance",
+    "points": [
+     {
+      "x": 52.61430893970201,
+      "y": 45
+     },
+     {
+      "x": 52.61430893970201,
+      "y": 44.981431033566224
+     }
+    ],
+    "widthM": 1.4,
+    "surfaceType": "paved",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-cellar-2-610002",
+    "points": [
+     {
+      "x": 52.61430893970201,
+      "y": 32.981431033566224
+     },
+     {
+      "x": 52.61430893970201,
+      "y": 27.926395004453042
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-shed-3-179491",
+    "points": [
+     {
+      "x": 47.61430893970201,
+      "y": 32.981431033566224
+     },
+     {
+      "x": 42.70639656387252,
+      "y": 32.981431033566224
+     },
+     {
+      "x": 42.70639656387252,
+      "y": 30.20922895732968
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-greenhouse-6-89931",
+    "points": [
+     {
+      "x": 47.61430893970201,
+      "y": 38.981431033566224
+     },
+     {
+      "x": 23.948449347627093,
+      "y": 38.981431033566224
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-patio-9-245627",
+    "points": [
+     {
+      "x": 47.61430893970201,
+      "y": 32.981431033566224
+     },
+     {
+      "x": 24.94779544108315,
+      "y": 32.981431033566224
+     },
+     {
+      "x": 24.94779544108315,
+      "y": 11.890838311332379
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-compost-10-247421",
+    "points": [
+     {
+      "x": 54.72111802400568,
+      "y": 32.981431033566224
+     },
+     {
+      "x": 54.72111802400568,
+      "y": 18.971486808977456
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   }
+  ],
+  "fences": [
+   {
+    "id": "fence-perimeter",
+    "points": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 40,
+      "y": 0
+     },
+     {
+      "x": 40,
+      "y": 15
+     },
+     {
+      "x": 60,
+      "y": 15
+     },
+     {
+      "x": 60,
+      "y": 45
+     },
+     {
+      "x": 0,
+      "y": 45
+     }
+    ],
+    "fenceType": "perimeter",
+    "gated": true
+   },
+   {
+    "id": "fence-obj-well-4-875659",
+    "points": [
+     {
+      "x": 28.4830392748342,
+      "y": 36.18878150706544
+     },
+     {
+      "x": 31.683039274834204,
+      "y": 36.18878150706544
+     },
+     {
+      "x": 31.683039274834204,
+      "y": 39.388781507065445
+     },
+     {
+      "x": 28.4830392748342,
+      "y": 39.388781507065445
+     }
+    ],
+    "fenceType": "decorative",
+    "gated": false
+   }
+  ],
+  "utilityNodes": [
+   {
+    "id": "util-obj-well-4-875659",
+    "objectId": "obj-well-4-875659",
+    "type": "well",
+    "kind": "water",
+    "connections": [
+     "util-obj-pump-5-438955"
+    ]
+   },
+   {
+    "id": "util-obj-pump-5-438955",
+    "objectId": "obj-pump-5-438955",
+    "type": "pump",
+    "kind": "water",
+    "connections": []
+   }
+  ],
+  "warnings": [],
+  "analytics": {
+   "totalAreaM2": 2400,
+   "allocatedAreaM2": 784.8,
+   "unallocatedAreaM2": 1615.2,
+   "byCategory": [
+    {
+     "category": "residential",
+     "areaM2": 156,
+     "percent": 6.5
+    },
+    {
+     "category": "food-perennial",
+     "areaM2": 370.79999999999995,
+     "percent": 15.449999999999998
+    },
+    {
+     "category": "greenhouse",
+     "areaM2": 36,
+     "percent": 1.5
+    },
+    {
+     "category": "utility",
+     "areaM2": 12,
+     "percent": 0.5
+    },
+    {
+     "category": "water",
+     "areaM2": 8,
+     "percent": 0.33333333333333337
+    },
+    {
+     "category": "storage",
+     "areaM2": 28,
+     "percent": 1.1666666666666667
+    },
+    {
+     "category": "leisure",
+     "areaM2": 30,
+     "percent": 1.25
+    },
+    {
+     "category": "future-expansion",
+     "areaM2": 144,
+     "percent": 6
+    }
+   ],
+   "estimatedFoodProductionScore": 37.29,
+   "maintenanceComplexityScore": 2.919
+  }
+ }
+}

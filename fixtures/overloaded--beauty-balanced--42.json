@@ -1,0 +1,912 @@
+{
+ "covers": "Program that cannot fit — exercises the unplaced/over-capacity path.",
+ "input": {
+  "plot": {
+   "id": "plot-fixture",
+   "northAngleDeg": 0,
+   "climateZone": "temperate",
+   "terrainSlope": "flat",
+   "soilType": "loam",
+   "waterSources": [],
+   "gridPower": true,
+   "existingObjects": [],
+   "boundary": [
+    {
+     "x": 0,
+     "y": 0
+    },
+    {
+     "x": 25,
+     "y": 0
+    },
+    {
+     "x": 25,
+     "y": 20
+    },
+    {
+     "x": 0,
+     "y": 20
+    }
+   ]
+  },
+  "brief": {
+   "freeText": "we also want a big apiary and a smokehouse",
+   "structuredInputs": {
+    "householdSize": 8,
+    "climateZone": "temperate",
+    "terrainSlope": "flat",
+    "soilType": "loam",
+    "waterSources": [],
+    "gridPower": true,
+    "priorities": [
+     "beauty-balanced"
+    ],
+    "animals": [
+     {
+      "type": "goats",
+      "count": 12
+     },
+     {
+      "type": "poultry",
+      "count": 30
+     }
+    ],
+    "crops": [
+     "potato",
+     "grain",
+     "vegetable",
+     "berries",
+     "orchard",
+     "vineyard",
+     "greenhouse"
+    ],
+    "infrastructure": [
+     "solar",
+     "well",
+     "septic",
+     "generator",
+     "barn",
+     "garage",
+     "pool",
+     "workshop"
+    ],
+    "aestheticPreference": 50,
+    "houseSizePreset": "medium",
+    "houseShape": "rect"
+   }
+  },
+  "mode": "beauty-balanced",
+  "seed": 42
+ },
+ "output": {
+  "strategyLabel": "Beauty-Balanced",
+  "mode": "beauty-balanced",
+  "seed": 42,
+  "zones": [],
+  "objects": [
+   {
+    "id": "obj-house-0-138108",
+    "typeId": "house",
+    "category": "residential",
+    "transform": {
+     "x": 15.642430369835344,
+     "y": 14.73238461118191,
+     "width": 12,
+     "height": 10,
+     "rotationDeg": 0
+    },
+    "label": "House",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "roadFacing",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-barn-1-718636",
+    "typeId": "barn",
+    "category": "storage",
+    "transform": {
+     "x": 15.922947539640585,
+     "y": 4.1469102250784635,
+     "width": 10,
+     "height": 8,
+     "rotationDeg": 0
+    },
+    "label": "Barn",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-garage-2-746799",
+    "typeId": "garage",
+    "category": "residential",
+    "transform": {
+     "x": 5.4084146388620145,
+     "y": 14.849101988850158,
+     "width": 6,
+     "height": 6,
+     "rotationDeg": 0
+    },
+    "label": "Garage",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-workshop-3-401271",
+    "typeId": "workshop",
+    "category": "storage",
+    "transform": {
+     "x": 5.3354856315627694,
+     "y": 7.292236978672445,
+     "width": 5,
+     "height": 6,
+     "rotationDeg": 0
+    },
+    "label": "Workshop",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "boundaryClear",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-shed-4-482971",
+    "typeId": "shed",
+    "category": "storage",
+    "transform": {
+     "x": 5.5816070873755965,
+     "y": 1.5090259721316397,
+     "width": 4,
+     "height": 3,
+     "rotationDeg": 0
+    },
+    "label": "Tool Shed",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-solar-array-5-596498",
+    "typeId": "solar-array",
+    "category": "energy",
+    "transform": {
+     "x": 16.442430369835343,
+     "y": 13.73238461118191,
+     "width": 8,
+     "height": 5,
+     "rotationDeg": 0
+    },
+    "label": "Solar Panels",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "roofMounted": true,
+     "rationaleTokens": [
+      "roofMounted"
+     ]
+    }
+   },
+   {
+    "id": "obj-septic-6-483936",
+    "typeId": "septic",
+    "category": "utility",
+    "transform": {
+     "x": 1.209417697833851,
+     "y": 2.0100207550171763,
+     "width": 2.25,
+     "height": 1.8,
+     "rotationDeg": 0
+    },
+    "label": "Septic System",
+    "locked": false,
+    "layerId": "utility",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-battery-room-7-732938",
+    "typeId": "battery-room",
+    "category": "energy",
+    "transform": {
+     "x": 23.827501123538234,
+     "y": 12.864161791652437,
+     "width": 1.7999999999999998,
+     "height": 1.7999999999999998,
+     "rotationDeg": 0
+    },
+    "label": "Battery Room",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "near:solar-array",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-inverter-room-8-576853",
+    "typeId": "inverter-room",
+    "category": "energy",
+    "transform": {
+     "x": 23.842689311383285,
+     "y": 17.752604606552048,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Inverter Room",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-well-9-344315",
+    "typeId": "well",
+    "category": "water",
+    "transform": {
+     "x": 23.77949082521721,
+     "y": 7.17975305764936,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Well",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-pump-10-775788",
+    "typeId": "pump",
+    "category": "water",
+    "transform": {
+     "x": 23.96492011951282,
+     "y": 3.3361528298817578,
+     "width": 2,
+     "height": 2,
+     "rotationDeg": 0
+    },
+    "label": "Pump House",
+    "locked": false,
+    "layerId": "water",
+    "metadata": {
+     "rationaleTokens": [
+      "near:well",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-generator-11-159701",
+    "typeId": "generator",
+    "category": "energy",
+    "transform": {
+     "x": 0.6549649239238352,
+     "y": 9.013898530108854,
+     "width": 1.2000000000000002,
+     "height": 1.6,
+     "rotationDeg": 0
+    },
+    "label": "Backup Generator",
+    "locked": false,
+    "layerId": "energy",
+    "metadata": {
+     "rationaleTokens": [
+      "apartFrom:garage",
+      "aligned"
+     ]
+    }
+   },
+   {
+    "id": "obj-smokehouse-12-320047",
+    "typeId": "smokehouse",
+    "category": "storage",
+    "transform": {
+     "x": 0.7804588882159442,
+     "y": 5.32272958310321,
+     "width": 1.2,
+     "height": 1.5,
+     "rotationDeg": 0
+    },
+    "label": "Smokehouse",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "aligned"
+     ]
+    }
+   }
+  ],
+  "paths": [
+   {
+    "id": "path-driveway",
+    "points": [
+     {
+      "x": 15.642430369835344,
+      "y": 20
+     },
+     {
+      "x": 8.408414638862014,
+      "y": 20
+     },
+     {
+      "x": 8.408414638862014,
+      "y": 17.84910198885016
+     }
+    ],
+    "widthM": 3,
+    "surfaceType": "paved",
+    "category": "service"
+   },
+   {
+    "id": "path-entrance",
+    "points": [
+     {
+      "x": 15.642430369835344,
+      "y": 20
+     },
+     {
+      "x": 15.642430369835344,
+      "y": 19.73238461118191
+     }
+    ],
+    "widthM": 1.4,
+    "surfaceType": "paved",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-barn-1-718636",
+    "points": [
+     {
+      "x": 15.642430369835344,
+      "y": 9.73238461118191
+     },
+     {
+      "x": 15.642430369835344,
+      "y": 8.146910225078464
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-workshop-3-401271",
+    "points": [
+     {
+      "x": 9.642430369835344,
+      "y": 10.292236978672445
+     },
+     {
+      "x": 7.8354856315627694,
+      "y": 10.292236978672445
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-shed-4-482971",
+    "points": [
+     {
+      "x": 9.642430369835344,
+      "y": 9.73238461118191
+     },
+     {
+      "x": 9.642430369835344,
+      "y": 3.0090259721316395
+     },
+     {
+      "x": 7.5816070873755965,
+      "y": 3.0090259721316395
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-battery-room-7-732938",
+    "points": [
+     {
+      "x": 21.642430369835346,
+      "y": 13.764161791652437
+     },
+     {
+      "x": 22.927501123538235,
+      "y": 13.764161791652437
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-inverter-room-8-576853",
+    "points": [
+     {
+      "x": 21.642430369835346,
+      "y": 16.752604606552048
+     },
+     {
+      "x": 22.842689311383285,
+      "y": 16.752604606552048
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-generator-11-159701",
+    "points": [
+     {
+      "x": 9.642430369835344,
+      "y": 9.813898530108855
+     },
+     {
+      "x": 1.2549649239238354,
+      "y": 9.813898530108855
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-smokehouse-12-320047",
+    "points": [
+     {
+      "x": 9.642430369835344,
+      "y": 9.73238461118191
+     },
+     {
+      "x": 1.3804588882159443,
+      "y": 9.73238461118191
+     },
+     {
+      "x": 1.3804588882159443,
+      "y": 6.07272958310321
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   }
+  ],
+  "fences": [
+   {
+    "id": "fence-perimeter",
+    "points": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 25,
+      "y": 0
+     },
+     {
+      "x": 25,
+      "y": 20
+     },
+     {
+      "x": 0,
+      "y": 20
+     }
+    ],
+    "fenceType": "perimeter",
+    "gated": true
+   },
+   {
+    "id": "fence-obj-well-9-344315",
+    "points": [
+     {
+      "x": 22.179490825217208,
+      "y": 5.57975305764936
+     },
+     {
+      "x": 25.37949082521721,
+      "y": 5.57975305764936
+     },
+     {
+      "x": 25.37949082521721,
+      "y": 8.77975305764936
+     },
+     {
+      "x": 22.179490825217208,
+      "y": 8.77975305764936
+     }
+    ],
+    "fenceType": "decorative",
+    "gated": false
+   }
+  ],
+  "utilityNodes": [
+   {
+    "id": "util-obj-solar-array-5-596498",
+    "objectId": "obj-solar-array-5-596498",
+    "type": "solar-array",
+    "kind": "power",
+    "connections": [
+     "util-obj-battery-room-7-732938"
+    ]
+   },
+   {
+    "id": "util-obj-battery-room-7-732938",
+    "objectId": "obj-battery-room-7-732938",
+    "type": "battery-room",
+    "kind": "power",
+    "connections": [
+     "util-obj-inverter-room-8-576853"
+    ]
+   },
+   {
+    "id": "util-obj-generator-11-159701",
+    "objectId": "obj-generator-11-159701",
+    "type": "generator",
+    "kind": "power",
+    "connections": [
+     "util-obj-battery-room-7-732938"
+    ]
+   },
+   {
+    "id": "util-obj-inverter-room-8-576853",
+    "objectId": "obj-inverter-room-8-576853",
+    "type": "inverter-room",
+    "kind": "power",
+    "connections": []
+   },
+   {
+    "id": "util-obj-well-9-344315",
+    "objectId": "obj-well-9-344315",
+    "type": "well",
+    "kind": "water",
+    "connections": [
+     "util-obj-pump-10-775788"
+    ]
+   },
+   {
+    "id": "util-obj-pump-10-775788",
+    "objectId": "obj-pump-10-775788",
+    "type": "pump",
+    "kind": "water",
+    "connections": []
+   }
+  ],
+  "warnings": [
+   {
+    "id": "warn-unplaced-compost",
+    "severity": "critical",
+    "message": "Could not fit \"compost\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "compost"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-patio",
+    "severity": "critical",
+    "message": "Could not fit \"patio\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "patio"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-pool",
+    "severity": "critical",
+    "message": "Could not fit \"pool\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "pool"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-berry-rows",
+    "severity": "critical",
+    "message": "Could not fit \"berry rows\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "berry-rows"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-vineyard",
+    "severity": "critical",
+    "message": "Could not fit \"vineyard\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "vineyard"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-vegetable-area",
+    "severity": "critical",
+    "message": "Could not fit \"vegetable area\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "vegetable-area"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-orchard-trees",
+    "severity": "critical",
+    "message": "Could not fit \"orchard trees\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "orchard-trees"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-potato-area",
+    "severity": "critical",
+    "message": "Could not fit \"potato area\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "potato-area"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-grain-field",
+    "severity": "critical",
+    "message": "Could not fit \"grain field\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "grain-field"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-apiary",
+    "severity": "critical",
+    "message": "Could not fit \"apiary\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "apiary"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-goat-shelter",
+    "severity": "critical",
+    "message": "Could not fit \"goat shelter\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "goat-shelter"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-poultry-coop",
+    "severity": "critical",
+    "message": "Could not fit \"poultry coop\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "poultry-coop"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-goat-paddock",
+    "severity": "critical",
+    "message": "Could not fit \"goat paddock\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "goat-paddock"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-unplaced-greenhouse",
+    "severity": "critical",
+    "message": "Could not fit \"greenhouse\" anywhere on the plot without violating hard constraints or overlapping existing zones. Consider a larger plot or a smaller program.",
+    "messageKey": "warning.unplaced",
+    "messageParams": {
+     "itemType": "greenhouse"
+    },
+    "ruleId": "capacity-overflow",
+    "objectIds": []
+   },
+   {
+    "id": "warn-household-area-norm",
+    "severity": "critical",
+    "message": "For 8 residents, a self-sufficient homestead typically needs around 2,000 m² (~250 m²/person); this plot is short by about 1,500 m². Consider a larger plot or a smaller household program.",
+    "messageKey": "warning.householdArea",
+    "messageParams": {
+     "household": 8,
+     "recommended": "2,000",
+     "perPerson": 250,
+     "shortfall": "1,500"
+    },
+    "ruleId": "household-area-norm",
+    "objectIds": []
+   },
+   {
+    "id": "warn-generator-noise-separation-obj-generator-11-159701-obj-garage-2-746799",
+    "severity": "caution",
+    "message": "Backup Generator and Garage: Backup generator is close to a quiet zone; expect noise when running.",
+    "messageKey": "warning.pair",
+    "messageParams": {
+     "ruleId": "generator-noise-separation",
+     "subjectType": "generator",
+     "relatedType": "garage"
+    },
+    "ruleId": "generator-noise-separation",
+    "objectIds": [
+     "obj-generator-11-159701",
+     "obj-garage-2-746799"
+    ],
+    "suggestedFix": {
+     "label": "Move apart",
+     "action": "increase-separation"
+    }
+   },
+   {
+    "id": "warn-setback-outbuilding-obj-shed-4-482971",
+    "severity": "caution",
+    "message": "Tool Shed is closer than the typical 4 m setback for outbuildings/animal housing from the neighboring boundary.",
+    "messageKey": "warning.single",
+    "messageParams": {
+     "ruleId": "setback-outbuilding",
+     "subjectType": "shed"
+    },
+    "ruleId": "setback-outbuilding",
+    "objectIds": [
+     "obj-shed-4-482971"
+    ],
+    "suggestedFix": {
+     "label": "Move away from boundary",
+     "action": "increase-separation"
+    }
+   },
+   {
+    "id": "warn-setback-septic-obj-septic-6-483936",
+    "severity": "caution",
+    "message": "Septic System is closer than the typical 2 m setback for a septic system from the property line.",
+    "messageKey": "warning.single",
+    "messageParams": {
+     "ruleId": "setback-septic",
+     "subjectType": "septic"
+    },
+    "ruleId": "setback-septic",
+    "objectIds": [
+     "obj-septic-6-483936"
+    ],
+    "suggestedFix": {
+     "label": "Move away from boundary",
+     "action": "increase-separation"
+    }
+   },
+   {
+    "id": "warn-setback-well-obj-well-9-344315",
+    "severity": "caution",
+    "message": "Well is closer than the typical 5 m sanitary setback for a well from the property line.",
+    "messageKey": "warning.single",
+    "messageParams": {
+     "ruleId": "setback-well",
+     "subjectType": "well"
+    },
+    "ruleId": "setback-well",
+    "objectIds": [
+     "obj-well-9-344315"
+    ],
+    "suggestedFix": {
+     "label": "Move away from boundary",
+     "action": "increase-separation"
+    }
+   },
+   {
+    "id": "warn-setback-outbuilding-obj-smokehouse-12-320047",
+    "severity": "caution",
+    "message": "Smokehouse is closer than the typical 4 m setback for outbuildings/animal housing from the neighboring boundary.",
+    "messageKey": "warning.single",
+    "messageParams": {
+     "ruleId": "setback-outbuilding",
+     "subjectType": "smokehouse"
+    },
+    "ruleId": "setback-outbuilding",
+    "objectIds": [
+     "obj-smokehouse-12-320047"
+    ],
+    "suggestedFix": {
+     "label": "Move away from boundary",
+     "action": "increase-separation"
+    }
+   }
+  ],
+  "analytics": {
+   "totalAreaM2": 500,
+   "allocatedAreaM2": 301.01000000000005,
+   "unallocatedAreaM2": 198.98999999999995,
+   "byCategory": [
+    {
+     "category": "residential",
+     "areaM2": 156,
+     "percent": 31.2
+    },
+    {
+     "category": "utility",
+     "areaM2": 4.05,
+     "percent": 0.8099999999999999
+    },
+    {
+     "category": "water",
+     "areaM2": 8,
+     "percent": 1.6
+    },
+    {
+     "category": "energy",
+     "areaM2": 9.16,
+     "percent": 1.8319999999999999
+    },
+    {
+     "category": "storage",
+     "areaM2": 123.8,
+     "percent": 24.759999999999998
+    }
+   ],
+   "estimatedFoodProductionScore": 0,
+   "maintenanceComplexityScore": 3.7706400000000007
+  }
+ }
+}

@@ -1,0 +1,348 @@
+{
+ "covers": "Smallest sane plot, empty program — the floor of the placement search.",
+ "input": {
+  "plot": {
+   "id": "plot-fixture",
+   "northAngleDeg": 0,
+   "climateZone": "temperate",
+   "terrainSlope": "flat",
+   "soilType": "loam",
+   "waterSources": [],
+   "gridPower": true,
+   "existingObjects": [],
+   "boundary": [
+    {
+     "x": 0,
+     "y": 0
+    },
+    {
+     "x": 30,
+     "y": 0
+    },
+    {
+     "x": 30,
+     "y": 30
+    },
+    {
+     "x": 0,
+     "y": 30
+    }
+   ]
+  },
+  "brief": {
+   "freeText": "",
+   "structuredInputs": {
+    "householdSize": 2,
+    "climateZone": "temperate",
+    "terrainSlope": "flat",
+    "soilType": "loam",
+    "waterSources": [],
+    "gridPower": true,
+    "priorities": [
+     "beauty-balanced"
+    ],
+    "animals": [],
+    "crops": [
+     "vegetable"
+    ],
+    "infrastructure": [],
+    "aestheticPreference": 50,
+    "houseSizePreset": "medium",
+    "houseShape": "rect"
+   }
+  },
+  "mode": "safety-first",
+  "seed": 59
+ },
+ "output": {
+  "strategyLabel": "Safety-First",
+  "mode": "safety-first",
+  "seed": 59,
+  "zones": [
+   {
+    "id": "zone-future-expansion",
+    "category": "future-expansion",
+    "boundary": [
+     {
+      "x": 15.85607154015532,
+      "y": 0
+     },
+     {
+      "x": 23.204540768504856,
+      "y": 0
+     },
+     {
+      "x": 23.204540768504856,
+      "y": 7.348469228349534
+     },
+     {
+      "x": 15.85607154015532,
+      "y": 7.348469228349534
+     }
+    ],
+    "label": "Future Expansion",
+    "metadata": {
+     "reservedForm": "user-defined future use"
+    },
+    "locked": false
+   }
+  ],
+  "objects": [
+   {
+    "id": "obj-house-0-828234",
+    "typeId": "house",
+    "category": "residential",
+    "transform": {
+     "x": 19.089548988332968,
+     "y": 24.35069725434295,
+     "width": 12,
+     "height": 10,
+     "rotationDeg": 0
+    },
+    "label": "House",
+    "locked": false,
+    "layerId": "residential",
+    "metadata": {
+     "rationaleTokens": [
+      "roadFacing",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-shed-1-351528",
+    "typeId": "shed",
+    "category": "storage",
+    "transform": {
+     "x": 17.627069598948577,
+     "y": 12.380545070897787,
+     "width": 3,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Tool Shed",
+    "locked": false,
+    "layerId": "storage",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "boundaryClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-vegetable-area-2-496162",
+    "typeId": "vegetable-area",
+    "category": "food-annual",
+    "transform": {
+     "x": 6.146399763711356,
+     "y": 10.084739283216651,
+     "width": 9.797958971132712,
+     "height": 8.16496580927726,
+     "rotationDeg": 0
+    },
+    "label": "Vegetable Area",
+    "locked": false,
+    "layerId": "food-annual",
+    "metadata": {
+     "rationaleTokens": [
+      "sunClear"
+     ]
+    }
+   },
+   {
+    "id": "obj-patio-3-316528",
+    "typeId": "patio",
+    "category": "leisure",
+    "transform": {
+     "x": 27.100145334061224,
+     "y": 11.034336801692842,
+     "width": 5,
+     "height": 6,
+     "rotationDeg": 0
+    },
+    "label": "Patio",
+    "locked": false,
+    "layerId": "leisure",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose",
+      "backYard"
+     ]
+    }
+   },
+   {
+    "id": "obj-compost-4-247581",
+    "typeId": "compost",
+    "category": "utility",
+    "transform": {
+     "x": 6.746444119783119,
+     "y": 23.07763849334791,
+     "width": 3,
+     "height": 4,
+     "rotationDeg": 0
+    },
+    "label": "Compost Yard",
+    "locked": false,
+    "layerId": "utility",
+    "metadata": {
+     "rationaleTokens": [
+      "accessClose"
+     ]
+    }
+   }
+  ],
+  "paths": [
+   {
+    "id": "path-entrance",
+    "points": [
+     {
+      "x": 19.089548988332968,
+      "y": 30
+     },
+     {
+      "x": 19.089548988332968,
+      "y": 29.35069725434295
+     }
+    ],
+    "widthM": 1.4,
+    "surfaceType": "paved",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-shed-1-351528",
+    "points": [
+     {
+      "x": 19.089548988332968,
+      "y": 19.35069725434295
+     },
+     {
+      "x": 19.089548988332968,
+      "y": 14.380545070897787
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-vegetable-area-2-496162",
+    "points": [
+     {
+      "x": 13.089548988332968,
+      "y": 19.35069725434295
+     },
+     {
+      "x": 11.045379249277712,
+      "y": 19.35069725434295
+     },
+     {
+      "x": 11.045379249277712,
+      "y": 14.16722218785528
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-patio-3-316528",
+    "points": [
+     {
+      "x": 24.600145334061224,
+      "y": 19.35069725434295
+     },
+     {
+      "x": 24.600145334061224,
+      "y": 14.034336801692842
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   },
+   {
+    "id": "path-obj-compost-4-247581",
+    "points": [
+     {
+      "x": 13.089548988332968,
+      "y": 24.35069725434295
+     },
+     {
+      "x": 8.246444119783119,
+      "y": 24.35069725434295
+     }
+    ],
+    "widthM": 1.1,
+    "surfaceType": "gravel",
+    "category": "access"
+   }
+  ],
+  "fences": [
+   {
+    "id": "fence-perimeter",
+    "points": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 30,
+      "y": 0
+     },
+     {
+      "x": 30,
+      "y": 30
+     },
+     {
+      "x": 0,
+      "y": 30
+     }
+    ],
+    "fenceType": "perimeter",
+    "gated": true
+   }
+  ],
+  "utilityNodes": [],
+  "warnings": [],
+  "analytics": {
+   "totalAreaM2": 900,
+   "allocatedAreaM2": 308,
+   "unallocatedAreaM2": 592,
+   "byCategory": [
+    {
+     "category": "residential",
+     "areaM2": 120,
+     "percent": 13.333333333333334
+    },
+    {
+     "category": "food-annual",
+     "areaM2": 80,
+     "percent": 8.88888888888889
+    },
+    {
+     "category": "utility",
+     "areaM2": 12,
+     "percent": 1.3333333333333335
+    },
+    {
+     "category": "storage",
+     "areaM2": 12,
+     "percent": 1.3333333333333335
+    },
+    {
+     "category": "leisure",
+     "areaM2": 30,
+     "percent": 3.3333333333333335
+    },
+    {
+     "category": "future-expansion",
+     "areaM2": 54.00000000000003,
+     "percent": 6.0000000000000036
+    }
+   ],
+   "estimatedFoodProductionScore": 19.555555555555557,
+   "maintenanceComplexityScore": 4.4399999999999995
+  }
+ }
+}
