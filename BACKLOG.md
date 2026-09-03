@@ -47,8 +47,25 @@ In order — each stage assumes the previous one landed.
    are the two fixes stage 4 originally scoped; both are UI/interaction work
    that belongs with the canvas (stage 6) and panels (stage 7), not the
    engine, so they moved there rather than being done twice.
-5. **App shell.** Document model, `@Observable` state, variants that
-   accumulate, `UndoManager`. First thing the user builds in Xcode.
+5. **App shell.** `PlanDocument`/`Variant`/`ProjectModel` are done in
+   `HomesteadCore`, tested on Linux (84 tests): accumulation, staleness
+   detection, object editing, a readable JSON codec with `schemaVersion`.
+   `UndoManager` doesn't exist outside Apple platforms, so it isn't — and
+   can't be — part of this; see AGENTS.md's "Settled decisions". What
+   remains, and needs a Mac:
+   - The Xcode project itself. Nothing has been created yet — SPM can't
+     produce a `.app` bundle, entitlements, or an Info.plist, and generating
+     an `.xcodeproj` by hand is fragile. This is the one-time action AGENTS.md
+     flags as needing the user: create an empty macOS App target in Xcode and
+     add `swift/` as a local package dependency.
+   - `FileDocument`/`ReferenceFileDocument` conformance wrapping
+     `PlanDocument` — lives in the app target, not `Core`, since the protocol
+     itself is a SwiftUI import.
+   - Wiring `NSUndoManager`/`UndoManager.registerUndo` around each
+     `ProjectModel` mutator from the view layer that owns the document.
+   - The CI macOS job: builds the app target, runs any App-layer tests, and
+     produces the screenshot contact sheet. Waits on the Xcode project
+     existing.
 6. **Canvas.** `Viewport` over `Canvas`: cursor-anchored zoom, pan,
    fit-to-plot, zoom-to-selection, screen-space north arrow and scale bar.
    Hit-testing is manual.

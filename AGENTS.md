@@ -73,8 +73,17 @@ Decided deliberately. Honouring them costs less than re-deciding them.
   survives every generation.
 - **The plan is a document.** `Codable` + `FileDocument`, one JSON format for
   both saving and export, carrying a `schemaVersion`. Analytics and warnings
-  are written into the file so it reads standalone, and recomputed on open.
-  Undo is `UndoManager`; history stays in memory.
+  are written into the file so it reads standalone, and recomputed — never
+  trusted — on open.
+- **Undo is `UndoManager`, which means `Core` has none.** `UndoManager` is an
+  Apple-platform type — it doesn't exist in swift-corelibs-foundation, so it
+  cannot appear in anything this agent needs to build and test on Linux.
+  `Core`'s mutators are therefore plain and undo-agnostic (`moveObject`,
+  `deleteObjects`, ...); the app layer wraps each call with
+  `undoManager.registerUndo`, the standard shape for a `ReferenceFileDocument`
+  on macOS. Undo itself is consequently untested until a Mac runs it —
+  narrow, App-layer-only surface, exactly the trade the three-layer split
+  was built to contain.
 - **A real viewport.** Pan and zoom are a `Viewport` (offset + scale) over a
   `Canvas`. North arrow and scale bar draw in screen space and stay put.
 - **Locking selects.** A locked object or layer can be selected and
