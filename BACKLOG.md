@@ -13,21 +13,40 @@ In order — each stage assumes the previous one landed.
 2. ~~**Domain and geometry.**~~ Done. Types, `mulberry32`, `jsRound`,
    polygons, transforms, plot shapes and the object catalog, each pinned
    against the reference data.
-3. **Planner.** `sizing`, `placement`, `pathsAndFences`, `generate`,
-   `textParser`, `utilityConnections`. Nothing ported yet — this is the next
-   stage, and the largest. Done when every fixture matches.
+3. ~~**Planner.**~~ Done, folding in stage 4's `analytics`/`warnings`/
+   `constraints`/`elevation`/`waterfront` early since `Generate.variant`
+   needed them to produce a complete `Layout`. `costs` and `materials` remain
+   — UI-only, not part of the generated plan, deferred to whichever later
+   stage first needs them. `GenerateTests` runs the whole pipeline (text
+   parsing → sizing → placement → paths/fences → utility hookups →
+   future-expansion reserve → analytics → warnings, unplaced items included)
+   against all 48 fixtures field by field; passed on the first full run.
 
-   Watch the seven `.sort()` calls with tying comparators: JavaScript's sort
-   is stable and Swift's is not, so ties need an explicit id tie-break or
-   placement silently shifts. The fixtures exist to catch exactly this.
-4. **Rules and analytics.** `analytics`, `warnings`, `constraints`, `costs`,
-   `materials`, `elevation`, `waterfront`. Built with the fixes below folded
-   in rather than ported and corrected afterwards:
-   - `suggestedFix` performs a deterministic nudge to the minimum distance,
-     refusing when it would leave the plot or create a new violation, and
-     routing through `UndoManager`.
-   - Overlap detection uses an AABB prefilter with an exact rotated-rectangle
-     test behind it, so rotated objects stop reporting phantom overlaps.
+   Three precision traps surfaced along the way, each caught by a fixture
+   comparison rather than reasoning about the code:
+   - **Unstable sort.** The tier/area placement sort and the
+     future-expansion corner-distance sort both tie constantly (same-type
+     crops share a tier and an area; corner distance repeats across a
+     symmetric grid). Swift's `sort` isn't stable, so both carry an explicit
+     original-index tie-break.
+   - **`Rect` as origin+size.** `maxY` derived as `minY + height` is not
+     bit-identical to TypeScript's independently computed `y + h/2` —
+     floating-point addition isn't associative. Broke `PathsAndFences`
+     (exact-equality point comparisons) while leaving `Placement` untouched
+     (its decisions are threshold comparisons a ULP doesn't flip). `Rect` now
+     stores all four edges directly; see its doc comment.
+   - **`toFixed`/`toLocaleString`.** JavaScript's `toFixed` rounds against a
+     double's *exact* value, not its shortest round-trip decimal string —
+     `1.45` prints as `"1.45"` in both languages but `.toFixed(1)` gives
+     `"1.4"`, because the underlying double is a hair under 1.45. Ported via
+     a high-precision decimal expansion rather than a scaled-Double round,
+     which reintroduces its own binary rounding before the intended one.
+
+   `suggestedFix` is still only *carried* on warnings, exactly as the web app
+   does — not wired to an action. That, plus the AABB-only overlap check,
+   are the two fixes stage 4 originally scoped; both are UI/interaction work
+   that belongs with the canvas (stage 6) and panels (stage 7), not the
+   engine, so they moved there rather than being done twice.
 5. **App shell.** Document model, `@Observable` state, variants that
    accumulate, `UndoManager`. First thing the user builds in Xcode.
 6. **Canvas.** `Viewport` over `Canvas`: cursor-anchored zoom, pan,
