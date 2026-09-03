@@ -22,27 +22,38 @@ public struct Size: Equatable, Hashable, Codable, Sendable {
     }
 }
 
+/// Ported from the TypeScript `Bounds` type, and deliberately storing all
+/// four edges rather than an origin + size: `maxY` derived as `minY +
+/// height` is not bit-identical to an independently computed `y + h/2`, since
+/// floating-point addition isn't associative. `Transform.aabb` and
+/// `WaterfrontModel.bounds` both need to reproduce TypeScript's independent
+/// min/max expressions exactly, so the type they build has to be able to
+/// hold two numbers that don't agree with each other to the last bit of a
+/// width — which an origin+size representation cannot represent at all.
 public struct Rect: Equatable, Hashable, Codable, Sendable {
-    public var origin: Point
-    public var size: Size
+    public var minX: Double
+    public var minY: Double
+    public var maxX: Double
+    public var maxY: Double
 
-    public init(origin: Point, size: Size) {
-        self.origin = origin
-        self.size = size
+    public init(minX: Double, minY: Double, maxX: Double, maxY: Double) {
+        self.minX = minX
+        self.minY = minY
+        self.maxX = maxX
+        self.maxY = maxY
     }
 
+    /// Convenience for the (common) case where TypeScript itself derives the
+    /// box from a width/height rather than independent edges — safe here
+    /// because there's no competing expression it has to match bit-for-bit.
     public init(minX: Double, minY: Double, width: Double, height: Double) {
-        self.init(origin: Point(x: minX, y: minY), size: Size(width: width, height: height))
+        self.init(minX: minX, minY: minY, maxX: minX + width, maxY: minY + height)
     }
 
-    public var minX: Double { origin.x }
-    public var minY: Double { origin.y }
-    public var width: Double { size.width }
-    public var height: Double { size.height }
-    public var maxX: Double { origin.x + size.width }
-    public var maxY: Double { origin.y + size.height }
-    public var midX: Double { origin.x + size.width / 2 }
-    public var midY: Double { origin.y + size.height / 2 }
+    public var width: Double { maxX - minX }
+    public var height: Double { maxY - minY }
+    public var midX: Double { minX + width / 2 }
+    public var midY: Double { minY + height / 2 }
 }
 
 extension Rect {
@@ -59,7 +70,7 @@ extension Rect {
             minY = min(minY, p.y)
             maxY = max(maxY, p.y)
         }
-        self.init(minX: minX, minY: minY, width: maxX - minX, height: maxY - minY)
+        self.init(minX: minX, minY: minY, maxX: maxX, maxY: maxY)
     }
 }
 

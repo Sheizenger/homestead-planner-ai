@@ -44,7 +44,10 @@ public struct Transform: Equatable, Hashable, Codable, Sendable {
         let rotated = rotationDeg.truncatingRemainder(dividingBy: 180) != 0
         let w = rotated ? height : width
         let h = rotated ? width : height
-        return Rect(minX: x - w / 2, minY: y - h / 2, width: w, height: h)
+        // minX/maxX and minY/maxY independently, matching TypeScript's
+        // `{ minX: t.x-w/2, maxX: t.x+w/2, ... }` — see Rect's doc comment on
+        // why this can't go through the width/height convenience.
+        return Rect(minX: x - w / 2, minY: y - h / 2, maxX: x + w / 2, maxY: y + h / 2)
     }
 }
 

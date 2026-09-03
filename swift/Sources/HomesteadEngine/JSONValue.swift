@@ -70,4 +70,9 @@ extension JSONValue {
         guard case .array(let values) = self else { return nil }
         return values.compactMap(\.stringValue)
     }
+
+    public var boolValue: Bool? {
+        if case .bool(let value) = self { return value }
+        return nil
+    }
 }

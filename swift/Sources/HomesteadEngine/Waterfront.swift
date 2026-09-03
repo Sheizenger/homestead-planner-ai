@@ -10,11 +10,15 @@ public enum WaterfrontModel {
         guard let wf = plot.waterfront, let b = plot.bounds else { return nil }
         let span = (wf.edge == .north || wf.edge == .south) ? b.height : b.width
         let width = max(0, min(wf.widthM, span))
+        // Each case reuses two of the plot's own edges verbatim and computes
+        // the other two — matching TypeScript's independent min/max fields
+        // exactly (see Rect's doc comment) rather than deriving an edge from
+        // a recombined width, which can differ by a ULP.
         switch wf.edge {
-        case .north: return Rect(minX: b.minX, minY: b.minY, width: b.width, height: width)
-        case .south: return Rect(minX: b.minX, minY: b.maxY - width, width: b.width, height: width)
-        case .west: return Rect(minX: b.minX, minY: b.minY, width: width, height: b.height)
-        case .east: return Rect(minX: b.maxX - width, minY: b.minY, width: width, height: b.height)
+        case .north: return Rect(minX: b.minX, minY: b.minY, maxX: b.maxX, maxY: b.minY + width)
+        case .south: return Rect(minX: b.minX, minY: b.maxY - width, maxX: b.maxX, maxY: b.maxY)
+        case .west: return Rect(minX: b.minX, minY: b.minY, maxX: b.minX + width, maxY: b.maxY)
+        case .east: return Rect(minX: b.maxX - width, minY: b.minY, maxX: b.maxX, maxY: b.maxY)
         }
     }
 
