@@ -13,8 +13,11 @@ import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Brief, LayoutVariant, PlanningMode, Plot, Project } from '../src/domain/types';
 import { OBJECT_LIBRARY } from '../src/domain/objectLibrary';
+import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../src/domain/constraints';
 import { generateVariant } from '../src/engine/generate';
-import { mulberry32 } from '../src/engine/placement';
+import { mulberry32, placeObjects } from '../src/engine/placement';
+import { buildProgram } from '../src/engine/sizing';
+import { parseFreeText, mergeFreeTextIntoStructured } from '../src/engine/textParser';
 import { buildLShapeBoundary, buildRectBoundary } from '../src/engine/plotShapes';
 
 const OUT_DIR = join(import.meta.dirname, '..', 'fixtures');
@@ -223,6 +226,38 @@ function main() {
   // so a transcription slip in 30 entries of dimensions and flags fails
   // loudly instead of quietly mis-sizing a paddock.
   writeFileSync(join(OUT_DIR, 'objectLibrary.json'), JSON.stringify(OBJECT_LIBRARY, null, 1) + '\n');
+  writeFileSync(
+    join(OUT_DIR, 'constraints.json'),
+    JSON.stringify({ constraints: CONSTRAINTS, boundarySetbacks: BOUNDARY_SETBACKS }, null, 1) + '\n',
+  );
+
+  // placeObjects in isolation, for the same 48 (scenario, mode, seed)
+  // combinations, decoupled from paths/fences/analytics/warnings so
+  // placement.ts can be verified before the rest of the pipeline exists.
+  // This is the single highest-risk file in the port: every rejected
+  // candidate still draws from the shared RNG before being discarded, so a
+  // one-iteration drift in the search grid desyncs every draw after it —
+  // exact equality here, including generated ids, is the only real proof the
+  // draw sequence stayed aligned.
+  const placementFixtures: unknown[] = [];
+  for (const scenario of SCENARIOS) {
+    for (const mode of MODES) {
+      for (const seed of SEEDS) {
+        const extraction = parseFreeText(scenario.brief.freeText);
+        const mergedInputs = mergeFreeTextIntoStructured(scenario.brief.structuredInputs, extraction);
+        const program = buildProgram(mergedInputs, mode);
+        const result = placeObjects(scenario.plot, program, mode, seed);
+        placementFixtures.push({
+          scenario: scenario.name,
+          mode,
+          seed,
+          input: { plot: scenario.plot, program },
+          output: result,
+        });
+      }
+    }
+  }
+  writeFileSync(join(OUT_DIR, 'placement.json'), JSON.stringify(placementFixtures, null, 1) + '\n');
 
   console.log(`Wrote ${index.length} fixtures to ${OUT_DIR}`);
 }
