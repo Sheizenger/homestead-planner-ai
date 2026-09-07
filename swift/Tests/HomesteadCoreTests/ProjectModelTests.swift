@@ -83,6 +83,28 @@ struct ProjectModelTests {
         #expect(m.isStale(id))
     }
 
+    // MARK: - Cost and materials
+
+    @Test func costEstimateAndMaterialsTakeoffDeriveFromTheCurrentVariant() {
+        let m = model()
+        let id = m.generateVariant(mode: .beautyBalanced, seed: 42)
+        let region = CostData.region(id: "custom")
+
+        let estimate = m.costEstimate(for: id, region: region)!
+        #expect(estimate.landAreaM2 == m.analytics(for: id)!.totalAreaM2)
+        #expect(estimate.totalUpfrontUsd > 0)
+
+        let takeoff = m.materialsTakeoff(for: id)!
+        #expect(!takeoff.structures.isEmpty)
+    }
+
+    @Test func costAndMaterialsAreNilForAMissingVariant() {
+        let m = model()
+        let bogus = UUID()
+        #expect(m.costEstimate(for: bogus, region: CostData.region(id: "custom")) == nil)
+        #expect(m.materialsTakeoff(for: bogus) == nil)
+    }
+
     // MARK: - Object editing
 
     @Test func lockedObjectsRefuseMoveAndDelete() {

@@ -14,7 +14,16 @@ import { join } from 'node:path';
 import type { Brief, LayoutVariant, PlanningMode, Plot, Project } from '../src/domain/types';
 import { OBJECT_LIBRARY } from '../src/domain/objectLibrary';
 import { CONSTRAINTS, BOUNDARY_SETBACKS } from '../src/domain/constraints';
+import {
+  COST_REGIONS,
+  OBJECT_COST_TABLE,
+  OBJECT_CATEGORY_FALLBACK_COST,
+  PATH_COST_PER_M2,
+  FENCE_COST_PER_M,
+} from '../src/domain/costData';
 import { generateVariant } from '../src/engine/generate';
+import { computeCostEstimate } from '../src/engine/costs';
+import { computeMaterialsTakeoff } from '../src/engine/materials';
 import { mulberry32, placeObjects } from '../src/engine/placement';
 import { buildProgram } from '../src/engine/sizing';
 import { parseFreeText, mergeFreeTextIntoStructured } from '../src/engine/textParser';
@@ -174,6 +183,16 @@ function main() {
 
   const index: { file: string; scenario: string; mode: PlanningMode; seed: number }[] = [];
 
+  // costs.ts/materials.ts both take the raw LayoutVariant computeCostEstimate
+  // and computeMaterialsTakeoff were written against (objects/paths/fences
+  // plus analytics.totalAreaM2) — reusing the variant generated for the main
+  // fixture, before normalize() strips the id/history fields those two
+  // functions don't touch anyway, rather than reconstructing an equivalent
+  // shape from scratch.
+  const costFixtures: unknown[] = [];
+  const materialsFixtures: unknown[] = [];
+  const costRegionIds = ['custom', 'de-bavaria', 'ru-national'];
+
   for (const scenario of SCENARIOS) {
     for (const mode of MODES) {
       for (const seed of SEEDS) {
@@ -189,6 +208,8 @@ function main() {
           stylePresetId: 'architectural-light',
         };
 
+        const variant = generateVariant(project, mode, seed);
+
         const file = `${scenario.name}--${mode}--${seed}.json`;
         writeFileSync(
           join(OUT_DIR, file),
@@ -196,18 +217,48 @@ function main() {
             {
               covers: scenario.covers,
               input: { plot: scenario.plot, brief: scenario.brief, mode, seed },
-              output: normalize(generateVariant(project, mode, seed)),
+              output: normalize(variant),
             },
             null,
             1,
           ) + '\n',
         );
         index.push({ file, scenario: scenario.name, mode, seed });
+
+        // Inputs aren't duplicated here: costs.json/materials.json reference
+        // this same (scenario, mode, seed) fixture by name, and the Swift
+        // test decodes that already-verified Layout for the objects/paths/
+        // fences/totalAreaM2 computeCostEstimate/computeMaterialsTakeoff
+        // actually read. Only the region (a handful of numbers) and the
+        // result are novel here.
+        for (const regionId of costRegionIds) {
+          const region = COST_REGIONS.find((r) => r.id === regionId)!;
+          costFixtures.push({
+            fixture: file,
+            regionId,
+            region,
+            output: computeCostEstimate(variant, region),
+          });
+        }
+        materialsFixtures.push({
+          fixture: file,
+          output: computeMaterialsTakeoff(variant),
+        });
       }
     }
   }
 
   writeFileSync(join(OUT_DIR, 'index.json'), JSON.stringify({ fixtures: index }, null, 1) + '\n');
+  writeFileSync(join(OUT_DIR, 'costs.json'), JSON.stringify(costFixtures, null, 1) + '\n');
+  writeFileSync(join(OUT_DIR, 'materials.json'), JSON.stringify(materialsFixtures, null, 1) + '\n');
+  writeFileSync(
+    join(OUT_DIR, 'costData.json'),
+    JSON.stringify(
+      { costRegions: COST_REGIONS, objectCostTable: OBJECT_COST_TABLE, objectCategoryFallbackCost: OBJECT_CATEGORY_FALLBACK_COST, pathCostPerM2: PATH_COST_PER_M2, fenceCostPerM: FENCE_COST_PER_M },
+      null,
+      1,
+    ) + '\n',
+  );
 
   // Every placement decision is downstream of this generator, so a Swift port
   // that diverges here diverges everywhere. Reference draws are emitted

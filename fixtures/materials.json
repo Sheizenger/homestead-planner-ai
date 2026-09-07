@@ -1,0 +1,5682 @@
+[
+ {
+  "fixture": "minimal--minimum-maintenance--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6210654982272601,
+     "widthM": 1.4,
+     "areaM2": 0.8694916975181641
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 21.786924773826236,
+     "widthM": 1.1,
+     "areaM2": 23.96561725120886
+    }
+   ],
+   "totalPavedAreaM2": 0.8694916975181641,
+   "totalGravelAreaM2": 23.96561725120886,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "minimal--minimum-maintenance--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6493027456570495,
+     "widthM": 1.4,
+     "areaM2": 0.9090238439198692
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 22.357262310188048,
+     "widthM": 1.1,
+     "areaM2": 24.592988541206854
+    }
+   ],
+   "totalPavedAreaM2": 0.9090238439198692,
+   "totalGravelAreaM2": 24.592988541206854,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "minimal--production-max--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6210654982272601,
+     "widthM": 1.4,
+     "areaM2": 0.8694916975181641
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 21.786924773826236,
+     "widthM": 1.1,
+     "areaM2": 23.96561725120886
+    }
+   ],
+   "totalPavedAreaM2": 0.8694916975181641,
+   "totalGravelAreaM2": 23.96561725120886,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "minimal--production-max--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6493027456570495,
+     "widthM": 1.4,
+     "areaM2": 0.9090238439198692
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 22.357262310188048,
+     "widthM": 1.1,
+     "areaM2": 24.592988541206854
+    }
+   ],
+   "totalPavedAreaM2": 0.9090238439198692,
+   "totalGravelAreaM2": 24.592988541206854,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "minimal--beauty-balanced--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6210654982272601,
+     "widthM": 1.4,
+     "areaM2": 0.8694916975181641
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 22.288612189990438,
+     "widthM": 1.1,
+     "areaM2": 24.517473408989485
+    }
+   ],
+   "totalPavedAreaM2": 0.8694916975181641,
+   "totalGravelAreaM2": 24.517473408989485,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "minimal--beauty-balanced--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6493027456570495,
+     "widthM": 1.4,
+     "areaM2": 0.9090238439198692
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 22.357262310188048,
+     "widthM": 1.1,
+     "areaM2": 24.592988541206854
+    }
+   ],
+   "totalPavedAreaM2": 0.9090238439198692,
+   "totalGravelAreaM2": 24.592988541206854,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "minimal--safety-first--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6210654982272601,
+     "widthM": 1.4,
+     "areaM2": 0.8694916975181641
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 21.786924773826236,
+     "widthM": 1.1,
+     "areaM2": 23.96561725120886
+    }
+   ],
+   "totalPavedAreaM2": 0.8694916975181641,
+   "totalGravelAreaM2": 23.96561725120886,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "minimal--safety-first--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 120
+    }
+   ],
+   "totalFenceLengthM": 120,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.6493027456570495,
+     "widthM": 1.4,
+     "areaM2": 0.9090238439198692
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 22.357262310188048,
+     "widthM": 1.1,
+     "areaM2": 24.592988541206854
+    }
+   ],
+   "totalPavedAreaM2": 0.9090238439198692,
+   "totalGravelAreaM2": 24.592988541206854,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 9.797958971132712,
+     "heightM": 8.16496580927726,
+     "areaM2": 80
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--minimum-maintenance--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.4762993649093
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 112.86202221865949,
+     "widthM": 1.1,
+     "areaM2": 124.14822444052545
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 124.14822444052545,
+   "structures": [
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 11.547005383792515,
+     "heightM": 17.32050807568877,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 16,
+     "heightM": 12,
+     "areaM2": 192
+    },
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 12.470765814495916,
+     "heightM": 9.699484522385713,
+     "areaM2": 120.96000000000001
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 6.928203230275509,
+     "heightM": 8.31384387633061,
+     "areaM2": 57.599999999999994
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 5.196152422706632,
+     "heightM": 8.660254037844386,
+     "areaM2": 44.99999999999999
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 4.743416490252569,
+     "heightM": 3.794733192202055,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 2.7,
+     "heightM": 2.25,
+     "areaM2": 6.075
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 1.35,
+     "heightM": 1.8,
+     "areaM2": 2.43
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--minimum-maintenance--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.47629936490925
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 191.51637527432564,
+     "widthM": 1.1,
+     "areaM2": 210.6680128017582
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 210.6680128017582,
+   "structures": [
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 17.32050807568877,
+     "heightM": 11.547005383792515,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 12,
+     "heightM": 16,
+     "areaM2": 192
+    },
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 12.470765814495916,
+     "heightM": 9.699484522385713,
+     "areaM2": 120.96000000000001
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 6.235382907247958,
+     "heightM": 5.196152422706632,
+     "areaM2": 32.4
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 4.156921938165306,
+     "heightM": 6.928203230275509,
+     "areaM2": 28.8
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 4.800000000000001,
+     "heightM": 4,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 4.743416490252569,
+     "heightM": 3.794733192202055,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3.2,
+     "heightM": 2.4000000000000004,
+     "areaM2": 7.6800000000000015
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--production-max--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.47629936490928
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 124.60138227466217,
+     "widthM": 1.1,
+     "areaM2": 137.0615205021284
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 137.0615205021284,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 12.769964761110346,
+     "heightM": 16.418526121427586,
+     "areaM2": 209.66400000000002
+    },
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 16,
+     "heightM": 12,
+     "areaM2": 192
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 9.237604307034012,
+     "heightM": 13.856406460551018,
+     "areaM2": 127.99999999999999
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 6.235382907247958,
+     "heightM": 5.196152422706632,
+     "areaM2": 32.4
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 6.841052550594829,
+     "heightM": 4.1046315303568965,
+     "areaM2": 28.080000000000002
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 4.800000000000001,
+     "heightM": 4,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 3.794733192202055,
+     "heightM": 4.743416490252569,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--production-max--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.47629936490927
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 134.19481657850167,
+     "widthM": 1.1,
+     "areaM2": 147.61429823635186
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 147.61429823635186,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 15.962455951387932,
+     "heightM": 20.523157651784484,
+     "areaM2": 327.6
+    },
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 16,
+     "heightM": 12,
+     "areaM2": 192
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 6.928203230275509,
+     "heightM": 10.392304845413262,
+     "areaM2": 71.99999999999999
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 4.1046315303568965,
+     "heightM": 6.841052550594829,
+     "areaM2": 28.080000000000002
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 4.800000000000001,
+     "heightM": 4,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 4.743416490252569,
+     "heightM": 3.794733192202055,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 1.8,
+     "heightM": 1.35,
+     "areaM2": 2.43
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--beauty-balanced--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.4762993649093
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 140.52821764642,
+     "widthM": 1.1,
+     "areaM2": 154.581039411062
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 154.581039411062,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 14,
+     "heightM": 18,
+     "areaM2": 252
+    },
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 12,
+     "heightM": 16,
+     "areaM2": 192
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 6.928203230275509,
+     "heightM": 10.392304845413262,
+     "areaM2": 71.99999999999999
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 10,
+     "heightM": 6,
+     "areaM2": 60
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 6.235382907247958,
+     "heightM": 5.196152422706632,
+     "areaM2": 32.4
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 4.800000000000001,
+     "heightM": 4,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 4.743416490252569,
+     "heightM": 3.794733192202055,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--beauty-balanced--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.47629936490927
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 209.35184532717608,
+     "widthM": 1.1,
+     "areaM2": 230.2870298598937
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 230.2870298598937,
+   "structures": [
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 16,
+     "heightM": 12,
+     "areaM2": 192
+    },
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 14.4,
+     "heightM": 11.200000000000001,
+     "areaM2": 161.28000000000003
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 10.392304845413262,
+     "heightM": 6.928203230275509,
+     "areaM2": 71.99999999999999
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 6.928203230275509,
+     "heightM": 8.31384387633061,
+     "areaM2": 57.599999999999994
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 6,
+     "heightM": 3.5999999999999996,
+     "areaM2": 21.599999999999998
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 4.800000000000001,
+     "heightM": 4,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 3.794733192202055,
+     "heightM": 4.743416490252569,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--safety-first--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.4762993649093
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 147.7897406152229,
+     "widthM": 1.1,
+     "areaM2": 162.5687146767452
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 162.5687146767452,
+   "structures": [
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 12,
+     "heightM": 16,
+     "areaM2": 192
+    },
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 13.661039491927397,
+     "heightM": 10.625252938165755,
+     "areaM2": 145.152
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 6.928203230275509,
+     "heightM": 10.392304845413262,
+     "areaM2": 71.99999999999999
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 8.31384387633061,
+     "heightM": 6.928203230275509,
+     "areaM2": 57.599999999999994
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 9.486832980505138,
+     "heightM": 5.692099788303082,
+     "areaM2": 53.99999999999999
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 4,
+     "heightM": 4.800000000000001,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 3.794733192202055,
+     "heightM": 4.743416490252569,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "family--safety-first--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    },
+    {
+     "fenceType": "paddock",
+     "lengthM": 109.47629936490927
+    }
+   ],
+   "totalFenceLengthM": 306.2762993649093,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 230.3964754065327,
+     "widthM": 1.1,
+     "areaM2": 253.43612294718596
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 253.43612294718596,
+   "structures": [
+    {
+     "typeId": "goat-paddock",
+     "label": "Goat Paddock",
+     "widthM": 16,
+     "heightM": 12,
+     "areaM2": 192
+    },
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 10.625252938165755,
+     "heightM": 13.661039491927397,
+     "areaM2": 145.152
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 6.928203230275509,
+     "heightM": 10.392304845413262,
+     "areaM2": 71.99999999999999
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 7.589466384404111,
+     "heightM": 4.553679830642466,
+     "areaM2": 34.56
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 6.235382907247958,
+     "heightM": 5.196152422706632,
+     "areaM2": 32.4
+    },
+    {
+     "typeId": "poultry-coop",
+     "label": "Poultry Coop & Run",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "goat-shelter",
+     "label": "Goat Shelter",
+     "widthM": 3.794733192202055,
+     "heightM": 4.743416490252569,
+     "areaM2": 18
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "woodshed",
+     "label": "Woodshed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 3.5999999999999996,
+     "heightM": 3,
+     "areaM2": 10.799999999999999
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--minimum-maintenance--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 16.322360973343677,
+     "widthM": 3,
+     "areaM2": 48.96708292003103
+    },
+    {
+     "group": "walkway",
+     "lengthM": 1.009242720594301,
+     "widthM": 1.4,
+     "areaM2": 1.4129398088320215
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 54.048885370057384,
+     "widthM": 1.1,
+     "areaM2": 59.45377390706313
+    }
+   ],
+   "totalPavedAreaM2": 50.380022728863054,
+   "totalGravelAreaM2": 59.45377390706313,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 15.588457268119894,
+     "heightM": 12.12435565298214,
+     "areaM2": 188.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 13.856406460551018,
+     "heightM": 8.660254037844386,
+     "areaM2": 119.99999999999999
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 6.928203230275509,
+     "heightM": 4.330127018922193,
+     "areaM2": 29.999999999999996
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--minimum-maintenance--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 11.600525657068424,
+     "widthM": 3,
+     "areaM2": 34.80157697120527
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.018568966433775813,
+     "widthM": 1.4,
+     "areaM2": 0.025996553007286136
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 72.34810862464354,
+     "widthM": 1.1,
+     "areaM2": 79.5829194871079
+    }
+   ],
+   "totalPavedAreaM2": 34.82757352421256,
+   "totalGravelAreaM2": 79.5829194871079,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 12.12435565298214,
+     "heightM": 15.588457268119894,
+     "areaM2": 188.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 13.856406460551018,
+     "heightM": 8.660254037844386,
+     "areaM2": 119.99999999999999
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 6.928203230275509,
+     "heightM": 4.330127018922193,
+     "areaM2": 29.999999999999996
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--production-max--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000008
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 16.322360973343677,
+     "widthM": 3,
+     "areaM2": 48.96708292003103
+    },
+    {
+     "group": "walkway",
+     "lengthM": 1.009242720594301,
+     "widthM": 1.4,
+     "areaM2": 1.4129398088320215
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 45.0271438313342,
+     "widthM": 1.1,
+     "areaM2": 49.52985821446762
+    }
+   ],
+   "totalPavedAreaM2": 50.380022728863054,
+   "totalGravelAreaM2": 49.52985821446762,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 20.523157651784484,
+     "heightM": 15.962455951387932,
+     "areaM2": 327.6
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 9.121403400793104,
+     "heightM": 14.594245441268967,
+     "areaM2": 133.12
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 5.7008771254956905,
+     "heightM": 9.121403400793104,
+     "areaM2": 52.00000000000001
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--production-max--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 14.66628714280833,
+     "widthM": 3,
+     "areaM2": 43.99886142842499
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.018568966433775813,
+     "widthM": 1.4,
+     "areaM2": 0.025996553007286136
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 96.40449488586088,
+     "widthM": 1.1,
+     "areaM2": 106.04494437444698
+    }
+   ],
+   "totalPavedAreaM2": 44.02485798143228,
+   "totalGravelAreaM2": 106.04494437444698,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 20.523157651784484,
+     "heightM": 15.962455951387932,
+     "areaM2": 327.6
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 9.121403400793104,
+     "heightM": 14.594245441268967,
+     "areaM2": 133.12
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 5.7008771254956905,
+     "heightM": 9.121403400793104,
+     "areaM2": 52.00000000000001
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--beauty-balanced--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 16.322360973343677,
+     "widthM": 3,
+     "areaM2": 48.96708292003103
+    },
+    {
+     "group": "walkway",
+     "lengthM": 1.009242720594301,
+     "widthM": 1.4,
+     "areaM2": 1.4129398088320215
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 59.34069132604877,
+     "widthM": 1.1,
+     "areaM2": 65.27476045865365
+    }
+   ],
+   "totalPavedAreaM2": 50.380022728863054,
+   "totalGravelAreaM2": 65.27476045865365,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 14,
+     "heightM": 18,
+     "areaM2": 252
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 10,
+     "heightM": 16,
+     "areaM2": 160
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--beauty-balanced--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 11.93453816480384,
+     "widthM": 3,
+     "areaM2": 35.80361449441152
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.018568966433775813,
+     "widthM": 1.4,
+     "areaM2": 0.025996553007286136
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 78.57429679046189,
+     "widthM": 1.1,
+     "areaM2": 86.43172646950808
+    }
+   ],
+   "totalPavedAreaM2": 35.82961104741881,
+   "totalGravelAreaM2": 86.43172646950808,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 18,
+     "heightM": 14,
+     "areaM2": 252
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 16,
+     "heightM": 10,
+     "areaM2": 160
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 5,
+     "heightM": 8,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--safety-first--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 16.322360973343677,
+     "widthM": 3,
+     "areaM2": 48.96708292003103
+    },
+    {
+     "group": "walkway",
+     "lengthM": 1.009242720594301,
+     "widthM": 1.4,
+     "areaM2": 1.4129398088320215
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 63.78131115610595,
+     "widthM": 1.1,
+     "areaM2": 70.15944227171656
+    }
+   ],
+   "totalPavedAreaM2": 50.380022728863054,
+   "totalGravelAreaM2": 70.15944227171656,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 17.076299364909246,
+     "heightM": 13.281566172707192,
+     "areaM2": 226.79999999999995
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 15.17893276880822,
+     "heightM": 9.486832980505138,
+     "areaM2": 144
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 4.743416490252569,
+     "heightM": 7.58946638440411,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "lshape--safety-first--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 210
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000011
+    }
+   ],
+   "totalFenceLengthM": 222.8,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 13.525929302721359,
+     "widthM": 3,
+     "areaM2": 40.577787908164076
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.018568966433775813,
+     "widthM": 1.4,
+     "areaM2": 0.025996553007286136
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 94.16806051869561,
+     "widthM": 1.1,
+     "areaM2": 103.58486657056518
+    }
+   ],
+   "totalPavedAreaM2": 40.603784461171365,
+   "totalGravelAreaM2": 103.58486657056518,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 17.076299364909246,
+     "heightM": 13.281566172707192,
+     "areaM2": 226.79999999999995
+    },
+    {
+     "typeId": "vineyard",
+     "label": "Vineyard",
+     "widthM": 9.486832980505138,
+     "heightM": 15.17893276880822,
+     "areaM2": 144
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "greenhouse",
+     "label": "Greenhouse",
+     "widthM": 4.743416490252569,
+     "heightM": 7.58946638440411,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "cellar",
+     "label": "Root Cellar",
+     "widthM": 4,
+     "heightM": 4,
+     "areaM2": 16
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--minimum-maintenance--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.80000000000001
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 112.4984972288,
+     "widthM": 1.1,
+     "areaM2": 123.74834695168002
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 123.74834695168002,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 5.196152422706632,
+     "heightM": 8.660254037844386,
+     "areaM2": 44.99999999999999
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 6,
+     "heightM": 2.5,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--minimum-maintenance--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.800000000000004
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3181697649648427,
+     "widthM": 1.4,
+     "areaM2": 0.4454376709507798
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 148.05055783142257,
+     "widthM": 1.1,
+     "areaM2": 162.85561361456485
+    }
+   ],
+   "totalPavedAreaM2": 0.4454376709507798,
+   "totalGravelAreaM2": 162.85561361456485,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 8.660254037844386,
+     "heightM": 5.196152422706632,
+     "areaM2": 44.99999999999999
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 2.5,
+     "heightM": 6,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--production-max--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.800000000000004
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 103.85005869103333,
+     "widthM": 1.1,
+     "areaM2": 114.23506456013666
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 114.23506456013666,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 11.401754250991381,
+     "heightM": 6.841052550594828,
+     "areaM2": 78.00000000000001
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 6,
+     "heightM": 2.5,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--production-max--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.800000000000004
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3181697649648427,
+     "widthM": 1.4,
+     "areaM2": 0.4454376709507798
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 158.10774296322555,
+     "widthM": 1.1,
+     "areaM2": 173.9185172595481
+    }
+   ],
+   "totalPavedAreaM2": 0.4454376709507798,
+   "totalGravelAreaM2": 173.9185172595481,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 11.401754250991381,
+     "heightM": 6.841052550594828,
+     "areaM2": 78.00000000000001
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 6,
+     "heightM": 2.5,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--beauty-balanced--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.800000000000004
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 94.92693959757452,
+     "widthM": 1.1,
+     "areaM2": 104.41963355733198
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 104.41963355733198,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 10,
+     "heightM": 6,
+     "areaM2": 60
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 2.5,
+     "heightM": 6,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--beauty-balanced--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.800000000000004
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3181697649648427,
+     "widthM": 1.4,
+     "areaM2": 0.4454376709507798
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 161.77820319806926,
+     "widthM": 1.1,
+     "areaM2": 177.95602351787622
+    }
+   ],
+   "totalPavedAreaM2": 0.4454376709507798,
+   "totalGravelAreaM2": 177.95602351787622,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 10,
+     "heightM": 6,
+     "areaM2": 60
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 6,
+     "heightM": 2.5,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--safety-first--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.800000000000004
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 97.63613057939097,
+     "widthM": 1.1,
+     "areaM2": 107.39974363733008
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 107.39974363733008,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 9.486832980505138,
+     "heightM": 5.692099788303082,
+     "areaM2": 53.99999999999999
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 6,
+     "heightM": 2.5,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "waterfront--safety-first--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 16.800000000000004
+    },
+    {
+     "fenceType": "garden",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 213.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3181697649648427,
+     "widthM": 1.4,
+     "areaM2": 0.4454376709507798
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 158.11802672670916,
+     "widthM": 1.1,
+     "areaM2": 173.92982939938008
+    }
+   ],
+   "totalPavedAreaM2": 0.4454376709507798,
+   "totalGravelAreaM2": 173.92982939938008,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "vegetable-area",
+     "label": "Vegetable Area",
+     "widthM": 10,
+     "heightM": 12,
+     "areaM2": 120
+    },
+    {
+     "typeId": "berry-rows",
+     "label": "Berry Rows",
+     "widthM": 9.486832980505138,
+     "heightM": 5.692099788303082,
+     "areaM2": 53.99999999999999
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "banya",
+     "label": "Banya",
+     "widthM": 5,
+     "heightM": 4,
+     "areaM2": 20
+    },
+    {
+     "typeId": "dock",
+     "label": "Dock",
+     "widthM": 6,
+     "heightM": 2.5,
+     "areaM2": 15
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "water-tank",
+     "label": "Water Tank",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "micro-hydro",
+     "label": "Micro-Hydro Turbine",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--minimum-maintenance--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.600000000000023
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 65.86847637495379,
+     "widthM": 1.1,
+     "areaM2": 72.45532401244917
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 72.45532401244917,
+   "structures": [
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 17.32050807568877,
+     "heightM": 11.547005383792515,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 15.588457268119894,
+     "heightM": 12.12435565298214,
+     "areaM2": 188.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 6.928203230275509,
+     "heightM": 5.196152422706632,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--minimum-maintenance--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.60000000000002
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 101.37130094141466,
+     "widthM": 1.1,
+     "areaM2": 111.50843103555613
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 111.50843103555613,
+   "structures": [
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 17.32050807568877,
+     "heightM": 11.547005383792515,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 15.588457268119894,
+     "heightM": 12.12435565298214,
+     "areaM2": 188.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 6.928203230275509,
+     "heightM": 5.196152422706632,
+     "areaM2": 36
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--production-max--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.600000000000023
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 53.09781148916207,
+     "widthM": 1.1,
+     "areaM2": 58.40759263807828
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 58.40759263807828,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 15.962455951387932,
+     "heightM": 20.523157651784484,
+     "areaM2": 327.6
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 11.547005383792515,
+     "heightM": 17.32050807568877,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 6.841052550594828,
+     "heightM": 9.121403400793104,
+     "areaM2": 62.400000000000006
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--production-max--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.600000000000016
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 102.81596029051063,
+     "widthM": 1.1,
+     "areaM2": 113.0975563195617
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 113.0975563195617,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 20.523157651784484,
+     "heightM": 15.962455951387932,
+     "areaM2": 327.6
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 17.32050807568877,
+     "heightM": 11.547005383792515,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 9.121403400793104,
+     "heightM": 6.841052550594828,
+     "areaM2": 62.400000000000006
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--beauty-balanced--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.600000000000023
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 54.657070449192545,
+     "widthM": 1.1,
+     "areaM2": 60.1227774941118
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 60.1227774941118,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 18,
+     "heightM": 14,
+     "areaM2": 252
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 17.32050807568877,
+     "heightM": 11.547005383792515,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 6,
+     "heightM": 8,
+     "areaM2": 48
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 4,
+     "heightM": 4.800000000000001,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--beauty-balanced--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.600000000000016
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 125.71745981682325,
+     "widthM": 1.1,
+     "areaM2": 138.28920579850558
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 138.28920579850558,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 14,
+     "heightM": 18,
+     "areaM2": 252
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 11.547005383792515,
+     "heightM": 17.32050807568877,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 8,
+     "heightM": 6,
+     "areaM2": 48
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--safety-first--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.600000000000016
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.275293205888012,
+     "widthM": 1.4,
+     "areaM2": 0.3854104882432168
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 57.94320708858581,
+     "widthM": 1.1,
+     "areaM2": 63.73752779744439
+    }
+   ],
+   "totalPavedAreaM2": 0.3854104882432168,
+   "totalGravelAreaM2": 63.73752779744439,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 17.076299364909246,
+     "heightM": 13.281566172707192,
+     "areaM2": 226.79999999999995
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 13.856406460551018,
+     "heightM": 9.237604307034012,
+     "areaM2": 127.99999999999999
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 5.692099788303082,
+     "heightM": 7.58946638440411,
+     "areaM2": 43.199999999999996
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "sloped--safety-first--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 184
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 27.60000000000002
+    }
+   ],
+   "totalFenceLengthM": 211.60000000000002,
+   "paths": [
+    {
+     "group": "walkway",
+     "lengthM": 0.3076491090818294,
+     "widthM": 1.4,
+     "areaM2": 0.43070875271456116
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 91.95932036468193,
+     "widthM": 1.1,
+     "areaM2": 101.15525240115014
+    }
+   ],
+   "totalPavedAreaM2": 0.43070875271456116,
+   "totalGravelAreaM2": 101.15525240115014,
+   "structures": [
+    {
+     "typeId": "orchard-trees",
+     "label": "Orchard",
+     "widthM": 17.076299364909246,
+     "heightM": 13.281566172707192,
+     "areaM2": 226.79999999999995
+    },
+    {
+     "typeId": "potato-area",
+     "label": "Potato Field",
+     "widthM": 11.547005383792515,
+     "heightM": 17.32050807568877,
+     "areaM2": 199.99999999999997
+    },
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "raised-beds",
+     "label": "Raised Beds",
+     "widthM": 7.58946638440411,
+     "heightM": 5.692099788303082,
+     "areaM2": 43.199999999999996
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "patio",
+     "label": "Patio",
+     "widthM": 6,
+     "heightM": 5,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "rainwater-cistern",
+     "label": "Rainwater Cistern",
+     "widthM": 2.5,
+     "heightM": 2.5,
+     "areaM2": 6.25
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--minimum-maintenance--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 102.80000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 9.384913742123171,
+     "widthM": 3,
+     "areaM2": 28.154741226369513
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.2676153888180899,
+     "widthM": 1.4,
+     "areaM2": 0.37466154434532584
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 42.63423003289844,
+     "widthM": 1.1,
+     "areaM2": 46.89765303618828
+    }
+   ],
+   "totalPavedAreaM2": 28.52940277071484,
+   "totalGravelAreaM2": 46.89765303618828,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 2.25,
+     "heightM": 1.8,
+     "areaM2": 4.05
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 1.7999999999999998,
+     "heightM": 1.7999999999999998,
+     "areaM2": 3.2399999999999993
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 1.35,
+     "heightM": 1.8,
+     "areaM2": 2.43
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 1.6,
+     "heightM": 1.2000000000000002,
+     "areaM2": 1.9200000000000004
+    },
+    {
+     "typeId": "smokehouse",
+     "label": "Smokehouse",
+     "widthM": 1.5,
+     "heightM": 1.2,
+     "areaM2": 1.7999999999999998
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--minimum-maintenance--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 9.600000000000012
+    }
+   ],
+   "totalFenceLengthM": 99.60000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 17.346990785766387,
+     "widthM": 3,
+     "areaM2": 52.04097235729916
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.227555715739733,
+     "widthM": 1.4,
+     "areaM2": 0.31857800203562614
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 31.999997404841682,
+     "widthM": 1.1,
+     "areaM2": 35.19999714532585
+    }
+   ],
+   "totalPavedAreaM2": 52.35955035933479,
+   "totalGravelAreaM2": 35.19999714532585,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 4,
+     "heightM": 4.800000000000001,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 1.6,
+     "heightM": 1.6,
+     "areaM2": 2.5600000000000005
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "smokehouse",
+     "label": "Smokehouse",
+     "widthM": 1.125,
+     "heightM": 0.9,
+     "areaM2": 1.0125
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 0.9,
+     "heightM": 0.675,
+     "areaM2": 0.6075
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--production-max--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 102.80000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 9.384913742123171,
+     "widthM": 3,
+     "areaM2": 28.154741226369513
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.2676153888180899,
+     "widthM": 1.4,
+     "areaM2": 0.37466154434532584
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 34.84568834831934,
+     "widthM": 1.1,
+     "areaM2": 38.33025718315128
+    }
+   ],
+   "totalPavedAreaM2": 28.52940277071484,
+   "totalGravelAreaM2": 38.33025718315128,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 2.25,
+     "heightM": 1.8,
+     "areaM2": 4.05
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 1.7999999999999998,
+     "heightM": 1.7999999999999998,
+     "areaM2": 3.2399999999999993
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 1.2000000000000002,
+     "heightM": 1.6,
+     "areaM2": 1.9200000000000004
+    },
+    {
+     "typeId": "smokehouse",
+     "label": "Smokehouse",
+     "widthM": 1.2,
+     "heightM": 1.5,
+     "areaM2": 1.7999999999999998
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--production-max--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 9.600000000000012
+    }
+   ],
+   "totalFenceLengthM": 99.60000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 17.346990785766387,
+     "widthM": 3,
+     "areaM2": 52.04097235729916
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.227555715739733,
+     "widthM": 1.4,
+     "areaM2": 0.31857800203562614
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 23.186296760970702,
+     "widthM": 1.1,
+     "areaM2": 25.504926437067773
+    }
+   ],
+   "totalPavedAreaM2": 52.35955035933479,
+   "totalGravelAreaM2": 25.504926437067773,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 4,
+     "heightM": 4.800000000000001,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 1.6,
+     "heightM": 1.6,
+     "areaM2": 2.5600000000000005
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "smokehouse",
+     "label": "Smokehouse",
+     "widthM": 1.125,
+     "heightM": 0.9,
+     "areaM2": 1.0125
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 0.9,
+     "heightM": 0.675,
+     "areaM2": 0.6075
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--beauty-balanced--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 102.80000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 9.384913742123171,
+     "widthM": 3,
+     "areaM2": 28.154741226369513
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.2676153888180899,
+     "widthM": 1.4,
+     "areaM2": 0.37466154434532584
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 34.97102269674647,
+     "widthM": 1.1,
+     "areaM2": 38.46812496642112
+    }
+   ],
+   "totalPavedAreaM2": 28.52940277071484,
+   "totalGravelAreaM2": 38.46812496642112,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 2.25,
+     "heightM": 1.8,
+     "areaM2": 4.05
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 1.7999999999999998,
+     "heightM": 1.7999999999999998,
+     "areaM2": 3.2399999999999993
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 1.2000000000000002,
+     "heightM": 1.6,
+     "areaM2": 1.9200000000000004
+    },
+    {
+     "typeId": "smokehouse",
+     "label": "Smokehouse",
+     "widthM": 1.2,
+     "heightM": 1.5,
+     "areaM2": 1.7999999999999998
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--beauty-balanced--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 9.600000000000012
+    }
+   ],
+   "totalFenceLengthM": 99.60000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 17.346990785766387,
+     "widthM": 3,
+     "areaM2": 52.04097235729916
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.227555715739733,
+     "widthM": 1.4,
+     "areaM2": 0.31857800203562614
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 16.21730440258978,
+     "widthM": 1.1,
+     "areaM2": 17.839034842848758
+    }
+   ],
+   "totalPavedAreaM2": 52.35955035933479,
+   "totalGravelAreaM2": 17.839034842848758,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 4,
+     "heightM": 4.800000000000001,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 0.675,
+     "heightM": 0.9,
+     "areaM2": 0.6075
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--safety-first--42.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 12.800000000000004
+    }
+   ],
+   "totalFenceLengthM": 102.80000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 9.384913742123171,
+     "widthM": 3,
+     "areaM2": 28.154741226369513
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.2676153888180899,
+     "widthM": 1.4,
+     "areaM2": 0.37466154434532584
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 32.62915887980718,
+     "widthM": 1.1,
+     "areaM2": 35.892074767787896
+    }
+   ],
+   "totalPavedAreaM2": 28.52940277071484,
+   "totalGravelAreaM2": 35.892074767787896,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 5,
+     "heightM": 6,
+     "areaM2": 30
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 4,
+     "heightM": 3,
+     "areaM2": 12
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 2.25,
+     "heightM": 1.8,
+     "areaM2": 4.05
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 2,
+     "heightM": 2,
+     "areaM2": 4
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 1.7999999999999998,
+     "heightM": 1.7999999999999998,
+     "areaM2": 3.2399999999999993
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 1.2000000000000002,
+     "heightM": 1.6,
+     "areaM2": 1.9200000000000004
+    },
+    {
+     "typeId": "smokehouse",
+     "label": "Smokehouse",
+     "widthM": 0.9,
+     "heightM": 1.125,
+     "areaM2": 1.0125
+    }
+   ]
+  }
+ },
+ {
+  "fixture": "overloaded--safety-first--59.json",
+  "output": {
+   "fences": [
+    {
+     "fenceType": "perimeter",
+     "lengthM": 90
+    },
+    {
+     "fenceType": "decorative",
+     "lengthM": 9.600000000000012
+    }
+   ],
+   "totalFenceLengthM": 99.60000000000001,
+   "paths": [
+    {
+     "group": "driveway",
+     "lengthM": 17.346990785766387,
+     "widthM": 3,
+     "areaM2": 52.04097235729916
+    },
+    {
+     "group": "walkway",
+     "lengthM": 0.227555715739733,
+     "widthM": 1.4,
+     "areaM2": 0.31857800203562614
+    },
+    {
+     "group": "gardenPath",
+     "lengthM": 35.6957274973951,
+     "widthM": 1.1,
+     "areaM2": 39.26530024713461
+    }
+   ],
+   "totalPavedAreaM2": 52.35955035933479,
+   "totalGravelAreaM2": 39.26530024713461,
+   "structures": [
+    {
+     "typeId": "house",
+     "label": "House",
+     "widthM": 12,
+     "heightM": 10,
+     "areaM2": 120
+    },
+    {
+     "typeId": "barn",
+     "label": "Barn",
+     "widthM": 10,
+     "heightM": 8,
+     "areaM2": 80
+    },
+    {
+     "typeId": "solar-array",
+     "label": "Solar Panels",
+     "widthM": 8,
+     "heightM": 5,
+     "areaM2": 40
+    },
+    {
+     "typeId": "garage",
+     "label": "Garage",
+     "widthM": 6,
+     "heightM": 6,
+     "areaM2": 36
+    },
+    {
+     "typeId": "septic",
+     "label": "Septic System",
+     "widthM": 4,
+     "heightM": 5,
+     "areaM2": 20
+    },
+    {
+     "typeId": "workshop",
+     "label": "Workshop",
+     "widthM": 4,
+     "heightM": 4.800000000000001,
+     "areaM2": 19.200000000000003
+    },
+    {
+     "typeId": "shed",
+     "label": "Tool Shed",
+     "widthM": 3,
+     "heightM": 4,
+     "areaM2": 12
+    },
+    {
+     "typeId": "battery-room",
+     "label": "Battery Room",
+     "widthM": 3,
+     "heightM": 3,
+     "areaM2": 9
+    },
+    {
+     "typeId": "inverter-room",
+     "label": "Inverter Room",
+     "widthM": 1.6,
+     "heightM": 1.6,
+     "areaM2": 2.5600000000000005
+    },
+    {
+     "typeId": "compost",
+     "label": "Compost Yard",
+     "widthM": 1.8,
+     "heightM": 1.35,
+     "areaM2": 2.43
+    },
+    {
+     "typeId": "well",
+     "label": "Well",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "pump",
+     "label": "Pump House",
+     "widthM": 1.2,
+     "heightM": 1.2,
+     "areaM2": 1.44
+    },
+    {
+     "typeId": "smokehouse",
+     "label": "Smokehouse",
+     "widthM": 0.9,
+     "heightM": 1.125,
+     "areaM2": 1.0125
+    },
+    {
+     "typeId": "generator",
+     "label": "Backup Generator",
+     "widthM": 0.9,
+     "heightM": 0.675,
+     "areaM2": 0.6075
+    }
+   ]
+  }
+ }
+]

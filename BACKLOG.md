@@ -15,9 +15,9 @@ In order — each stage assumes the previous one landed.
    against the reference data.
 3. ~~**Planner.**~~ Done, folding in stage 4's `analytics`/`warnings`/
    `constraints`/`elevation`/`waterfront` early since `Generate.variant`
-   needed them to produce a complete `Layout`. `costs` and `materials` remain
-   — UI-only, not part of the generated plan, deferred to whichever later
-   stage first needs them. `GenerateTests` runs the whole pipeline (text
+   needed them to produce a complete `Layout`. `costs` and `materials`
+   ported at stage 7, where the panels that actually need them live.
+   `GenerateTests` runs the whole pipeline (text
    parsing → sizing → placement → paths/fences → utility hookups →
    future-expansion reserve → analytics → warnings, unplaced items included)
    against all 48 fixtures field by field; passed on the first full run.
@@ -91,10 +91,34 @@ In order — each stage assumes the previous one landed.
    What's left, and needs a Mac: the actual `Canvas` view wiring these
    into drawing and gesture handling, which waits on the Xcode project
    (stage 5's still-open item).
-7. **Panels.** Brief, object properties, warnings, variant list with rename /
-   delete / badges, object palette (search over the catalog, `+` and a
-   keyboard shortcut), and the "brief changed since this variant was
-   generated" banner with its generate-alongside action.
+7. **Panels — logic half done.** `CostData`/`Costs`/`Materials` are ported
+   in `HomesteadEngine` (generated from the TypeScript tables like the
+   object catalog and constraints, held against them field by field) and
+   `ObjectPalette.search` in `HomesteadCore`; `ProjectModel` exposes
+   `costEstimate(for:region:)` and `materialsTakeoff(for:)` alongside
+   `analytics`/`warnings`. 107 tests, all on Linux.
+
+   `costs.json`/`materials.json` reference the 48 golden fixtures by name
+   rather than duplicating their objects/paths/fences, since
+   `computeCostEstimate`/`computeMaterialsTakeoff` are pure functions of
+   exactly what `GenerateTests` already verified. Comparing them surfaced a
+   real cross-platform limit rather than a porting error: `hypot` is IEEE
+   754 "correct to within about 1 ULP," not bit-identical across libm
+   implementations, and summing several `distance()` calls along a path
+   (`polylineLength`) makes hitting one of the rare divergent inputs likely
+   enough to show up — measured at 3 of 517 point-pairs across the golden
+   fixtures. Documented in AGENTS.md's porting gotchas; the cost/materials
+   fixture tests compare with a relative tolerance for exactly this reason,
+   while everything else in the suite stays exact.
+
+   Object properties and warnings panels need no new logic beyond what
+   `ProjectModel` already exposes — they read `warnings(for:)`'s
+   `objectIds` and the mutators from stage 5. Variant list (rename/delete/
+   badges) and the staleness banner (`isStale`) are likewise already there
+   from stage 5; what's left is drawing all of this, which needs the Xcode
+   project (still stage 5's open item) and, for the object palette
+   specifically, a keyboard shortcut and drag target that are pure
+   SwiftUI/App-layer concerns.
 8. **Export, locales, accessibility.** PNG and PDF from the same scene the
    canvas draws; `en` + `ru` with a key-parity test; `Canvas` is opaque to
    VoiceOver, so the plan needs a parallel accessible representation.

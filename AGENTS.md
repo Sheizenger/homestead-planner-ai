@@ -59,6 +59,19 @@ Silent, and no config confesses them:
 - **`mulberry32`.** Reproduce on `UInt32` with wrapping arithmetic (`&+`,
   `&*`) and identical shifts. Promotion to `Int` changes the stream, and with
   it every layout.
+- **`hypot` isn't bit-identical across platforms.** IEEE 754 requires basic
+  arithmetic (`+`, `-`, `*`, `/`, `sqrt`) to be correctly rounded; `hypot` is
+  not held to that standard, only to "within about 1 ULP." glibc's `hypot`
+  (this port, on Linux) and V8's `Math.hypot` (the fixtures, from Node) are
+  both valid and still disagree in the last bit for some inputs — measured
+  directly at 3 of 517 point-pairs across the golden fixtures' paths. A
+  single `distance()` call rarely shows it; summing several along a path
+  (`Materials.polylineLength`, `Costs`'s path/fence lengths) makes hitting one
+  of those inputs likely enough to matter. Fixture tests whose output is a
+  displayed quantity (a cost, a length) compare with a relative tolerance for
+  exactly this reason; tests whose output is a decision (an id, a placement,
+  a boolean) stay exact, because nothing here ever changes what a
+  hypot-sized wobble would flip.
 
 ## Settled decisions
 

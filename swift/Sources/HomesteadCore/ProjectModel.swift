@@ -48,6 +48,16 @@ public final class ProjectModel {
         )
     }
 
+    public func costEstimate(for variantID: Variant.ID, region: CostRegion) -> CostEstimate? {
+        guard let variant = variant(variantID), let analytics = analytics(for: variantID) else { return nil }
+        return Costs.estimate(objects: variant.objects, paths: variant.paths, fences: variant.fences, totalAreaM2: analytics.totalAreaM2, region: region)
+    }
+
+    public func materialsTakeoff(for variantID: Variant.ID) -> MaterialsTakeoff? {
+        guard let variant = variant(variantID) else { return nil }
+        return Materials.takeoff(objects: variant.objects, paths: variant.paths, fences: variant.fences)
+    }
+
     /// True once the brief or the plot boundary has moved on since this
     /// variant was generated — the trigger for the "re-generate with the
     /// current brief" banner. A variant that no longer exists reads as not
