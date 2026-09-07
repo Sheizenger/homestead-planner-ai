@@ -111,6 +111,17 @@ In order — each stage assumes the previous one landed.
    fixture tests compare with a relative tolerance for exactly this reason,
    while everything else in the suite stays exact.
 
+   `EditCommands` (the quick-edit text box: "move the greenhouse near the
+   well") is ported too — every verb, `resizeTransform`, and the
+   grid-search `findRepositionTarget`, verified against real Node output
+   including the "nowhere to put it" failure case. Its vocabulary is
+   restricted to object types already present in the plan, which is
+   correct for every verb it knows (move/resize/delete/duplicate/rotate/
+   lock — all edit something that already has to exist). The frozen web
+   app's audit flagged this same restriction as closing off an `add` verb,
+   but `add` isn't one of this file's verbs at all; that's `ObjectPalette`'s
+   job, already done, not a defect here. 113 tests now.
+
    Object properties and warnings panels need no new logic beyond what
    `ProjectModel` already exposes — they read `warnings(for:)`'s
    `objectIds` and the mutators from stage 5. Variant list (rename/delete/
