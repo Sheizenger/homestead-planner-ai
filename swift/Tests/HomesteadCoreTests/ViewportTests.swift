@@ -69,6 +69,29 @@ import HomesteadEngine
     #expect(viewport == before)
 }
 
+@Test func fitToSelectionFramesTheRotatedFootprintNotJustTheAabb() {
+    var viewport = Viewport()
+    // A 10x2 rect rotated 45° reaches further out than its own width/height
+    // suggest — fitToSelection has to frame the actual rotated corners.
+    let rotated = Transform(x: 0, y: 0, width: 10, height: 2, rotationDeg: 45)
+    let size = Size(width: 400, height: 400)
+
+    viewport.fitToSelection([rotated], in: size, padding: 0)
+
+    for corner in rotated.corners {
+        let screen = viewport.toScreen(corner)
+        #expect(screen.x >= -1e-6 && screen.x <= size.width + 1e-6)
+        #expect(screen.y >= -1e-6 && screen.y <= size.height + 1e-6)
+    }
+}
+
+@Test func fitToSelectionIgnoresAnEmptyList() {
+    var viewport = Viewport(offset: Point(x: 3, y: 4), scale: 15)
+    let before = viewport
+    viewport.fitToSelection([], in: Size(width: 800, height: 600))
+    #expect(viewport == before)
+}
+
 @Test func boundingBoxOfAPolygon() {
     let lShape = [
         Point(x: 0, y: 0), Point(x: 60, y: 0), Point(x: 60, y: 30),

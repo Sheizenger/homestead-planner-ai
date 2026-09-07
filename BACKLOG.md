@@ -66,9 +66,31 @@ In order — each stage assumes the previous one landed.
    - The CI macOS job: builds the app target, runs any App-layer tests, and
      produces the screenshot contact sheet. Waits on the Xcode project
      existing.
-6. **Canvas.** `Viewport` over `Canvas`: cursor-anchored zoom, pan,
-   fit-to-plot, zoom-to-selection, screen-space north arrow and scale bar.
-   Hit-testing is manual.
+6. **Canvas — Core half done.** `Viewport` (cursor-anchored zoom, pan,
+   fit-to-plot, and now `fitToSelection`), `HitTesting` (point and marquee,
+   both against the object's real rotated footprint — not the centre-only
+   test the web app's marquee did), and `ScaleBar.niceLength` (a round
+   metre length sized to the current zoom, replacing the web app's fixed
+   "10 m" bar that either vanishes or overruns the canvas depending on
+   zoom) are done and tested on Linux (98 tests). North arrow needs no
+   helper beyond `Plot.northAngleDeg`, already there.
+
+   Finding this by testing rather than by reading paid for itself
+   immediately: `HitTesting`'s marquee prefilter first reused
+   `Transform.aabb` for a cheap reject, which is *not* a true bounding box
+   at any rotation other than a multiple of 90° — it under-reports a
+   45°-rotated object's real extent (proven with a diamond: the aabb-based
+   check missed a corner poking into the marquee that the exact test caught).
+   `Transform.aabb` stays exactly as it was, faithful to the TypeScript
+   engine's own axis-aligned-only convention; `HitTesting` now builds a real
+   box from `transform.corners` instead. This was dormant in the engine
+   (nothing it places is ever rotated) and would have been live and wrong
+   the moment a user free-rotated something on the canvas — exactly the
+   overlap-detection imprecision noted under stage 3's "moved to canvas."
+
+   What's left, and needs a Mac: the actual `Canvas` view wiring these
+   into drawing and gesture handling, which waits on the Xcode project
+   (stage 5's still-open item).
 7. **Panels.** Brief, object properties, warnings, variant list with rename /
    delete / badges, object palette (search over the catalog, `+` and a
    keyboard shortcut), and the "brief changed since this variant was

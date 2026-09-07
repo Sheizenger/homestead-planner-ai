@@ -284,7 +284,7 @@ public struct Zone: Equatable, Codable, Sendable {
     }
 }
 
-public struct PlanObject: Equatable, Codable, Sendable {
+public struct PlanObject: Identifiable, Equatable, Codable, Sendable {
     public var id: String
     public var zoneId: String?
     /// References an `ObjectLibrary` catalog entry.

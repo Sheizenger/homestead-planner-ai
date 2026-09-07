@@ -63,4 +63,26 @@ public struct Viewport: Equatable, Sendable {
             y: bounds.midY - size.height / (2 * scale)
         )
     }
+
+    /// Frames the given transforms' full (rotation-aware) footprint — "zoom
+    /// to selection". Tighter than `fit`'s plot-framing default padding,
+    /// since a selection is usually small and the point is to fill the view
+    /// with it, not leave plot-sized breathing room around it.
+    public mutating func fitToSelection(_ transforms: [Transform], in size: Size, padding: Double = 60) {
+        guard let bounds = Self.union(of: transforms) else { return }
+        fit(bounds, in: size, padding: padding)
+    }
+
+    private static func union(of transforms: [Transform]) -> Rect? {
+        var result: Rect?
+        for transform in transforms {
+            for corner in transform.corners {
+                let point = Rect(minX: corner.x, minY: corner.y, maxX: corner.x, maxY: corner.y)
+                result = result.map {
+                    Rect(minX: min($0.minX, point.minX), minY: min($0.minY, point.minY), maxX: max($0.maxX, point.maxX), maxY: max($0.maxY, point.maxY))
+                } ?? point
+            }
+        }
+        return result
+    }
 }

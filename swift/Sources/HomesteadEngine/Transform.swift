@@ -36,10 +36,17 @@ public struct Transform: Equatable, Hashable, Codable, Sendable {
         ].map { Point(x: x + $0.x * cos - $0.y * sin, y: y + $0.x * sin + $0.y * cos) }
     }
 
-    /// The axis-aligned box around this object. Exact for the axis-aligned
-    /// rotations the generator produces, and a conservative over-estimate for
-    /// anything else — which is why overlap checks pair it with an exact test
-    /// rather than trusting it alone.
+    /// The axis-aligned box `transformAabb` in the TypeScript engine
+    /// computes: exact for the axis-aligned rotations the generator ever
+    /// produces (0/90/180/270°), by swapping width and height rather than
+    /// measuring the rotated corners. At any other angle it is not a real
+    /// bounding box and is not conservative either way — a 45°-rotated
+    /// square's diagonal reaches past every edge of this box, so it can
+    /// *under*-report the true extent. Kept faithful to the original for the
+    /// engine's own overlap/violation checks, which only ever see axis-aligned
+    /// input; anything working with a freely-rotated `Transform` (hit-testing
+    /// a canvas the user has rotated something on) needs a true box instead —
+    /// `Rect(bounding: transform.corners)`.
     public var aabb: Rect {
         let rotated = rotationDeg.truncatingRemainder(dividingBy: 180) != 0
         let w = rotated ? height : width
