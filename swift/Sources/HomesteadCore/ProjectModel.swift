@@ -2,6 +2,25 @@ import Foundation
 import Observation
 import HomesteadEngine
 
+/// What `ProjectModel.applyQuickEdit` did with a parsed command. A semantic
+/// result rather than a message string — the (future) panel maps this to
+/// localized text, so Core never has to know what language is on screen.
+public enum EditCommandOutcome: Equatable, Sendable {
+    /// The text didn't parse as any known verb + object mention — including
+    /// naming a type absent from the plan: `EditCommands.parse`'s
+    /// candidates are built only from types actually present, so an absent
+    /// type is never recognized as a mention in the first place, and there
+    /// is no separate "named but not found" outcome to report.
+    case notUnderstood
+    /// The type exists, but only as the wrong lock state for this verb —
+    /// e.g. "unlock the well" when every well present is already unlocked.
+    case allMatchesLocked
+    /// A move-near/away command found a reference object but nowhere on the
+    /// plot fit the subject without overlapping something else.
+    case noRoom
+    case applied(verb: EditVerb, objectIds: [String])
+}
+
 /// The running state of one open project. Owns a `PlanDocument` and exposes
 /// every mutation as a plain, undoable-by-the-caller method — see AGENTS.md
 /// on why undo itself is not this class's job.
@@ -208,6 +227,76 @@ public final class ProjectModel {
             }
         }
         return newIDs
+    }
+
+    // MARK: - Quick-edit text commands
+
+    public func rotateObject90(_ objectID: String, in variantID: Variant.ID) {
+        mutateObject(objectID, in: variantID) { $0.transform.rotationDeg = ($0.transform.rotationDeg + 90).truncatingRemainder(dividingBy: 360) }
+    }
+
+    /// Parses and applies a quick-edit command ("move the greenhouse near
+    /// the well") in one step — `EditCommands.parse` plus the mutators
+    /// above, so a caller (the eventual quick-edit panel) needs one method
+    /// rather than re-deriving how a parsed command maps onto edits.
+    ///
+    /// The web app selects `subjects` by "matches `subjectTypeId` and isn't
+    /// locked" *before* branching on the verb — which makes its `unlock`
+    /// branch permanently dead: an object already excluded for being locked
+    /// can never reach the `if (o.locked) toggleLock(o.id)` inside it, yet
+    /// the web app reports success regardless (see BACKLOG.md). Locking
+    /// wants unlocked targets, unlocking wants locked ones — the two are not
+    /// the same filter, so this asks each verb which targets it actually
+    /// wants rather than applying one blanket exclusion up front.
+    @discardableResult
+    public func applyQuickEdit(_ text: String, in variantID: Variant.ID) -> EditCommandOutcome {
+        guard let variant = variant(variantID) else { return .notUnderstood }
+        guard let parsed = EditCommands.parse(text, objectsPresent: variant.objects) else { return .notUnderstood }
+
+        // `parsed.subjectTypeId` was matched against candidates built from
+        // this same `variant.objects`, so a type match always exists; the
+        // only way `subjects` can still come up empty is every match having
+        // the wrong lock state for this verb.
+        let wantsLocked = parsed.verb == .unlock
+        let subjects = variant.objects.filter { $0.typeId == parsed.subjectTypeId && $0.locked == wantsLocked }
+        guard !subjects.isEmpty else { return .allMatchesLocked }
+
+        switch parsed.verb {
+        case .delete:
+            let removed = deleteObjects(Set(subjects.map(\.id)), in: variantID)
+            return .applied(verb: parsed.verb, objectIds: Array(removed))
+        case .duplicate:
+            return .applied(verb: parsed.verb, objectIds: duplicateObjects(Set(subjects.map(\.id)), in: variantID))
+        case .rotate:
+            for subject in subjects { rotateObject90(subject.id, in: variantID) }
+            return .applied(verb: parsed.verb, objectIds: subjects.map(\.id))
+        case .lock, .unlock:
+            for subject in subjects { toggleLock(subject.id, in: variantID) }
+            return .applied(verb: parsed.verb, objectIds: subjects.map(\.id))
+        case .enlarge, .shrink:
+            var touched: [String] = []
+            for subject in subjects {
+                guard let entry = ObjectLibrary[subject.typeId] else { continue }
+                let size = EditCommands.resizeTransform(entry: entry, current: subject.transform, grow: parsed.verb == .enlarge)
+                resizeObject(subject.id, in: variantID, to: Transform(x: subject.transform.x, y: subject.transform.y, width: size.width, height: size.height, rotationDeg: subject.transform.rotationDeg))
+                touched.append(subject.id)
+            }
+            return .applied(verb: parsed.verb, objectIds: touched)
+        case .moveNear, .moveAway:
+            // `EditCommands.parse` requires a non-nil `referenceTypeId` for
+            // these two verbs, and — same reasoning as `subjectTypeId`
+            // above — only ever sets it to a type present in this same
+            // `variant.objects`, so both force-unwraps are guaranteed here.
+            let reference = variant.objects.first { $0.typeId == parsed.referenceTypeId! }!
+            let mode: EditCommands.RepositionMode = parsed.verb == .moveNear ? .near : .away
+            var touched: [String] = []
+            for subject in subjects {
+                guard let target = EditCommands.findRepositionTarget(objects: variant.objects, plot: document.plot, subject: subject, reference: reference, mode: mode) else { continue }
+                moveObject(subject.id, in: variantID, to: target)
+                touched.append(subject.id)
+            }
+            return touched.isEmpty ? .noRoom : .applied(verb: parsed.verb, objectIds: touched)
+        }
     }
 
     // MARK: - Private

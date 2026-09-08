@@ -122,6 +122,26 @@ In order — each stage assumes the previous one landed.
    but `add` isn't one of this file's verbs at all; that's `ObjectPalette`'s
    job, already done, not a defect here. 113 tests now.
 
+   `ProjectModel.applyQuickEdit` wires that parser to the document: each
+   verb now picks its own target lock-state (locking wants unlocked
+   matches, unlocking wants locked ones), which is the fix for the web
+   app's dead `unlock` branch above — proven by a test that locks, tries
+   "lock" again (no eligible target), then unlocks and checks the object
+   actually flips back, not just "reports success." 122 tests now.
+
+   Writing that test surfaced a Swift-side analogue of the same class of
+   dead-code bug: `EditCommandOutcome` had an `.objectNotFound` case for
+   "named a type that doesn't exist," but `EditCommands.parse`'s
+   candidates are built only from types already present in the plan (see
+   above), so a parsed `subjectTypeId`/`referenceTypeId` can never fail to
+   match `variant.objects` — both branches returning `.objectNotFound`
+   were unreachable by construction, exactly like the web app's own dead
+   "reference not found" branch. Removed the case and both branches
+   (one collapses to `.allMatchesLocked`, the other to a documented
+   force-unwrap) rather than keep defensive code for a state that can't
+   occur; naming an absent type now reads as `.notUnderstood`, since it
+   never parses as a mention in the first place.
+
    Object properties and warnings panels need no new logic beyond what
    `ProjectModel` already exposes — they read `warnings(for:)`'s
    `objectIds` and the mutators from stage 5. Variant list (rename/delete/
