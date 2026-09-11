@@ -37,15 +37,28 @@ public struct BoundarySetback: Equatable, Sendable {
 /// Which jurisdiction's fire-safety/sanitary/boundary-setback norms layer on
 /// top of the baseline `Constraints.all`/`boundarySetbacks`. `.generic` adds
 /// nothing — it is exactly that baseline, which is what the golden fixtures
-/// are pinned against, so it must stay the default everywhere. Real
-/// per-country rule sets (SanPiN/RF, an EU country) are added here once
-/// their exact figures are sourced and confirmed — see BACKLOG.md's
-/// "Regulatory regions" entry. Every number that lands here is planning
-/// guidance, not certified compliance: callers are expected to label it that
-/// way (see `RECOMMENDED_M2_PER_PERSON` in Warnings.swift for the existing
-/// wording to match) and to say so to whoever reads the result.
+/// are pinned against, so it must stay the default everywhere.
+///
+/// Every number in every non-`.generic` case below is planning guidance,
+/// confirmed with the user as a deliberately simplified reading of a real
+/// code family rather than a citation to a specific clause — never
+/// certified compliance. Each one's message says so explicitly (matching
+/// `RECOMMENDED_M2_PER_PERSON`'s existing wording) and names what to check
+/// before relying on it for real construction.
 public enum RegulatoryRegion: String, CaseIterable, Codable, Sendable {
     case generic
+    /// Russia/CIS — SanPiN/SP planning distances for a rural or garden
+    /// plot (SP 53.13330 and the fire-safety separations in SP 4.13130).
+    case ruSanPiN = "ru-sanpin"
+    /// Germany — `Abstandsflächenrecht`, the building-to-boundary setback
+    /// each `Landesbauordnung` sets, which actually scales with wall
+    /// height and differs by state; collapsed here to a commonly-cited
+    /// flat minimum for a single-story dwelling.
+    case deGeneric = "de-generic"
+    /// Spain — the building-to-boundary separation a municipal `PGOU`
+    /// (Plan General de Ordenación Urbana) typically sets for detached
+    /// rural/residential construction; varies by municipality.
+    case esGeneric = "es-generic"
 }
 
 public enum Constraints {
@@ -346,17 +359,93 @@ public enum Constraints {
         ),
     ]
 
-    /// `all`, plus whatever `region` adds. Additive by construction — a
-    /// region can only add rules on top of the baseline, never replace or
-    /// remove one, so `.generic` (the only case with nothing to add yet)
-    /// reproduces `all` exactly.
+    /// `all`, with `region`'s own rules replacing whichever baseline entries
+    /// it names more specifically (by id) and adding the rest. `.generic`
+    /// overrides and adds nothing, so it reproduces `all` exactly — the
+    /// golden fixtures depend on that.
     public static func all(for region: RegulatoryRegion) -> [Constraint] {
-        all
+        let extra = regionalOverrides(region)
+        return all.filter { !extra.overriddenConstraintIds.contains($0.id) } + extra.constraints
     }
 
-    /// `boundarySetbacks`, plus whatever `region` adds. Same additive
-    /// contract as `all(for:)` above.
+    /// `boundarySetbacks`, with the same override-by-id contract as
+    /// `all(for:)` above.
     public static func boundarySetbacks(for region: RegulatoryRegion) -> [BoundarySetback] {
-        boundarySetbacks
+        let extra = regionalOverrides(region)
+        return boundarySetbacks.filter { !extra.overriddenSetbackIds.contains($0.id) } + extra.setbacks
+    }
+
+    private static func regionalOverrides(_ region: RegulatoryRegion) -> (
+        overriddenConstraintIds: Set<String>, constraints: [Constraint],
+        overriddenSetbackIds: Set<String>, setbacks: [BoundarySetback]
+    ) {
+        switch region {
+        case .generic:
+            return ([], [], [], [])
+
+        case .ruSanPiN:
+            // Replaces the generic flat 8 m fire-separation guidance: SP
+            // 4.13130 actually tiers this by both buildings' construction
+            // class (roughly 6 m masonry-masonry, 8-10 m one timber, 15 m
+            // both timber). This planner has no construction-material field
+            // on objects to pick a tier with, so it uses the conservative
+            // both-timber case as a single number rather than guess a
+            // lighter one that could be wrong for an actual wooden shed.
+            return (
+                ["fire-house-outbuilding-separation"],
+                [
+                    Constraint(
+                        id: "ru-sanpin-fire-house-outbuilding-separation",
+                        kind: .safety,
+                        subjectTypes: ["house", "house-l"],
+                        relatedTypes: ["barn", "shed", "woodshed", "goat-shelter", "poultry-coop", "banya", "smokehouse"],
+                        minDistance: 15,
+                        maxDistance: nil,
+                        hard: false,
+                        severity: .caution,
+                        message: "SanPiN/SP 4.13130 planning guidance: fire separation between a house and this outbuilding runs roughly 6-15 m depending on both buildings' construction class (about 6 m if both are non-combustible, up to 15 m if both are timber). This is an orientation using the conservative all-timber figure, not certified compliance — confirm the distance for your actual materials against the current SP 4.13130 text before building."
+                    ),
+                ],
+                [], []
+            )
+
+        case .deGeneric:
+            // Germany's Abstandsflächenrecht sets this per building height,
+            // not as a flat number, and each Land's Bauordnung sets its own
+            // formula — this is a commonly-cited flat floor for an ordinary
+            // single-story dwelling, not a substitute for the real formula.
+            return (
+                [], [],
+                ["setback-house"],
+                [
+                    BoundarySetback(
+                        id: "de-setback-house",
+                        appliesTo: ["house", "house-l"],
+                        minDistanceM: 3,
+                        severity: .caution,
+                        message: "is closer than a commonly-cited flat minimum for Germany's Abstandsflächenrecht boundary setback. The real distance scales with wall height and is set per Landesbauordnung (varies by state) — this is a planning orientation, not certified compliance; confirm against your state's current Bauordnung before building."
+                    ),
+                ]
+            )
+
+        case .esGeneric:
+            // Spain's separación a linderos for detached rural/residential
+            // construction is set by each municipality's PGOU, not a
+            // national figure — this is a commonly-cited flat minimum, not
+            // a substitute for the local plan.
+            return (
+                [], [],
+                ["setback-house"],
+                [
+                    BoundarySetback(
+                        id: "es-setback-house",
+                        appliesTo: ["house", "house-l"],
+                        minDistanceM: 3,
+                        severity: .caution,
+                        message: "is closer than a commonly-cited flat minimum for a Spanish municipal PGOU's building-to-boundary separation for detached rural/residential construction. The real distance is set locally and varies widely by municipality — this is a planning orientation, not certified compliance; confirm against your municipality's current PGOU before building."
+                    ),
+                ]
+            )
+        }
     }
 }

@@ -151,29 +151,40 @@ In order — each stage assumes the previous one landed.
    specifically, a keyboard shortcut and drag target that are pure
    SwiftUI/App-layer concerns.
 
-   **Regulatory regions — architecture done, no real data yet.** The user
+   **Regulatory regions — architecture and three real regions.** The user
    asked for placement/warnings to actually reflect fire-safety/sanitary/
    boundary-setback norms, selectable by jurisdiction (SanPiN/RF and at
    least one EU country), with every number labeled as planning guidance
    rather than certified compliance — the same posture `RECOMMENDED_M2_PER_PERSON`
-   already takes. What's landed: `RegulatoryRegion` (currently only
-   `.generic`), `Constraints.all(for:)`/`boundarySetbacks(for:)` layering
-   region-specific rules additively on top of the existing baseline arrays
-   (which stay untouched and still back `ConstraintsParityTests`),
-   `Plot.regulatoryRegion` (`Optional`, so every existing fixture keeps
-   decoding unchanged), and the parameter threaded through
-   `Placement.placeObjects`/`Warnings.compute`/`Generate.variant`/
-   `ProjectModel.warnings(for:)` — all defaulted to `.generic`, which is
-   byte-for-byte the current behavior (`genericRegionReproducesTheBaselineExactly`
-   in `ConstraintsParityTests.swift` guards this). None of that is wired to
-   any UI yet — no picker exists because no view layer exists (stage 5's
-   Xcode blocker again).
-   Deliberately NOT done here: actual SanPiN/RF or EU numbers. Real
-   setback/clearance figures are safety-relevant claims, not something to
-   guess into a `RegulatoryRegion` case and call done — they need the
-   user's sign-off on the specific figures before landing, same as any
-   other regulatory citation. See the chat for the proposed SanPiN/RF
-   candidate table awaiting that confirmation.
+   already takes. Landed: `RegulatoryRegion` (`.generic`, `.ruSanPiN`,
+   `.deGeneric`, `.esGeneric`), `Constraints.all(for:)`/`boundarySetbacks(for:)`
+   which start from the existing baseline arrays (untouched, still back
+   `ConstraintsParityTests`) and let a region *override* a specific
+   baseline rule by id as well as add new ones — SanPiN replaces the
+   generic flat 8 m house-to-outbuilding fire separation with a 15 m
+   figure (the conservative all-timber case of SP 4.13130's 6-15 m,
+   construction-class-tiered range, collapsed to one number since objects
+   carry no construction-material field to pick a tier with); Germany and
+   Spain each replace the generic 3 m house boundary setback with their
+   own id and citation (Abstandsflächenrecht / municipal PGOU) at the same
+   3 m figure, since neither has a nationally uniform number simple enough
+   to model as better than that. `Plot.regulatoryRegion` is `Optional` so
+   every existing fixture keeps decoding unchanged, and the parameter
+   threads through `Placement.placeObjects`/`Warnings.compute`/
+   `Generate.variant`/`ProjectModel.warnings(for:)` defaulted to
+   `.generic` — byte-for-byte the current behavior, guarded by
+   `genericRegionReproducesTheBaselineExactly`, with
+   `sanPiNOverridesTheGenericFireSeparationRule`/
+   `euRegionsOverrideTheGenericHouseSetback` proving the override half of
+   the contract. 125 tests now.
+   None of this is wired to any UI yet — no region picker exists because
+   no view layer exists (stage 5's Xcode blocker again). Every number
+   above was explicitly confirmed with the user before landing, and every
+   message it produces says so and names what to check before relying on
+   it for real construction; none of it is a citation to a specific
+   clause, and a real EU country's setback is usually height/zoning-
+   dependent, not a flat meter figure — this is a deliberately simplified
+   planning orientation, the same posture as `RECOMMENDED_M2_PER_PERSON`.
 8. **Export, locales, accessibility.** PNG and PDF from the same scene the
    canvas draws; `en` + `ru` with a key-parity test; `Canvas` is opaque to
    VoiceOver, so the plan needs a parallel accessible representation.

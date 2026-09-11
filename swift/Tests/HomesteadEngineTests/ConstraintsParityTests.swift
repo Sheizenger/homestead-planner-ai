@@ -66,12 +66,36 @@ private struct ReferenceData: Decodable {
     #expect(!Constraints.matches(well, ["septic"]))
 }
 
-/// `.generic` is the only region with a real rule set today (see
-/// `RegulatoryRegion`'s doc comment) — it must reproduce `all`/
-/// `boundarySetbacks` exactly, since those are what the golden fixtures are
-/// pinned against. This is the regression guard for the region-aware
-/// accessors introduced alongside per-region placement/warnings.
+/// `.generic` overrides and adds nothing (see `RegulatoryRegion`'s doc
+/// comment) — it must reproduce `all`/`boundarySetbacks` exactly, since
+/// those are what the golden fixtures are pinned against. This is the
+/// regression guard for the region-aware accessors introduced alongside
+/// per-region placement/warnings.
 @Test func genericRegionReproducesTheBaselineExactly() {
     #expect(Constraints.all(for: .generic) == Constraints.all)
     #expect(Constraints.boundarySetbacks(for: .generic) == Constraints.boundarySetbacks)
+}
+
+/// SanPiN/RF replaces the generic flat fire-separation guidance with its
+/// own (a different id, a stricter distance) rather than adding a second,
+/// redundant warning alongside it — proving the override half of the
+/// contract, not just the additive half `.generic` exercises above.
+@Test func sanPiNOverridesTheGenericFireSeparationRule() {
+    let sanPiN = Constraints.all(for: .ruSanPiN)
+    #expect(!sanPiN.contains { $0.id == "fire-house-outbuilding-separation" })
+    let override = sanPiN.first { $0.id == "ru-sanpin-fire-house-outbuilding-separation" }
+    #expect(override?.minDistance == 15)
+    // Every other baseline constraint is untouched.
+    #expect(sanPiN.count == Constraints.all.count)
+}
+
+/// Germany and Spain both override the generic house boundary setback
+/// (same relationship, a different legal basis) rather than duplicate it.
+@Test func euRegionsOverrideTheGenericHouseSetback() {
+    for (region, id) in [(RegulatoryRegion.deGeneric, "de-setback-house"), (RegulatoryRegion.esGeneric, "es-setback-house")] {
+        let setbacks = Constraints.boundarySetbacks(for: region)
+        #expect(!setbacks.contains { $0.id == "setback-house" }, Comment(rawValue: region.rawValue))
+        #expect(setbacks.contains { $0.id == id }, Comment(rawValue: region.rawValue))
+        #expect(setbacks.count == Constraints.boundarySetbacks.count, Comment(rawValue: region.rawValue))
+    }
 }
