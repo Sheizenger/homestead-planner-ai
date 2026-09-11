@@ -244,7 +244,7 @@ public enum Placement {
         rand: RandomStream,
         layout: LayoutParams,
         avoidBounds: Rect?,
-        region: RegulatoryRegion = .generic
+        region: RegulatoryRegion
     ) -> Candidate? {
         let orientations = width == height ? [0] : [0, 90]
         var best: Candidate?
@@ -322,7 +322,7 @@ public enum Placement {
         boundary: [Point],
         layout: LayoutParams,
         plot: Plot,
-        region: RegulatoryRegion = .generic
+        region: RegulatoryRegion
     ) -> (score: Double, reasons: [String]) {
         var score = 0.0
         var reasons: [String] = []
