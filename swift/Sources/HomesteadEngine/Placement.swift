@@ -88,7 +88,8 @@ public enum Placement {
         plot: Plot,
         program: [Sizing.ProgramItem],
         mode: PlanningMode,
-        seed: Int
+        seed: Int,
+        region: RegulatoryRegion = .generic
     ) -> Result {
         let rand = RandomStream(seed: seed)
         let bounds = plot.bounds ?? Rect(minX: 0, minY: 0, width: 0, height: 0)
@@ -189,14 +190,14 @@ public enum Placement {
             var best = searchBestCandidate(
                 plot: plot, bounds: searchBounds, step: step, width: width, height: height,
                 entry: entry, placed: placed, houseCenter: houseCenter, weights: weights,
-                rand: rand, layout: layout, avoidBounds: avoidBounds
+                rand: rand, layout: layout, avoidBounds: avoidBounds, region: region
             )
             for shrink in [0.8, 0.6, 0.45] {
                 if best != nil { break }
                 best = searchBestCandidate(
                     plot: plot, bounds: searchBounds, step: step, width: width * shrink, height: height * shrink,
                     entry: entry, placed: placed, houseCenter: houseCenter, weights: weights,
-                    rand: rand, layout: layout, avoidBounds: avoidBounds
+                    rand: rand, layout: layout, avoidBounds: avoidBounds, region: region
                 )
             }
             guard let chosen = best else {
@@ -242,7 +243,8 @@ public enum Placement {
         weights: ModeWeights,
         rand: RandomStream,
         layout: LayoutParams,
-        avoidBounds: Rect?
+        avoidBounds: Rect?,
+        region: RegulatoryRegion = .generic
     ) -> Candidate? {
         let orientations = width == height ? [0] : [0, 90]
         var best: Candidate?
@@ -269,7 +271,7 @@ public enum Placement {
                     let overlaps = placed.contains { aabb.overlaps($0.transform.aabb, margin: layout.spacingPad) }
                     if overlaps { continue }
 
-                    let hardViolation = Constraints.all.contains { constraint in
+                    let hardViolation = Constraints.all(for: region).contains { constraint in
                         guard constraint.hard,
                               constraint.kind == .separation || constraint.kind == .safety,
                               let minDistance = constraint.minDistance
@@ -296,7 +298,8 @@ public enum Placement {
 
                     let candidate = scoreCandidate(
                         transform: transform, entry: entry, placed: placed, houseCenter: houseCenter,
-                        bounds: bounds, weights: weights, boundary: plot.boundary, layout: layout, plot: plot
+                        bounds: bounds, weights: weights, boundary: plot.boundary, layout: layout, plot: plot,
+                        region: region
                     )
                     if best == nil || candidate.score > best!.score {
                         best = Candidate(transform: transform, score: candidate.score, reasons: candidate.reasons)
@@ -318,7 +321,8 @@ public enum Placement {
         weights: ModeWeights,
         boundary: [Point],
         layout: LayoutParams,
-        plot: Plot
+        plot: Plot,
+        region: RegulatoryRegion = .generic
     ) -> (score: Double, reasons: [String]) {
         var score = 0.0
         var reasons: [String] = []
@@ -388,7 +392,7 @@ public enum Placement {
             reasons.append("roadFacing")
         }
 
-        for setback in Constraints.boundarySetbacks {
+        for setback in Constraints.boundarySetbacks(for: region) {
             guard Constraints.matches(entry, setback.appliesTo) else { continue }
             guard let d = Polygon.distanceToBoundary(transform.center, polygon: boundary) else { continue }
             if d < setback.minDistanceM {
@@ -398,7 +402,7 @@ public enum Placement {
             }
         }
 
-        for constraint in Constraints.all {
+        for constraint in Constraints.all(for: region) {
             // Checked both ways — see the matching comment in
             // searchBestCandidate's hard-violation check: a directional
             // subjectTypes/relatedTypes match would only ever influence

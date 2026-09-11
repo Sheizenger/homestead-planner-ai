@@ -34,6 +34,20 @@ public struct BoundarySetback: Equatable, Sendable {
     public let message: String
 }
 
+/// Which jurisdiction's fire-safety/sanitary/boundary-setback norms layer on
+/// top of the baseline `Constraints.all`/`boundarySetbacks`. `.generic` adds
+/// nothing — it is exactly that baseline, which is what the golden fixtures
+/// are pinned against, so it must stay the default everywhere. Real
+/// per-country rule sets (SanPiN/RF, an EU country) are added here once
+/// their exact figures are sourced and confirmed — see BACKLOG.md's
+/// "Regulatory regions" entry. Every number that lands here is planning
+/// guidance, not certified compliance: callers are expected to label it that
+/// way (see `RECOMMENDED_M2_PER_PERSON` in Warnings.swift for the existing
+/// wording to match) and to say so to whoever reads the result.
+public enum RegulatoryRegion: String, CaseIterable, Codable, Sendable {
+    case generic
+}
+
 public enum Constraints {
     /// True if `entry`'s id or category appears in `list` — the matcher both
     /// placement and warnings use to test a `Constraint` or
@@ -331,4 +345,18 @@ public enum Constraints {
             message: "is close to the boundary — keep clearance for maintenance access and safety."
         ),
     ]
+
+    /// `all`, plus whatever `region` adds. Additive by construction — a
+    /// region can only add rules on top of the baseline, never replace or
+    /// remove one, so `.generic` (the only case with nothing to add yet)
+    /// reproduces `all` exactly.
+    public static func all(for region: RegulatoryRegion) -> [Constraint] {
+        all
+    }
+
+    /// `boundarySetbacks`, plus whatever `region` adds. Same additive
+    /// contract as `all(for:)` above.
+    public static func boundarySetbacks(for region: RegulatoryRegion) -> [BoundarySetback] {
+        boundarySetbacks
+    }
 }

@@ -72,6 +72,20 @@ Silent, and no config confesses them:
   exactly this reason; tests whose output is a decision (an id, a placement,
   a boolean) stay exact, because nothing here ever changes what a
   hypot-sized wobble would flip.
+- **`swift test` on this Linux toolchain (6.1.2) occasionally segfaults on
+  exit, not on a failed assertion.** First seen adding `RegulatoryRegion`
+  (a new `Codable`/`CaseIterable` enum) as an `Optional` stored property on
+  `Plot`: the full suite crashed with `signal 11` inside `libswiftCore`
+  after every individual test had already printed `passed`, and only when
+  many `HomesteadCoreTests` ran together — never with a `--filter` isolating
+  one test, never in `HomesteadEngineTests` alone, and not on every run of
+  the full suite either (9 of 9 clean re-runs after the first crash, same
+  binary). That profile — reproducible only under load, gone in isolation,
+  crash *after* every assertion already passed — is a runtime/teardown race,
+  not a logic bug; bisected by `git stash`-ing files one at a time and
+  re-running `swift test`, which is the only way it showed up; reading the
+  diff would never have surfaced it. Treat a `signal 11` with no failed
+  `#expect` above it as a rerun candidate, not evidence the change is wrong.
 
 ## Settled decisions
 
@@ -118,3 +132,69 @@ the user reviews pictures, not diffs.
 `BACKLOG.md` holds everything known and not yet done — the port stages, the
 frozen web app's defects, and the `PRD.md` sections that no longer match
 reality.
+
+<!-- agentos:begin -->
+## AgentOS
+
+Этот воркспейс подключён к AgentOS — системе, которая держит состояние работы на диске и продолжает начатое сама: после обрыва сессии и после исчерпания лимитов токенов.
+
+**Первое действие в каждой сессии:**
+
+```bash
+agentctl resume --announce
+```
+
+Одна строка ответа скажет, есть ли незавершённая работа, чего она ждёт и когда продолжит. Если работа есть — продолжай её, не спрашивая человека «что дальше».
+
+**Новая задача от человека, сколь угодно абстрактная:**
+
+```bash
+agentctl goal "…"
+```
+
+Система сама зафиксирует критерии приёмки, построит план задач и выдаст задания субагентам. Раскладывать задачу — твоя работа, не его.
+
+**Задание выполнено:**
+
+```bash
+agentctl task report <task_id> --json '{"summary":"…"}'
+```
+
+Возвращай отчёт, а не транскрипт: на лимите из брифа держится вся экономия контекста. Результат, не отданный в AgentOS, теряется при обрыве сессии, как будто его не было.
+
+**Упёрся в лимит токенов, доступ или необратимое действие:**
+
+```bash
+agentctl task block <task_id> --reason quota|capability|approval
+```
+
+Заблокированная задача не останавливает остальные ветки плана, а по квоте продолжится сама после сброса лимитов.
+
+**Задачи кончились:**
+
+```bash
+agentctl verify <mission_id>
+```
+
+Готово — это пройденная приёмка, а не отсутствие оставшейся работы. Красный программный гейт отменяет любой вердикт, включая твой.
+
+**Нужно что-то узнать о проекте:**
+
+```bash
+agentctl memory search "…"
+```
+
+Память хранит факты этого проекта и общий опыт. Не спрашивай человека о том, что можешь узнать сам — из памяти, репозитория или запуска команды.
+
+**Несколько задач параллельно:**
+
+Мастер-агентов в проекте может быть несколько — по чату на задачу. Назовись своим ID (`export AGENTOS_AGENT_ID=<имя>` или флаг `--agent <имя>` у любой команды), и ты будешь вести только свои миссии. Без этого все чаты работают под общим агентом `default` и подхватывают работу друг друга. Чужие миссии видно через `agentctl status --all`.
+
+**Чего нельзя делать:**
+
+- Красный программный гейт — это отказ. Тест не помечается skip, линтер не глушится, allowlist политики не расширяется ради «чтобы прошло».
+- Не объявляй «готово» до приёмки: готово — когда подтверждены все критерии.
+- Секреты не попадают в код, БД и логи. Нужен ключ — блокируй задачу с reason=capability и назови переменную окружения.
+
+Полный контракт — [AGENTS.md](AGENTS.md). Если у тебя есть инструменты `agentos_*`, работай через них: это тот же контракт вызовами.
+<!-- agentos:end -->

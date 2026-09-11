@@ -1,0 +1,23 @@
+# Настройки AgentOS для этого проекта.
+#
+# Здесь описываются только отличия от умолчаний: конфигурация собирается
+# слоями (пакет -> ~/.agentos -> этот файл), поэтому копировать всё целиком
+# не нужно. Полный список параметров: agentctl doctor и документация.
+
+# runtime:
+#   max_concurrency: 4        # сколько задач исполнять параллельно
+#
+# budget:
+#   mission_tokens: 2000000   # потолок на миссию
+#
+
+# Чем проверяется результат в этом проекте — определено при установке.
+# Красный гейт отменяет любой вердикт, включая вердикт модели.
+self_check:
+  programmatic_gates:
+    - name: tests
+      cmd: "npm test"
+      applies_when: artifacts_touch_code
+    - name: lint
+      cmd: "npm run lint"
+      applies_when: artifacts_touch_code

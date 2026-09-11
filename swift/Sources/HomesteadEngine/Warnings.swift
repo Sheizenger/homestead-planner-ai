@@ -108,7 +108,8 @@ public enum Warnings {
         plot: Plot,
         householdSize: Int,
         climateZone: ClimateZone,
-        crops: [String]
+        crops: [String],
+        region: RegulatoryRegion = .generic
     ) -> [Warning] {
         var warnings: [Warning] = []
 
@@ -125,7 +126,7 @@ public enum Warnings {
         // regardless of which side matched "subject" vs "related".
         var reportedPairs = Set<String>()
 
-        for constraint in Constraints.all {
+        for constraint in Constraints.all(for: region) {
             for subject in objects {
                 guard let subjectEntry = ObjectLibrary[subject.typeId],
                       Constraints.matches(subjectEntry, constraint.subjectTypes)
@@ -194,7 +195,7 @@ public enum Warnings {
 
         for object in objects {
             guard let entry = ObjectLibrary[object.typeId] else { continue }
-            for setback in Constraints.boundarySetbacks {
+            for setback in Constraints.boundarySetbacks(for: region) {
                 guard Constraints.matches(entry, setback.appliesTo) else { continue }
                 guard let d = Polygon.distanceToBoundary(object.transform.center, polygon: plot.boundary) else { continue }
                 if d < setback.minDistanceM {

@@ -65,3 +65,13 @@ private struct ReferenceData: Decodable {
     #expect(Constraints.matches(well, ["water"]))
     #expect(!Constraints.matches(well, ["septic"]))
 }
+
+/// `.generic` is the only region with a real rule set today (see
+/// `RegulatoryRegion`'s doc comment) — it must reproduce `all`/
+/// `boundarySetbacks` exactly, since those are what the golden fixtures are
+/// pinned against. This is the regression guard for the region-aware
+/// accessors introduced alongside per-region placement/warnings.
+@Test func genericRegionReproducesTheBaselineExactly() {
+    #expect(Constraints.all(for: .generic) == Constraints.all)
+    #expect(Constraints.boundarySetbacks(for: .generic) == Constraints.boundarySetbacks)
+}

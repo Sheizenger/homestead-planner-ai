@@ -63,7 +63,8 @@ public final class ProjectModel {
             plot: document.plot,
             householdSize: document.brief.structuredInputs.householdSize,
             climateZone: document.brief.structuredInputs.climateZone,
-            crops: document.brief.structuredInputs.crops
+            crops: document.brief.structuredInputs.crops,
+            region: document.plot.regulatoryRegion ?? .generic
         )
     }
 

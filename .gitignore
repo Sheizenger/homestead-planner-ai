@@ -6,3 +6,6 @@ dist-ssr
 
 # Swift
 swift/.build/
+
+# AgentOS: рантайм-состояние
+.agentos/var/

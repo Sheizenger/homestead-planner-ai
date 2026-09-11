@@ -150,6 +150,30 @@ In order — each stage assumes the previous one landed.
    project (still stage 5's open item) and, for the object palette
    specifically, a keyboard shortcut and drag target that are pure
    SwiftUI/App-layer concerns.
+
+   **Regulatory regions — architecture done, no real data yet.** The user
+   asked for placement/warnings to actually reflect fire-safety/sanitary/
+   boundary-setback norms, selectable by jurisdiction (SanPiN/RF and at
+   least one EU country), with every number labeled as planning guidance
+   rather than certified compliance — the same posture `RECOMMENDED_M2_PER_PERSON`
+   already takes. What's landed: `RegulatoryRegion` (currently only
+   `.generic`), `Constraints.all(for:)`/`boundarySetbacks(for:)` layering
+   region-specific rules additively on top of the existing baseline arrays
+   (which stay untouched and still back `ConstraintsParityTests`),
+   `Plot.regulatoryRegion` (`Optional`, so every existing fixture keeps
+   decoding unchanged), and the parameter threaded through
+   `Placement.placeObjects`/`Warnings.compute`/`Generate.variant`/
+   `ProjectModel.warnings(for:)` — all defaulted to `.generic`, which is
+   byte-for-byte the current behavior (`genericRegionReproducesTheBaselineExactly`
+   in `ConstraintsParityTests.swift` guards this). None of that is wired to
+   any UI yet — no picker exists because no view layer exists (stage 5's
+   Xcode blocker again).
+   Deliberately NOT done here: actual SanPiN/RF or EU numbers. Real
+   setback/clearance figures are safety-relevant claims, not something to
+   guess into a `RegulatoryRegion` case and call done — they need the
+   user's sign-off on the specific figures before landing, same as any
+   other regulatory citation. See the chat for the proposed SanPiN/RF
+   candidate table awaiting that confirmation.
 8. **Export, locales, accessibility.** PNG and PDF from the same scene the
    canvas draws; `en` + `ru` with a key-parity test; `Canvas` is opaque to
    VoiceOver, so the plan needs a parallel accessible representation.

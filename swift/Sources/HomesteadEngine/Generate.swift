@@ -13,10 +13,11 @@ public enum Generate {
     ]
 
     public static func variant(plot: Plot, brief: Brief, mode: PlanningMode, seed: Int) -> Layout {
+        let region = plot.regulatoryRegion ?? .generic
         let extraction = TextParser.parse(brief.freeText)
         let mergedInputs = TextParser.merge(brief.structuredInputs, with: extraction)
         let program = Sizing.buildProgram(mergedInputs, mode: mode)
-        let placed = Placement.placeObjects(plot: plot, program: program, mode: mode, seed: seed)
+        let placed = Placement.placeObjects(plot: plot, program: program, mode: mode, seed: seed, region: region)
         let paths = PathsAndFences.synthesizePaths(objects: placed.objects, plot: plot)
         let fences = PathsAndFences.synthesizeFences(objects: placed.objects, plot: plot)
         let zones = FutureExpansionZone.build(plot: plot, objects: placed.objects, mode: mode)
@@ -28,7 +29,8 @@ public enum Generate {
             plot: plot,
             householdSize: mergedInputs.householdSize,
             climateZone: mergedInputs.climateZone,
-            crops: mergedInputs.crops
+            crops: mergedInputs.crops,
+            region: region
         )
 
         // `unshift`, once per unplaced item in array order: each prepend

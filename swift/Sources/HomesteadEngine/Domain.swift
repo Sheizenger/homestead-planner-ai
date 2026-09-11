@@ -223,6 +223,10 @@ public struct Plot: Equatable, Codable, Sendable {
     public var waterfront: Waterfront?
     public var elevation: PlotElevation?
     public var existingObjects: [ExistingObject]
+    /// `nil` means `.generic` — see `RegulatoryRegion`. Optional
+    /// (like `waterfront`/`elevation` above) so golden fixtures predating
+    /// this field keep decoding unchanged rather than needing a value.
+    public var regulatoryRegion: RegulatoryRegion?
 
     public init(
         id: String = "plot",
@@ -235,7 +239,8 @@ public struct Plot: Equatable, Codable, Sendable {
         gridPower: Bool = true,
         waterfront: Waterfront? = nil,
         elevation: PlotElevation? = nil,
-        existingObjects: [ExistingObject] = []
+        existingObjects: [ExistingObject] = [],
+        regulatoryRegion: RegulatoryRegion? = nil
     ) {
         self.id = id
         self.boundary = boundary
@@ -248,6 +253,7 @@ public struct Plot: Equatable, Codable, Sendable {
         self.waterfront = waterfront
         self.elevation = elevation
         self.existingObjects = existingObjects
+        self.regulatoryRegion = regulatoryRegion
     }
 
     /// The bounding box of the boundary. A plot always has at least three
