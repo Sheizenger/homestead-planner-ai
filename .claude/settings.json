@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agentctl resume --announce --quiet",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
