@@ -32,6 +32,7 @@ struct PlanCanvasView: View {
             Canvas { context, size in
                 drawGrid(context, size: size)
                 drawPlot(context)
+                drawZones(context)
                 drawFences(context)
                 drawPaths(context)
                 drawObjects(context)
@@ -39,6 +40,9 @@ struct PlanCanvasView: View {
                 drawNorthArrow(context, size: size)
             }
             .contentShape(Rectangle())
+            .overlay(alignment: .topLeading) {
+                legend.allowsHitTesting(false)
+            }
             .overlay(alignment: .bottomTrailing) {
                 zoomControls(in: geometry.size)
             }
@@ -74,6 +78,53 @@ struct PlanCanvasView: View {
             .onChange(of: variant.id) { fitToPlot(in: geometry.size) }
         }
         .background(Color(white: 0.99))
+    }
+
+    /// Only the categories this plan actually contains — a fixed legend of
+    /// all thirteen would mostly list things that aren't on screen.
+    private var legend: some View {
+        let categories = orderedCategories()
+        return VStack(alignment: .leading, spacing: 3) {
+            ForEach(categories, id: \.self) { category in
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(color(for: category))
+                        .frame(width: 10, height: 10)
+                    Text(name(for: category)).font(.system(size: 10))
+                }
+            }
+        }
+        .padding(8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        .padding(12)
+        .opacity(categories.isEmpty ? 0 : 1)
+    }
+
+    private func orderedCategories() -> [ObjectCategory] {
+        var seen: [ObjectCategory] = []
+        for object in variant.objects where !seen.contains(object.category) {
+            seen.append(object.category)
+        }
+        return seen
+    }
+
+    private func name(for category: ObjectCategory) -> String {
+        switch category {
+        case .residential: return "Living"
+        case .access: return "Access"
+        case .foodAnnual: return "Annual crops"
+        case .foodPerennial: return "Perennial crops"
+        case .greenhouse: return "Greenhouse"
+        case .animal: return "Animals"
+        case .utility: return "Utilities"
+        case .water: return "Water"
+        case .energy: return "Energy"
+        case .storage: return "Storage"
+        case .leisure: return "Leisure"
+        case .futureExpansion: return "Future expansion"
+        case .fence: return "Fence"
+        case .path: return "Path"
+        }
     }
 
     private func zoomControls(in size: CGSize) -> some View {
@@ -136,6 +187,30 @@ struct PlanCanvasView: View {
         context.stroke(path, with: .color(Color(white: 0.45)), lineWidth: 2)
     }
 
+    /// Zones (the future-expansion reserve today) sit under everything as a
+    /// tinted, dashed region — they're areas the plan sets aside, not objects
+    /// placed on it, and reading them as solid would misrepresent that.
+    private func drawZones(_ context: GraphicsContext) {
+        for zone in variant.zones {
+            guard zone.boundary.count > 2 else { continue }
+            var path = Path()
+            path.addLines(zone.boundary.map(screen))
+            path.closeSubpath()
+
+            let tint = color(for: ObjectCategory(zone: zone.category) ?? .futureExpansion)
+            context.fill(path, with: .color(tint.opacity(0.18)))
+            context.stroke(path, with: .color(tint.opacity(0.7)), style: StrokeStyle(lineWidth: 1.2, dash: [6, 4]))
+
+            if let bounds = Rect(bounding: zone.boundary), bounds.width * viewport.scale > 60 {
+                let center = screen(Point(x: bounds.midX, y: bounds.midY))
+                context.draw(
+                    Text(zone.label).font(.system(size: 9)).foregroundColor(Color(white: 0.4)),
+                    at: center
+                )
+            }
+        }
+    }
+
     private func drawFences(_ context: GraphicsContext) {
         for fence in variant.fences {
             var path = Path()
@@ -163,9 +238,15 @@ struct PlanCanvasView: View {
             shape.addLines(object.transform.corners.map(screen))
             shape.closeSubpath()
 
+            // Structures read as solid; growing areas are deliberately
+            // lighter so a 200 m² potato patch doesn't visually outweigh the
+            // house standing next to it.
             let tint = color(for: object.category)
-            context.fill(shape, with: .color(tint.opacity(object.locked ? 0.35 : 0.7)))
-            context.stroke(shape, with: .color(tint), lineWidth: 1.5)
+            let growingAreas: Set<ObjectCategory> = [.foodAnnual, .foodPerennial, .greenhouse]
+            let isGrowingArea = growingAreas.contains(object.category)
+            let fillOpacity = object.locked ? 0.3 : (isGrowingArea ? 0.4 : 0.78)
+            context.fill(shape, with: .color(tint.opacity(fillOpacity)))
+            context.stroke(shape, with: .color(tint.opacity(isGrowingArea ? 0.8 : 1)), lineWidth: isGrowingArea ? 1 : 1.6)
 
             if object.id == selectedObjectID {
                 context.stroke(shape, with: .color(.accentColor), lineWidth: 3)

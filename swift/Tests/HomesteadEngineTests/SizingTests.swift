@@ -132,4 +132,48 @@ struct SizingTests {
         )
         #expect(program == [item("house", 12, 10), item("shed", 4, 3), item("compost", 4, 3)])
     }
+
+    /// The vocabulary exists so a picker can't offer a term the engine
+    /// silently drops — the test above is what that looks like from the
+    /// inside, and "chicken" instead of "poultry" yields a plan with no
+    /// chickens in it and no error anywhere. Every published term must
+    /// actually place the catalog entries it claims.
+    @Test func everyPublishedCropTermProducesItsCatalogEntry() {
+        for term in Sizing.cropVocabulary {
+            let program = Sizing.buildProgram(base(crops: [term.key]), mode: .beautyBalanced)
+            for typeId in term.typeIds {
+                #expect(program.contains { $0.typeId == typeId }, Comment(rawValue: term.key))
+            }
+        }
+    }
+
+    @Test func everyPublishedInfrastructureTermProducesItsCatalogEntries() {
+        for term in Sizing.infrastructureVocabulary {
+            let program = Sizing.buildProgram(base(infrastructure: [term.key]), mode: .beautyBalanced)
+            for typeId in term.typeIds {
+                #expect(program.contains { $0.typeId == typeId }, Comment(rawValue: "\(term.key) -> \(typeId)"))
+            }
+        }
+    }
+
+    @Test func animalVocabularyMatchesBuildProgram() {
+        for term in Sizing.animalVocabulary {
+            let program = Sizing.buildProgram(
+                base(animals: [AnimalRequest(type: term.key, count: 4)]),
+                mode: .beautyBalanced
+            )
+            for typeId in term.typeIds {
+                #expect(program.contains { $0.typeId == typeId }, Comment(rawValue: "\(term.key) -> \(typeId)"))
+            }
+        }
+    }
+
+    /// Every term also needs a human-readable label, since the UI shows these
+    /// directly — a term whose catalog entry vanished would otherwise show
+    /// its raw key ("rainwater-cistern") in a picker.
+    @Test func everyVocabularyTermResolvesALabel() {
+        for term in Sizing.cropVocabulary + Sizing.infrastructureVocabulary + Sizing.animalVocabulary {
+            #expect(term.label != term.key, Comment(rawValue: term.key))
+        }
+    }
 }

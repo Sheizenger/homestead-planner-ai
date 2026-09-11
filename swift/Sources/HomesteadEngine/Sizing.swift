@@ -47,6 +47,44 @@ public enum Sizing {
         "micro-hydro": ["micro-hydro"],
     ]
 
+    /// One term a brief can ask for, and the catalog entries it expands to.
+    /// The UI enumerates these rather than hardcoding its own copy of the
+    /// vocabulary: a picker offering "chicken" or "goat" silently produces
+    /// nothing, because `buildProgram` only matches `poultry` and `goats`.
+    /// The label comes from the catalog too, so there is no second list of
+    /// display names to drift out of sync.
+    public struct VocabularyTerm: Equatable, Sendable, Identifiable {
+        public let key: String
+        public let typeIds: [String]
+
+        public var id: String { key }
+        public var label: String {
+            typeIds.compactMap { ObjectLibrary[$0]?.label }.first ?? key
+        }
+    }
+
+    /// Sorted by key purely for stable presentation — generation order comes
+    /// from the order terms appear in the brief, not from this.
+    public static var cropVocabulary: [VocabularyTerm] {
+        cropToType
+            .map { VocabularyTerm(key: $0.key, typeIds: [$0.value]) }
+            .sorted { $0.key < $1.key }
+    }
+
+    public static var infrastructureVocabulary: [VocabularyTerm] {
+        infraToTypes
+            .map { VocabularyTerm(key: $0.key, typeIds: $0.value) }
+            .sorted { $0.key < $1.key }
+    }
+
+    /// `buildProgram`'s animal switch, which is hardcoded rather than
+    /// table-driven — `animalVocabularyMatchesBuildProgram` holds these two
+    /// against it so a new case there can't silently miss the UI.
+    public static let animalVocabulary: [VocabularyTerm] = [
+        VocabularyTerm(key: "goats", typeIds: ["goat-shelter", "goat-paddock"]),
+        VocabularyTerm(key: "poultry", typeIds: ["poultry-coop"]),
+    ]
+
     private static let modeScale: [PlanningMode: Double] = [
         .productionMax: 1.3,
         .minimumMaintenance: 0.75,

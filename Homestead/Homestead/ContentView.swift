@@ -2,9 +2,8 @@
 //  ContentView.swift
 //  Homestead
 //
-//  Generate a plan, switch between variants, pan/zoom it, select an object,
-//  read its warnings. Everything here reads from ProjectModel — no new logic
-//  in the view layer, per AGENTS.md's three-layer split.
+//  Brief on the left, plan on the right. Everything reads from ProjectModel
+//  — no new logic in the view layer, per AGENTS.md's three-layer split.
 //
 
 import SwiftUI
@@ -30,67 +29,102 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(model.document.variants, selection: $selectedVariantID) { variant in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(variant.strategyLabel).font(.headline)
-                    Text("\(variant.objects.count) objects").font(.caption).foregroundStyle(.secondary)
-                }
-                .tag(variant.id)
+            VStack(spacing: 0) {
+                BriefEditorView(model: model)
+                Divider()
+                generateBar
             }
-            .navigationTitle("Variants")
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220)
+            .navigationTitle("Brief")
+            .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 420)
         } detail: {
             Group {
                 if let variant = selectedVariant {
-                    VSplitView {
-                        PlanCanvasView(
-                            plot: model.document.plot,
-                            variant: variant,
-                            viewport: $viewport,
-                            selectedObjectID: $selectedObjectID
-                        )
-                        .frame(minHeight: 320)
+                    VStack(spacing: 0) {
+                        if model.isStale(variant.id) { staleBanner }
+                        VSplitView {
+                            PlanCanvasView(
+                                plot: model.document.plot,
+                                variant: variant,
+                                viewport: $viewport,
+                                selectedObjectID: $selectedObjectID
+                            )
+                            .frame(minHeight: 320)
 
-                        VStack(spacing: 0) {
-                            if let object = selectedObject {
-                                selectionBar(for: object, in: variant)
-                                Divider()
+                            VStack(spacing: 0) {
+                                if let object = selectedObject {
+                                    selectionBar(for: object, in: variant)
+                                    Divider()
+                                }
+                                WarningsListView(warnings: model.warnings(for: variant.id))
                             }
-                            WarningsListView(warnings: model.warnings(for: variant.id))
+                            .frame(minHeight: 140, idealHeight: 200)
                         }
-                        .frame(minHeight: 140, idealHeight: 200)
                     }
                 } else {
                     ContentUnavailableView(
                         "No plan yet",
                         systemImage: "sparkles",
-                        description: Text("Pick a mode and press Generate.")
+                        description: Text("Describe the homestead on the left, then press Generate.")
                     )
                 }
             }
             .toolbar {
-                ToolbarItem {
-                    Picker("Mode", selection: $mode) {
-                        ForEach(PlanningMode.allCases, id: \.self) { mode in
-                            Text(label(for: mode)).tag(mode)
+                if !model.document.variants.isEmpty {
+                    ToolbarItem {
+                        Picker("Variant", selection: $selectedVariantID) {
+                            ForEach(model.document.variants) { variant in
+                                Text(variant.strategyLabel).tag(variant.id as Variant.ID?)
+                            }
                         }
-                    }
-                    .pickerStyle(.menu)
-                }
-                ToolbarItem {
-                    Button {
-                        let id = model.generateVariant(mode: mode, seed: Int.random(in: 0..<1_000_000))
-                        model.setActiveVariant(id)
-                        selectedVariantID = id
-                        selectedObjectID = nil
-                    } label: {
-                        Label("Generate", systemImage: "sparkles")
+                        .pickerStyle(.menu)
                     }
                 }
             }
         }
         .onAppear { selectedVariantID = model.activeVariant?.id }
         .onChange(of: selectedVariantID) { selectedObjectID = nil }
+    }
+
+    private var generateBar: some View {
+        VStack(spacing: 8) {
+            Picker("Mode", selection: $mode) {
+                ForEach(PlanningMode.allCases, id: \.self) { mode in
+                    Text(label(for: mode)).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Button {
+                let id = model.generateVariant(mode: mode, seed: Int.random(in: 0..<1_000_000))
+                model.setActiveVariant(id)
+                selectedVariantID = id
+                selectedObjectID = nil
+            } label: {
+                Label("Generate", systemImage: "sparkles").frame(maxWidth: .infinity)
+            }
+            .keyboardShortcut("g", modifiers: .command)
+            .controlSize(.large)
+        }
+        .padding(12)
+    }
+
+    private var staleBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            Text("The brief changed since this plan was generated.")
+            Spacer()
+            Button("Regenerate") {
+                let id = model.generateVariant(mode: mode, seed: Int.random(in: 0..<1_000_000))
+                model.setActiveVariant(id)
+                selectedVariantID = id
+                selectedObjectID = nil
+            }
+        }
+        .font(.callout)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.12))
     }
 
     @ViewBuilder
@@ -130,9 +164,9 @@ struct ContentView: View {
     private func label(for mode: PlanningMode) -> String {
         switch mode {
         case .productionMax: return "Production"
-        case .minimumMaintenance: return "Low-maintenance"
+        case .minimumMaintenance: return "Low-upkeep"
         case .beautyBalanced: return "Balanced"
-        case .safetyFirst: return "Safety-first"
+        case .safetyFirst: return "Safety"
         }
     }
 }
