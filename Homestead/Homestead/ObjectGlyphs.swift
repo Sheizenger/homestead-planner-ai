@@ -17,24 +17,37 @@
 import SwiftUI
 import HomesteadEngine
 
+/// Maps an object's local metres to screen points. Deliberately a closure
+/// rather than centre+scale+rotation: the plan view projects straight down,
+/// the axonometric view projects the same local frame onto a roof at height,
+/// and both are linear maps — so one set of glyphs serves both.
 struct GlyphFrame {
-    let center: CGPoint
+    let project: (Double, Double) -> CGPoint
     let scale: Double
-    let rotation: Double
 
     func point(_ x: Double, _ y: Double) -> CGPoint {
-        let cosR = cos(rotation)
-        let sinR = sin(rotation)
-        return CGPoint(
-            x: center.x + CGFloat((x * cosR - y * sinR) * scale),
-            y: center.y + CGFloat((x * sinR + y * cosR) * scale)
-        )
+        project(x, y)
     }
 
     /// Stroke widths in the source are world metres; below about half a point
     /// they stop being visible and just cost time.
     func lineWidth(_ metres: Double) -> CGFloat {
         max(0.4, CGFloat(metres * scale))
+    }
+
+    /// Straight-down view: rotate in place, then scale about the centre.
+    static func plan(center: CGPoint, scale: Double, rotation: Double) -> GlyphFrame {
+        let cosR = cos(rotation)
+        let sinR = sin(rotation)
+        return GlyphFrame(
+            project: { x, y in
+                CGPoint(
+                    x: center.x + CGFloat((x * cosR - y * sinR) * scale),
+                    y: center.y + CGFloat((x * sinR + y * cosR) * scale)
+                )
+            },
+            scale: scale
+        )
     }
 }
 

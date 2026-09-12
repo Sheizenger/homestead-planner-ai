@@ -24,6 +24,7 @@ struct PlanCanvasView: View {
     let variant: Variant
     @Binding var viewport: Viewport
     @Binding var selectedObjectID: String?
+    var showsDimensions: Bool
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var dragAnchor: CGSize = .zero
@@ -226,56 +227,148 @@ struct PlanCanvasView: View {
         }
     }
 
-    private func drawObjects(_ context: GraphicsContext) {
-        for object in variant.objects {
-            var shape = Path()
-            shape.addLines(object.transform.corners.map(screen))
-            shape.closeSubpath()
+    /// Roof-mounted equipment (a solar array on the house) deliberately
+    /// shares the building's footprint — the engine places it there and
+    /// excludes it from overlap warnings, path routing and area accounting.
+    /// Drawn like a ground object it just reads as two buildings piled on
+    /// each other, so it gets a dashed, unfilled treatment on top instead.
+    private func isRoofMounted(_ object: PlanObject) -> Bool {
+        object.metadata["roofMounted"]?.boolValue == true
+    }
 
-            let style = CategoryStyle.of(object.category, colorScheme)
+    private func drawObjects(_ context: GraphicsContext) {
+        for object in variant.objects where !isRoofMounted(object) {
+            drawFootprint(context, object: object, roofMounted: false)
+        }
+        for object in variant.objects where isRoofMounted(object) {
+            drawFootprint(context, object: object, roofMounted: true)
+        }
+        drawLabels(context)
+    }
+
+    private func drawFootprint(_ context: GraphicsContext, object: PlanObject, roofMounted: Bool) {
+        var shape = Path()
+        shape.addLines(object.transform.corners.map(screen))
+        shape.closeSubpath()
+
+        let style = CategoryStyle.of(object.category, colorScheme)
+        if roofMounted {
+            context.fill(shape, with: .color(style.fill.opacity(0.5)))
+            context.stroke(shape, with: .color(style.stroke), style: StrokeStyle(lineWidth: 1.2, dash: [4, 3]))
+        } else {
             context.fill(shape, with: .color(style.fill.opacity(object.locked ? 0.55 : 1)))
             context.stroke(shape, with: .color(style.stroke), lineWidth: 1.2)
+        }
 
-            ObjectGlyphs.draw(
-                context,
-                object: object,
-                frame: GlyphFrame(
-                    center: screen(object.transform.center),
-                    scale: viewport.scale,
-                    rotation: object.transform.rotationDeg * .pi / 180
-                ),
-                stroke: style.stroke
+        ObjectGlyphs.draw(
+            context,
+            object: object,
+            frame: .plan(
+                center: screen(object.transform.center),
+                scale: viewport.scale,
+                rotation: object.transform.rotationDeg * .pi / 180
+            ),
+            stroke: style.stroke
+        )
+        drawSymbol(context, object: object, style: style)
+
+        if object.id == selectedObjectID {
+            context.stroke(shape, with: .color(.accentColor), lineWidth: 2.5)
+        }
+        if showsDimensions { drawDimensions(context, for: object) }
+    }
+
+    /// A standard symbol per type, so a shape says what it is before anyone
+    /// reads its label — and small objects, whose labels get skipped when
+    /// space runs out, still identify themselves.
+    private func drawSymbol(_ context: GraphicsContext, object: PlanObject, style: CategoryStyle) {
+        let footprint = min(object.transform.width, object.transform.height) * viewport.scale
+        guard footprint > 24 else { return }
+        let size = min(20, max(10, footprint * 0.38))
+        context.draw(
+            Text(Image(systemName: ObjectSymbols.name(for: object)))
+                .font(.system(size: size))
+                .foregroundColor(style.stroke.opacity(0.8)),
+            at: screen(object.transform.center)
+        )
+    }
+
+    private func drawDimensions(_ context: GraphicsContext, for object: PlanObject) {
+        let corners = object.transform.corners
+        guard corners.count == 4, object.transform.width * viewport.scale > 44 else { return }
+
+        for (a, b, metres) in [
+            (corners[3], corners[2], object.transform.width),
+            (corners[0], corners[3], object.transform.height),
+        ] {
+            var line = Path()
+            line.move(to: screen(a))
+            line.addLine(to: screen(b))
+            context.stroke(line, with: .color(chrome.furniture.opacity(0.85)), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+
+            let mid = Point(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+            context.draw(
+                Text("\(Int(metres.rounded())) m").font(.system(size: 8)).foregroundColor(chrome.furniture),
+                at: screen(mid)
             )
-
-            if object.id == selectedObjectID {
-                context.stroke(shape, with: .color(.accentColor), lineWidth: 2.5)
-            }
-
-            drawLabel(context, for: object)
         }
     }
 
-    /// Inside the object when it fits, just below it when it doesn't — the
-    /// first pass centred every label regardless, so a shed's name overflowed
-    /// its own footprint and collided with whatever sat beside it.
-    private func drawLabel(_ context: GraphicsContext, for object: PlanObject) {
-        let widthOnScreen = CGFloat(object.transform.width * viewport.scale)
-        let heightOnScreen = CGFloat(object.transform.height * viewport.scale)
-        guard widthOnScreen > 26 else { return }
+    /// One pass over every label, after all footprints are drawn, so a label
+    /// is never buried under a later object — and so each one can be placed
+    /// against the labels already committed. Without this, neighbours write
+    /// over each other: a roof-mounted array's name lands exactly on the
+    /// house's, and a bed's name lands on the shelter next to it.
+    private func drawLabels(_ context: GraphicsContext) {
+        var occupied: [CGRect] = []
+        let byPriority = variant.objects.sorted {
+            $0.transform.width * $0.transform.height > $1.transform.width * $1.transform.height
+        }
 
-        let estimatedTextWidth = CGFloat(object.label.count) * 5.4
-        let centre = screen(object.transform.center)
-        let fitsInside = estimatedTextWidth + 8 <= widthOnScreen && heightOnScreen > 26
-        let position = fitsInside
-            ? centre
-            : CGPoint(x: centre.x, y: centre.y + heightOnScreen / 2 + 8)
+        for object in byPriority {
+            let widthOnScreen = CGFloat(object.transform.width * viewport.scale)
+            let heightOnScreen = CGFloat(object.transform.height * viewport.scale)
+            guard widthOnScreen > 26 else { continue }
 
-        context.draw(
-            Text(object.label)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(chrome.label),
-            at: position
-        )
+            let textWidth = CGFloat(object.label.count) * 5.4
+            let textSize = CGSize(width: textWidth + 4, height: 12)
+            let centre = screen(object.transform.center)
+            let fitsInside = textWidth + 8 <= widthOnScreen && heightOnScreen > 26
+
+            var candidates: [CGPoint] = []
+            if fitsInside { candidates.append(centre) }
+            candidates.append(CGPoint(x: centre.x, y: centre.y + heightOnScreen / 2 + 8))
+            candidates.append(CGPoint(x: centre.x, y: centre.y - heightOnScreen / 2 - 8))
+            candidates.append(CGPoint(x: centre.x + widthOnScreen / 2 + textWidth / 2 + 6, y: centre.y))
+            candidates.append(CGPoint(x: centre.x - widthOnScreen / 2 - textWidth / 2 - 6, y: centre.y))
+
+            let spot = candidates.first { candidate in
+                let rect = CGRect(
+                    x: candidate.x - textSize.width / 2,
+                    y: candidate.y - textSize.height / 2,
+                    width: textSize.width,
+                    height: textSize.height
+                )
+                return !occupied.contains { $0.intersects(rect) }
+            }
+
+            // Every position taken: skip rather than stack text on text. The
+            // object is still selectable, and its name shows in the bar below.
+            guard let position = spot else { continue }
+            occupied.append(CGRect(
+                x: position.x - textSize.width / 2,
+                y: position.y - textSize.height / 2,
+                width: textSize.width,
+                height: textSize.height
+            ))
+
+            context.draw(
+                Text(object.label)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(chrome.label),
+                at: position
+            )
+        }
     }
 
     private func drawScaleBar(_ context: GraphicsContext, size: CGSize) {
