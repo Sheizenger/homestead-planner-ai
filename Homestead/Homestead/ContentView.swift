@@ -81,6 +81,7 @@ struct ContentView: View {
                 }
             }
         }
+        .frame(minWidth: 940, minHeight: 620)
         .onAppear { selectedVariantID = model.activeVariant?.id }
         .onChange(of: selectedVariantID) { selectedObjectID = nil }
     }
@@ -107,6 +108,7 @@ struct ContentView: View {
             .controlSize(.large)
         }
         .padding(12)
+        .background(.bar)
     }
 
     private var staleBanner: some View {

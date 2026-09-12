@@ -9,9 +9,10 @@
 //  implicitly. No axis flip: the engine's +Y-is-south convention already
 //  matches SwiftUI's downward-growing Y.
 //
-//  North arrow and scale bar are drawn in screen space, deliberately outside
-//  the viewport transform, so they stay put and stay legible at any zoom
-//  (see Viewport's own doc comment).
+//  Colours come from CategoryStyle, which is the web app's palette including
+//  its dark variants. North arrow, scale bar and legend are screen-space
+//  furniture, deliberately outside the viewport transform, so they stay put
+//  and stay legible at any zoom (see Viewport's own doc comment).
 //
 
 import SwiftUI
@@ -24,8 +25,11 @@ struct PlanCanvasView: View {
     @Binding var viewport: Viewport
     @Binding var selectedObjectID: String?
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var dragAnchor: CGSize = .zero
     @State private var magnifyAnchor: CGFloat = 1
+
+    private var chrome: CanvasChrome { CanvasChrome.of(colorScheme) }
 
     var body: some View {
         GeometryReader { geometry in
@@ -40,12 +44,8 @@ struct PlanCanvasView: View {
                 drawNorthArrow(context, size: size)
             }
             .contentShape(Rectangle())
-            .overlay(alignment: .topLeading) {
-                legend.allowsHitTesting(false)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                zoomControls(in: geometry.size)
-            }
+            .overlay(alignment: .topLeading) { legend.allowsHitTesting(false) }
+            .overlay(alignment: .bottomTrailing) { zoomControls(in: geometry.size) }
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -69,28 +69,38 @@ struct PlanCanvasView: View {
                     .onChanged { value in
                         let factor = value.magnification / magnifyAnchor
                         magnifyAnchor = value.magnification
-                        let center = Point(x: Double(geometry.size.width) / 2, y: Double(geometry.size.height) / 2)
-                        viewport.zoom(by: Double(factor), anchor: center)
+                        let centre = Point(x: Double(geometry.size.width) / 2, y: Double(geometry.size.height) / 2)
+                        viewport.zoom(by: Double(factor), anchor: centre)
                     }
                     .onEnded { _ in magnifyAnchor = 1 }
             )
+            // Re-fit on every layout event, not just the first. Fitting once
+            // in onAppear is what drew the plan as a postage stamp in the
+            // corner: the first layout pass reports a much smaller canvas
+            // than the settled window, and nothing ever corrected it.
             .onAppear { fitToPlot(in: geometry.size) }
+            .onChange(of: geometry.size) { fitToPlot(in: geometry.size) }
+            .onChange(of: plot.boundary) { fitToPlot(in: geometry.size) }
             .onChange(of: variant.id) { fitToPlot(in: geometry.size) }
         }
-        .background(Color(white: 0.99))
+        .background(chrome.background)
     }
 
-    /// Only the categories this plan actually contains — a fixed legend of
-    /// all thirteen would mostly list things that aren't on screen.
+    // MARK: - Controls
+
     private var legend: some View {
         let categories = orderedCategories()
         return VStack(alignment: .leading, spacing: 3) {
             ForEach(categories, id: \.self) { category in
                 HStack(spacing: 6) {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(color(for: category))
-                        .frame(width: 10, height: 10)
-                    Text(name(for: category)).font(.system(size: 10))
+                        .fill(CategoryStyle.of(category, colorScheme).fill)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 2)
+                                .stroke(CategoryStyle.of(category, colorScheme).stroke, lineWidth: 1)
+                        )
+                        .frame(width: 11, height: 11)
+                    Text(CategoryStyle.label(category)).font(.system(size: 10))
                 }
             }
         }
@@ -108,25 +118,6 @@ struct PlanCanvasView: View {
         return seen
     }
 
-    private func name(for category: ObjectCategory) -> String {
-        switch category {
-        case .residential: return "Living"
-        case .access: return "Access"
-        case .foodAnnual: return "Annual crops"
-        case .foodPerennial: return "Perennial crops"
-        case .greenhouse: return "Greenhouse"
-        case .animal: return "Animals"
-        case .utility: return "Utilities"
-        case .water: return "Water"
-        case .energy: return "Energy"
-        case .storage: return "Storage"
-        case .leisure: return "Leisure"
-        case .futureExpansion: return "Future expansion"
-        case .fence: return "Fence"
-        case .path: return "Path"
-        }
-    }
-
     private func zoomControls(in size: CGSize) -> some View {
         VStack(spacing: 4) {
             Button { zoom(by: 1.3, in: size) } label: { Image(systemName: "plus.magnifyingglass") }
@@ -142,7 +133,7 @@ struct PlanCanvasView: View {
     }
 
     private func fitToPlot(in size: CGSize) {
-        guard let bounds = plot.bounds else { return }
+        guard let bounds = plot.bounds, size.width > 0, size.height > 0 else { return }
         viewport.fit(bounds, in: Size(width: Double(size.width), height: Double(size.height)))
     }
 
@@ -176,15 +167,15 @@ struct PlanCanvasView: View {
             path.addLine(to: CGPoint(x: size.width, y: screenY))
             y += step
         }
-        context.stroke(path, with: .color(Color(white: 0.93)), lineWidth: 1)
+        context.stroke(path, with: .color(chrome.grid), lineWidth: 1)
     }
 
     private func drawPlot(_ context: GraphicsContext) {
         var path = Path()
         path.addLines(plot.boundary.map(screen))
         path.closeSubpath()
-        context.fill(path, with: .color(Color(white: 0.965)))
-        context.stroke(path, with: .color(Color(white: 0.45)), lineWidth: 2)
+        context.fill(path, with: .color(chrome.plotFill))
+        context.stroke(path, with: .color(chrome.plotStroke), lineWidth: 2)
     }
 
     /// Zones (the future-expansion reserve today) sit under everything as a
@@ -197,38 +188,41 @@ struct PlanCanvasView: View {
             path.addLines(zone.boundary.map(screen))
             path.closeSubpath()
 
-            let tint = color(for: ObjectCategory(zone: zone.category) ?? .futureExpansion)
-            context.fill(path, with: .color(tint.opacity(0.18)))
-            context.stroke(path, with: .color(tint.opacity(0.7)), style: StrokeStyle(lineWidth: 1.2, dash: [6, 4]))
+            let style = CategoryStyle.of(ObjectCategory(zone: zone.category) ?? .futureExpansion, colorScheme)
+            context.fill(path, with: .color(style.fill.opacity(0.45)))
+            context.stroke(path, with: .color(style.stroke.opacity(0.8)), style: StrokeStyle(lineWidth: 1.2, dash: [6, 4]))
 
             if let bounds = Rect(bounding: zone.boundary), bounds.width * viewport.scale > 60 {
-                let center = screen(Point(x: bounds.midX, y: bounds.midY))
+                let centre = screen(Point(x: bounds.midX, y: bounds.midY))
                 context.draw(
-                    Text(zone.label).font(.system(size: 9)).foregroundColor(Color(white: 0.4)),
-                    at: center
+                    Text(zone.label).font(.system(size: 9)).foregroundColor(chrome.furniture),
+                    at: centre
                 )
             }
         }
     }
 
     private func drawFences(_ context: GraphicsContext) {
+        let style = CategoryStyle.of(.animal, colorScheme)
         for fence in variant.fences {
             var path = Path()
             path.addLines(fence.points.map(screen))
             context.stroke(
                 path,
-                with: .color(Color(red: 0.45, green: 0.32, blue: 0.2)),
+                with: .color(style.stroke.opacity(0.9)),
                 style: StrokeStyle(lineWidth: 1.5, dash: fence.gated ? [5, 4] : [])
             )
         }
     }
 
     private func drawPaths(_ context: GraphicsContext) {
+        let style = CategoryStyle.of(.access, colorScheme)
         for pathEntity in variant.paths {
             var path = Path()
             path.addLines(pathEntity.points.map(screen))
             let width = max(1.5, CGFloat(pathEntity.widthM * viewport.scale))
-            context.stroke(path, with: .color(Color(white: 0.78)), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
+            context.stroke(path, with: .color(style.fill), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
+            context.stroke(path, with: .color(style.stroke.opacity(0.45)), style: StrokeStyle(lineWidth: max(0.5, width * 0.08), lineCap: .round))
         }
     }
 
@@ -238,18 +232,23 @@ struct PlanCanvasView: View {
             shape.addLines(object.transform.corners.map(screen))
             shape.closeSubpath()
 
-            // Structures read as solid; growing areas are deliberately
-            // lighter so a 200 m² potato patch doesn't visually outweigh the
-            // house standing next to it.
-            let tint = color(for: object.category)
-            let growingAreas: Set<ObjectCategory> = [.foodAnnual, .foodPerennial, .greenhouse]
-            let isGrowingArea = growingAreas.contains(object.category)
-            let fillOpacity = object.locked ? 0.3 : (isGrowingArea ? 0.4 : 0.78)
-            context.fill(shape, with: .color(tint.opacity(fillOpacity)))
-            context.stroke(shape, with: .color(tint.opacity(isGrowingArea ? 0.8 : 1)), lineWidth: isGrowingArea ? 1 : 1.6)
+            let style = CategoryStyle.of(object.category, colorScheme)
+            context.fill(shape, with: .color(style.fill.opacity(object.locked ? 0.55 : 1)))
+            context.stroke(shape, with: .color(style.stroke), lineWidth: 1.2)
+
+            ObjectGlyphs.draw(
+                context,
+                object: object,
+                frame: GlyphFrame(
+                    center: screen(object.transform.center),
+                    scale: viewport.scale,
+                    rotation: object.transform.rotationDeg * .pi / 180
+                ),
+                stroke: style.stroke
+            )
 
             if object.id == selectedObjectID {
-                context.stroke(shape, with: .color(.accentColor), lineWidth: 3)
+                context.stroke(shape, with: .color(.accentColor), lineWidth: 2.5)
             }
 
             drawLabel(context, for: object)
@@ -257,24 +256,24 @@ struct PlanCanvasView: View {
     }
 
     /// Inside the object when it fits, just below it when it doesn't — the
-    /// alternative (always centred) overflows small objects and collides
-    /// with whatever is drawn next to them.
+    /// first pass centred every label regardless, so a shed's name overflowed
+    /// its own footprint and collided with whatever sat beside it.
     private func drawLabel(_ context: GraphicsContext, for object: PlanObject) {
         let widthOnScreen = CGFloat(object.transform.width * viewport.scale)
         let heightOnScreen = CGFloat(object.transform.height * viewport.scale)
-        guard widthOnScreen > 22 else { return }
+        guard widthOnScreen > 26 else { return }
 
         let estimatedTextWidth = CGFloat(object.label.count) * 5.4
-        let center = screen(object.transform.center)
-        let fitsInside = estimatedTextWidth + 6 <= widthOnScreen && heightOnScreen > 14
+        let centre = screen(object.transform.center)
+        let fitsInside = estimatedTextWidth + 8 <= widthOnScreen && heightOnScreen > 26
         let position = fitsInside
-            ? center
-            : CGPoint(x: center.x, y: center.y + heightOnScreen / 2 + 7)
+            ? centre
+            : CGPoint(x: centre.x, y: centre.y + heightOnScreen / 2 + 8)
 
         context.draw(
             Text(object.label)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundColor(Color(white: 0.15)),
+                .foregroundColor(chrome.label),
             at: position
         )
     }
@@ -291,27 +290,25 @@ struct PlanCanvasView: View {
         path.addLine(to: CGPoint(x: origin.x + length, y: origin.y))
         path.move(to: CGPoint(x: origin.x + length, y: origin.y - 4))
         path.addLine(to: CGPoint(x: origin.x + length, y: origin.y + 4))
-        context.stroke(path, with: .color(Color(white: 0.35)), lineWidth: 1.5)
+        context.stroke(path, with: .color(chrome.furniture), lineWidth: 1.5)
 
         // niceLength only ever returns 1/2/5 × a power of ten, so a sub-metre
         // step is 0.5/0.2/0.1 — all of which print cleanly as-is.
         let label = metres < 1 ? "\(metres) m" : "\(Int(metres)) m"
         context.draw(
-            Text(label)
-                .font(.system(size: 10))
-                .foregroundColor(Color(white: 0.35)),
+            Text(label).font(.system(size: 10)).foregroundColor(chrome.furniture),
             at: CGPoint(x: origin.x + length / 2, y: origin.y - 12)
         )
     }
 
     private func drawNorthArrow(_ context: GraphicsContext, size: CGSize) {
-        let center = CGPoint(x: size.width - 34, y: 40)
+        let centre = CGPoint(x: size.width - 34, y: 40)
         let radians = plot.northAngleDeg * .pi / 180
         // North is "up" on screen, rotated by the plot's own north angle.
         func offset(_ angle: Double, _ length: Double) -> CGPoint {
             CGPoint(
-                x: center.x + CGFloat(sin(angle) * length),
-                y: center.y - CGFloat(cos(angle) * length)
+                x: centre.x + CGFloat(sin(angle) * length),
+                y: centre.y - CGFloat(cos(angle) * length)
             )
         }
         let tip = offset(radians, 16)
@@ -322,36 +319,18 @@ struct PlanCanvasView: View {
         var shaft = Path()
         shaft.move(to: tail)
         shaft.addLine(to: tip)
-        context.stroke(shaft, with: .color(Color(white: 0.35)), lineWidth: 1.5)
+        context.stroke(shaft, with: .color(chrome.furniture), lineWidth: 1.5)
 
         var head = Path()
         head.move(to: tip)
         head.addLine(to: left)
         head.addLine(to: right)
         head.closeSubpath()
-        context.fill(head, with: .color(Color(white: 0.35)))
+        context.fill(head, with: .color(chrome.furniture))
 
         context.draw(
-            Text("N").font(.system(size: 10, weight: .semibold)).foregroundColor(Color(white: 0.35)),
-            at: CGPoint(x: center.x, y: center.y + 24)
+            Text("N").font(.system(size: 10, weight: .semibold)).foregroundColor(chrome.furniture),
+            at: CGPoint(x: centre.x, y: centre.y + 24)
         )
-    }
-
-    private func color(for category: ObjectCategory) -> Color {
-        switch category {
-        case .residential: return Color(red: 0.85, green: 0.52, blue: 0.24)
-        case .access: return Color(white: 0.55)
-        case .foodAnnual: return Color(red: 0.45, green: 0.68, blue: 0.32)
-        case .foodPerennial: return Color(red: 0.25, green: 0.5, blue: 0.26)
-        case .greenhouse: return Color(red: 0.36, green: 0.72, blue: 0.66)
-        case .animal: return Color(red: 0.68, green: 0.5, blue: 0.32)
-        case .utility: return Color(red: 0.36, green: 0.5, blue: 0.78)
-        case .water: return Color(red: 0.3, green: 0.62, blue: 0.8)
-        case .energy: return Color(red: 0.86, green: 0.72, blue: 0.28)
-        case .storage: return Color(white: 0.52)
-        case .leisure: return Color(red: 0.6, green: 0.45, blue: 0.72)
-        case .futureExpansion: return Color(white: 0.8)
-        case .fence, .path: return Color(white: 0.6)
-        }
     }
 }
