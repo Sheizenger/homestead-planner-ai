@@ -70,7 +70,7 @@ enum ObjectGlyphs {
         case "vegetable-area":
             furrowLines(context, w, h, frame, stroke, dots: .hollow)
         case "grain-field":
-            furrowLines(context, w, h, frame, stroke, dots: .none)
+            furrowLines(context, w, h, frame, stroke, dots: .bare)
         case "raised-beds":
             bedGrid(context, w, h, frame, stroke)
         case "greenhouse":
@@ -188,7 +188,7 @@ enum ObjectGlyphs {
         context.stroke(path, with: .color(stroke.opacity(0.65)), style: style)
     }
 
-    private enum FurrowDots { case none, filled, hollow }
+    private enum FurrowDots { case bare, filled, hollow }
 
     private static func furrowLines(_ context: GraphicsContext, _ w: Double, _ h: Double, _ frame: GlyphFrame, _ stroke: Color, dots: FurrowDots) {
         let spacing = 1.1, margin = 0.5
@@ -205,7 +205,7 @@ enum ObjectGlyphs {
         }
         context.stroke(path, with: .color(stroke.opacity(0.45)), lineWidth: frame.lineWidth(0.05))
 
-        guard dots != .none else { return }
+        guard dots != .bare else { return }
         let dotCols = max(1, Int(usableW / 1.0))
         let radius = CGFloat((dots == .filled ? 0.1 : 0.13) * frame.scale)
         guard radius > 0.6 else { return }
@@ -385,7 +385,10 @@ enum ObjectGlyphs {
     }
 
     private static func coopRun(_ context: GraphicsContext, _ w: Double, _ h: Double, _ frame: GlyphFrame, _ stroke: Color) {
-        roofLines(context, w * 0.55, h, GlyphFrame(center: frame.point(-w * 0.22, 0), scale: frame.scale, rotation: frame.rotation), stroke, withDoor: false)
+        // The hutch sits at the run's left end: shift in the object's own
+        // local frame, which works whatever projection `frame` carries.
+        let hutch = GlyphFrame(project: { x, y in frame.point(x - w * 0.22, y) }, scale: frame.scale)
+        roofLines(context, w * 0.55, h, hutch, stroke, withDoor: false)
 
         var mesh = Path()
         var x = 0.2
