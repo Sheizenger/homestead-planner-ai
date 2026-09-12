@@ -173,17 +173,9 @@ struct AxonometricPlanView: View {
         }
 
         let fenceStyle = CategoryStyle.of(.animal, colorScheme)
+        let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
         for fence in variant.fences {
-            var line = Path()
-            line.addLines(fence.points.map { screen($0, z: 1.4) })
-            context.stroke(line, with: .color(fenceStyle.stroke.opacity(0.85)), style: StrokeStyle(lineWidth: 1, dash: fence.gated ? [5, 4] : []))
-            // Posts, so the fence reads as standing rather than painted on.
-            for point in fence.points {
-                var post = Path()
-                post.move(to: screen(point, z: 0))
-                post.addLine(to: screen(point, z: 1.4))
-                context.stroke(post, with: .color(fenceStyle.stroke.opacity(0.6)), lineWidth: 1)
-            }
+            AxoKit.fence(painter, points: fence.points, height: 1.4, color: fenceStyle.stroke.opacity(0.9))
         }
     }
 
@@ -202,18 +194,108 @@ struct AxonometricPlanView: View {
             let base = Massing.baseElevation(for: object, among: variant.objects)
             let corners = object.transform.corners
             let selected = object.id == selectedObjectID
+            let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
+            let roofTones = Massing.roofColor(for: object)
+            let roof = Color(hex: colorScheme == .dark ? roofTones.dark : roofTones.light)
 
             switch Massing.form(for: object) {
             case .flat(let height):
-                drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0.0)
+                drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0)
+
             case .block(let height):
                 drawWalls(context, corners: corners, from: base, to: base + height, style: style)
                 drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0.10)
-            case .canopy(let height, let radius):
-                drawCanopies(context, object: object, height: height, radius: radius, style: style, selected: selected)
+
+            case .gabled(let eaves, let ridge):
+                AxoKit.gabledBuilding(
+                    painter,
+                    object: object,
+                    base: base,
+                    eaves: eaves,
+                    ridge: ridge,
+                    wall: style.fill,
+                    wallOutline: style.stroke,
+                    roof: roof,
+                    glazed: false
+                )
+                if ["house", "house-l", "banya", "smokehouse"].contains(object.typeId) {
+                    AxoKit.chimney(painter, object: object, base: base, ridgeZ: base + ridge, wall: style.fill, outline: style.stroke)
+                }
+                if selected { outlineFootprint(context, corners: corners, z: base) }
+
+            case .glass(let eaves, let ridge):
+                AxoKit.gabledBuilding(
+                    painter,
+                    object: object,
+                    base: base,
+                    eaves: eaves,
+                    ridge: ridge,
+                    wall: style.fill.opacity(0.8),
+                    wallOutline: style.stroke,
+                    roof: Color(hex: 0xbfe3e8).opacity(0.75),
+                    glazed: true
+                )
+                if selected { outlineFootprint(context, corners: corners, z: base) }
+
+            case .cylinder(let height, let radiusScale):
+                let radius = min(object.transform.width, object.transform.height) * radiusScale
+                painter.cylinder(
+                    center: object.transform.center,
+                    radius: radius,
+                    from: base,
+                    to: base + height,
+                    fill: style.fill,
+                    outline: style.stroke,
+                    shade: 0.22
+                )
+                if selected { outlineFootprint(context, corners: corners, z: base) }
+
+            case .rows(let height, _):
+                AxoKit.plantedRows(
+                    painter,
+                    object: object,
+                    base: base,
+                    height: height,
+                    soil: style.fill,
+                    crop: style.stroke.opacity(0.85),
+                    outline: style.stroke
+                )
+                if selected { outlineFootprint(context, corners: corners, z: base) }
+
+            case .canopy(let height, let radius, let conifer):
+                drawOrchard(painter, object: object, height: height, radius: radius, conifer: conifer, style: style)
+                if selected { outlineFootprint(context, corners: corners, z: base) }
             }
 
             if showsDimensions { drawDimensions(context, for: object, z: base) }
+        }
+    }
+
+    private func outlineFootprint(_ context: GraphicsContext, corners: [Point], z: Double) {
+        var path = Path()
+        path.addLines(corners.map { screen($0, z: z) })
+        path.closeSubpath()
+        context.stroke(path, with: .color(.accentColor), lineWidth: 2.5)
+    }
+
+    private func drawOrchard(_ painter: AxoPainter, object: PlanObject, height: Double, radius: Double, conifer: Bool, style: CategoryStyle) {
+        let w = object.transform.width
+        let h = object.transform.height
+        let cols = min(4, max(1, Int(w / 5)))
+        let rows = min(4, max(1, Int(h / 5)))
+        let centre = object.transform.center
+
+        // Back to front within the grove, so near trees overlap far ones.
+        var positions: [Point] = []
+        for r in 0..<rows {
+            for c in 0..<cols {
+                let x = cols == 1 ? centre.x : centre.x - w / 2 + 1.5 + Double(c) * (w - 3) / Double(cols - 1)
+                let y = rows == 1 ? centre.y : centre.y - h / 2 + 1.5 + Double(r) * (h - 3) / Double(rows - 1)
+                positions.append(Point(x: x, y: y))
+            }
+        }
+        for position in positions.sorted(by: { $0.x + $0.y < $1.x + $1.y }) {
+            AxoKit.tree(painter, at: position, height: height, radius: radius, conifer: conifer, foliage: style.fill, outline: style.stroke)
         }
     }
 
@@ -254,33 +336,6 @@ struct AxonometricPlanView: View {
         }
 
         drawSymbol(context, object: object, at: z, style: style)
-    }
-
-    private func drawCanopies(_ context: GraphicsContext, object: PlanObject, height: Double, radius: Double, style: CategoryStyle, selected: Bool) {
-        let w = object.transform.width
-        let h = object.transform.height
-        let cols = min(4, max(1, Int(w / 5)))
-        let rows = min(4, max(1, Int(h / 5)))
-        let centre = object.transform.center
-
-        for r in 0..<rows {
-            for c in 0..<cols {
-                let x = cols == 1 ? centre.x : centre.x - w / 2 + 1.5 + Double(c) * (w - 3) / Double(cols - 1)
-                let y = rows == 1 ? centre.y : centre.y - h / 2 + 1.5 + Double(r) * (h - 3) / Double(rows - 1)
-
-                var trunk = Path()
-                trunk.move(to: screen(Point(x: x, y: y), z: 0))
-                trunk.addLine(to: screen(Point(x: x, y: y), z: height - radius))
-                context.stroke(trunk, with: .color(style.stroke.opacity(0.8)), lineWidth: max(1, CGFloat(0.25 * viewport.scale)))
-
-                let top = screen(Point(x: x, y: y), z: height)
-                let screenR = CGFloat(radius * viewport.scale * Axonometry.cosA)
-                let rect = CGRect(x: top.x - screenR, y: top.y - screenR, width: screenR * 2, height: screenR * 2)
-                context.fill(Path(ellipseIn: rect), with: .color(style.fill))
-                context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(0.08)))
-                context.stroke(Path(ellipseIn: rect), with: .color(style.stroke.opacity(selected ? 1 : 0.8)), lineWidth: selected ? 2 : 0.9)
-            }
-        }
     }
 
     private func drawSymbol(_ context: GraphicsContext, object: PlanObject, at z: Double, style: CategoryStyle) {
