@@ -107,7 +107,10 @@ public struct Variant: Codable, Identifiable, Equatable, Sendable {
 /// AGENTS.md. `schemaVersion` exists so a future format change can migrate
 /// or reject an old file explicitly instead of failing decode with no
 /// explanation.
-public struct PlanDocument: Codable, Sendable {
+/// `Equatable` so a caller can ask whether the document actually changed:
+/// undo compares snapshots, and "are there unsaved changes?" is the same
+/// question asked at a different moment.
+public struct PlanDocument: Codable, Equatable, Sendable {
     public static let currentSchemaVersion = 1
 
     public var schemaVersion: Int

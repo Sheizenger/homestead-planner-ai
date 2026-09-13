@@ -3,7 +3,9 @@
 //  Homestead
 //
 //  Brief on the left, plan on the right. Everything reads from ProjectModel
-//  — no new logic in the view layer, per AGENTS.md's three-layer split.
+//  — no new logic in the view layer, per AGENTS.md's three-layer split — and
+//  every mutation goes through PlanStore.edit, which is what makes undo
+//  uniform.
 //
 //  Laid out with HSplitView rather than NavigationSplitView: on macOS the
 //  latter's default style floats the sidebar over the detail column, which
@@ -23,13 +25,16 @@ enum PlanViewMode: String, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
-    @State private var model = ProjectModel(document: .blank(name: "My Homestead", widthM: 60, heightM: 45))
+    @Bindable var store: PlanStore
+
     @State private var mode: PlanningMode = .beautyBalanced
     @State private var viewMode: PlanViewMode = .plan
     @State private var showsDimensions = false
     @State private var selectedVariantID: Variant.ID?
     @State private var selectedObjectID: String?
     @State private var viewport = Viewport()
+
+    private var model: ProjectModel { store.model }
 
     private var selectedVariant: Variant? {
         guard let id = selectedVariantID else { return nil }
@@ -44,7 +49,7 @@ struct ContentView: View {
     var body: some View {
         HSplitView {
             VStack(spacing: 0) {
-                BriefEditorView(model: model)
+                BriefEditorView(model: model, edit: store.edit)
                 Divider()
                 generateBar
             }
@@ -82,6 +87,12 @@ struct ContentView: View {
         }
         .onAppear { selectedVariantID = model.activeVariant?.id }
         .onChange(of: selectedVariantID) { selectedObjectID = nil }
+        // Opening a file swaps the whole document, so the selection that
+        // pointed into the old one has to go with it.
+        .onChange(of: model.document.id) {
+            selectedVariantID = model.activeVariant?.id
+            selectedObjectID = nil
+        }
     }
 
     @ViewBuilder
@@ -98,7 +109,10 @@ struct ContentView: View {
                                 variant: variant,
                                 viewport: $viewport,
                                 selectedObjectID: $selectedObjectID,
-                                showsDimensions: showsDimensions
+                                showsDimensions: showsDimensions,
+                                moveObject: { id, delta, committed in
+                                    drag(id, by: delta, in: variant.id, committed: committed)
+                                }
                             )
                             .transition(.opacity)
                         case .axonometric:
@@ -131,6 +145,22 @@ struct ContentView: View {
                 description: Text("Describe the homestead on the left, then press Generate.")
             )
         }
+    }
+
+    /// Live movement applies straight to the model; the undo step is opened
+    /// once at the start of the gesture and closed once at its end, so a drag
+    /// undoes as one action rather than as sixty.
+    private func drag(_ objectID: String, by delta: Point, in variantID: Variant.ID, committed: Bool) {
+        if committed {
+            store.endInteractiveEdit("Move Object")
+            return
+        }
+        store.beginInteractiveEdit()
+        guard let object = model.variant(variantID)?.objects.first(where: { $0.id == objectID }) else { return }
+        var transform = object.transform
+        transform.x += delta.x
+        transform.y += delta.y
+        model.moveObject(objectID, in: variantID, to: transform)
     }
 
     private var generateBar: some View {
@@ -169,10 +199,16 @@ struct ContentView: View {
     }
 
     private func generate() {
-        let id = model.generateVariant(mode: mode, seed: Int.random(in: 0..<1_000_000))
-        model.setActiveVariant(id)
-        selectedVariantID = id
-        selectedObjectID = nil
+        var newID: Variant.ID?
+        store.edit("Generate Plan") {
+            let id = model.generateVariant(mode: mode, seed: Int.random(in: 0..<1_000_000))
+            model.setActiveVariant(id)
+            newID = id
+        }
+        if let newID {
+            selectedVariantID = newID
+            selectedObjectID = nil
+        }
     }
 
     @ViewBuilder
@@ -195,14 +231,20 @@ struct ContentView: View {
 
             Spacer()
 
-            Button { model.rotateObject90(object.id, in: variant.id) } label: {
+            Button {
+                store.edit("Rotate Object") { model.rotateObject90(object.id, in: variant.id) }
+            } label: {
                 Label("Rotate", systemImage: "rotate.right")
             }
-            Button { model.toggleLock(object.id, in: variant.id) } label: {
+            Button {
+                store.edit(object.locked ? "Unlock Object" : "Lock Object") {
+                    model.toggleLock(object.id, in: variant.id)
+                }
+            } label: {
                 Label(object.locked ? "Unlock" : "Lock", systemImage: object.locked ? "lock.open" : "lock")
             }
             Button(role: .destructive) {
-                _ = model.deleteObjects([object.id], in: variant.id)
+                store.edit("Delete Object") { _ = model.deleteObjects([object.id], in: variant.id) }
                 selectedObjectID = nil
             } label: {
                 Label("Delete", systemImage: "trash")
@@ -227,7 +269,9 @@ struct ContentView: View {
                 let clamped = max(floorValue, newValue)
                 var transform = object.transform
                 if axis == .width { transform.width = clamped } else { transform.height = clamped }
-                model.resizeObject(object.id, in: variant.id, to: transform)
+                store.edit("Resize Object") {
+                    model.resizeObject(object.id, in: variant.id, to: transform)
+                }
             }
         )
     }
@@ -243,5 +287,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(store: PlanStore())
 }

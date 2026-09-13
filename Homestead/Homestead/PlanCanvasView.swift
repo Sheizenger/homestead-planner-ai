@@ -25,10 +25,16 @@ struct PlanCanvasView: View {
     @Binding var viewport: Viewport
     @Binding var selectedObjectID: String?
     var showsDimensions: Bool
+    /// Called with a world-space delta while an object is being dragged, and
+    /// once more with `committed: true` when the drag ends — so the owner can
+    /// wrap the whole gesture in a single undo step rather than one per frame.
+    var moveObject: (String, Point, Bool) -> Void = { _, _, _ in }
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var dragAnchor: CGSize = .zero
     @State private var magnifyAnchor: CGFloat = 1
+    @State private var draggingObjectID: String?
+    @State private var dragResolved = false
 
     private var chrome: CanvasChrome { CanvasChrome.of(colorScheme) }
 
@@ -55,11 +61,37 @@ struct PlanCanvasView: View {
                             height: value.translation.height - dragAnchor.height
                         )
                         dragAnchor = value.translation
-                        viewport.pan(byScreen: Point(x: Double(delta.width), y: Double(delta.height)))
+
+                        // What this gesture is gets decided once, from where it
+                        // began: on an object it moves that object, on empty
+                        // ground it pans the view. Resolved by an explicit
+                        // flag rather than "is the translation still zero",
+                        // since the first event isn't guaranteed to be.
+                        if !dragResolved {
+                            dragResolved = true
+                            let start = viewport.toWorld(Point(x: Double(value.startLocation.x), y: Double(value.startLocation.y)))
+                            draggingObjectID = HitTesting.hitTest(start, in: variant.objects)
+                        }
+
+                        if let id = draggingObjectID {
+                            moveObject(id, Point(x: Double(delta.width) / viewport.scale, y: Double(delta.height) / viewport.scale), false)
+                        } else {
+                            viewport.pan(byScreen: Point(x: Double(delta.width), y: Double(delta.height)))
+                        }
                     }
                     .onEnded { value in
                         dragAnchor = .zero
+                        dragResolved = false
                         let moved = abs(value.translation.width) + abs(value.translation.height)
+                        if let id = draggingObjectID {
+                            draggingObjectID = nil
+                            if moved < 4 {
+                                selectedObjectID = id
+                            } else {
+                                moveObject(id, Point(x: 0, y: 0), true)
+                            }
+                            return
+                        }
                         guard moved < 4 else { return }
                         let world = viewport.toWorld(Point(x: Double(value.location.x), y: Double(value.location.y)))
                         selectedObjectID = HitTesting.hitTest(world, in: variant.objects)

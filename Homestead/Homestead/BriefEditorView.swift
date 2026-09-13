@@ -21,6 +21,9 @@ import HomesteadCore
 
 struct BriefEditorView: View {
     let model: ProjectModel
+    /// Brief changes are edits like any other, so they go through the same
+    /// undo-registering wrapper the canvas uses.
+    let edit: (String, () -> Void) -> Void
 
     var body: some View {
         Form {
@@ -99,7 +102,11 @@ struct BriefEditorView: View {
     private func input<T>(_ keyPath: WritableKeyPath<StructuredInputs, T>) -> Binding<T> {
         Binding(
             get: { model.document.brief.structuredInputs[keyPath: keyPath] },
-            set: { value in model.updateStructuredInputs { $0[keyPath: keyPath] = value } }
+            set: { value in
+                edit("Change Brief") {
+                    model.updateStructuredInputs { $0[keyPath: keyPath] = value }
+                }
+            }
         )
     }
 
@@ -107,6 +114,7 @@ struct BriefEditorView: View {
         Binding(
             get: { model.document.brief.structuredInputs[keyPath: keyPath].contains(key) },
             set: { isOn in
+                edit("Change Brief") {
                 model.updateStructuredInputs { inputs in
                     if isOn {
                         guard !inputs[keyPath: keyPath].contains(key) else { return }
@@ -114,6 +122,7 @@ struct BriefEditorView: View {
                     } else {
                         inputs[keyPath: keyPath].removeAll { $0 == key }
                     }
+                }
                 }
             }
         )
@@ -123,9 +132,11 @@ struct BriefEditorView: View {
         Binding(
             get: { model.document.brief.structuredInputs.animals.first { $0.type == key }?.count ?? 0 },
             set: { count in
-                model.updateStructuredInputs { inputs in
-                    inputs.animals.removeAll { $0.type == key }
-                    if count > 0 { inputs.animals.append(AnimalRequest(type: key, count: count)) }
+                edit("Change Animals") {
+                    model.updateStructuredInputs { inputs in
+                        inputs.animals.removeAll { $0.type == key }
+                        if count > 0 { inputs.animals.append(AnimalRequest(type: key, count: count)) }
+                    }
                 }
             }
         )
@@ -135,7 +146,9 @@ struct BriefEditorView: View {
         Binding(
             get: { model.document.plot.bounds?.width ?? 0 },
             set: { width in
-                model.updatePlotBoundary(PlotShape.rectangle(width: width, height: model.document.plot.bounds?.height ?? 30))
+                edit("Resize Plot") {
+                    model.updatePlotBoundary(PlotShape.rectangle(width: width, height: model.document.plot.bounds?.height ?? 30))
+                }
             }
         )
     }
@@ -144,7 +157,9 @@ struct BriefEditorView: View {
         Binding(
             get: { model.document.plot.bounds?.height ?? 0 },
             set: { height in
-                model.updatePlotBoundary(PlotShape.rectangle(width: model.document.plot.bounds?.width ?? 30, height: height))
+                edit("Resize Plot") {
+                    model.updatePlotBoundary(PlotShape.rectangle(width: model.document.plot.bounds?.width ?? 30, height: height))
+                }
             }
         )
     }

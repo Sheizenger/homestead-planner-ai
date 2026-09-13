@@ -176,4 +176,23 @@ struct ProjectModelTests {
         #expect(clone.transform.x == original.transform.x + 2)
         #expect(clone.transform.y == original.transform.y + 2)
     }
+
+    /// `restore` is what undo and "open a saved plan" are both built on, so
+    /// it has to put back everything — including what the non-invertible
+    /// edits took away, which is exactly why undo snapshots instead of
+    /// inverting. Deleting an object also strips the fences and utility
+    /// nodes that referenced it; the snapshot brings those back too.
+    @Test func restorePutsBackEverythingAnEditRemoved() {
+        let m = model()
+        let id = m.generateVariant(mode: .beautyBalanced, seed: 42)
+        let before = m.document
+        let target = m.variant(id)!.objects.first { !$0.locked }!
+
+        _ = m.deleteObjects([target.id], in: id)
+        #expect(!m.variant(id)!.objects.contains { $0.id == target.id })
+
+        m.restore(before)
+        #expect(m.document == before)
+        #expect(m.variant(id)!.objects.contains { $0.id == target.id })
+    }
 }

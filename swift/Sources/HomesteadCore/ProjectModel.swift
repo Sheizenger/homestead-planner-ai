@@ -87,6 +87,22 @@ public final class ProjectModel {
         return variant.generatedFromBrief != document.brief || variant.generatedFromPlotBoundary != document.plot.boundary
     }
 
+    // MARK: - Whole-document replacement
+
+    /// Swaps the entire document. Two callers need this and neither is an
+    /// edit in its own right: opening a saved plan, and undo.
+    ///
+    /// Undo is snapshot-based on purpose. Inverse operations are the usual
+    /// alternative, but several mutators here aren't cleanly invertible —
+    /// `deleteObjects` also strips the fences and utility nodes that
+    /// referenced what it removed, and `addObject` mints a fresh id, so an
+    /// "undo delete" built from inverses would restore a different object
+    /// than the one taken away. A document is a value type of a few hundred
+    /// small structs; snapshotting it is cheap and always exact.
+    public func restore(_ document: PlanDocument) {
+        self.document = document
+    }
+
     // MARK: - Brief and plot
 
     public func updateFreeText(_ text: String) {
