@@ -335,7 +335,34 @@ struct AxonometricPlanView: View {
             context.stroke(face, with: .color(.accentColor), lineWidth: 2.2)
         }
 
+        // The plan glyph, laid onto this horizontal face. This is what the
+        // projection-agnostic GlyphFrame is for: the panel grid belongs on
+        // the roof-mounted array, the table and chairs on the patio, and an
+        // affine map of the ground plane is exactly what the glyphs were
+        // written against.
+        ObjectGlyphs.draw(context, object: object, frame: frame(for: object, at: z), stroke: style.stroke)
         drawSymbol(context, object: object, at: z, style: style)
+    }
+
+    /// Maps an object's local metres onto the horizontal plane at `z`.
+    /// Horizontal unit vectors keep their length under this projection —
+    /// (1,0) lands at (cos 30°, sin 30°), which is still unit length — so the
+    /// viewport's own scale carries across unchanged.
+    private func frame(for object: PlanObject, at z: Double) -> GlyphFrame {
+        let centre = object.transform.center
+        let rotation = object.transform.rotationDeg * .pi / 180
+        let cosR = cos(rotation)
+        let sinR = sin(rotation)
+        return GlyphFrame(
+            project: { localX, localY in
+                let world = Point(
+                    x: centre.x + localX * cosR - localY * sinR,
+                    y: centre.y + localX * sinR + localY * cosR
+                )
+                return self.screen(world, z: z)
+            },
+            scale: viewport.scale
+        )
     }
 
     private func drawSymbol(_ context: GraphicsContext, object: PlanObject, at z: Double, style: CategoryStyle) {
