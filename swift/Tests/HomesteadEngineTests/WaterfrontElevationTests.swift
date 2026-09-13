@@ -75,4 +75,32 @@ struct WaterfrontElevationTests {
     @Test func flatPlotHasNoContourLines() {
         #expect(ElevationModel.contourLines(on: plot()).isEmpty)
     }
+
+    /// `zone` is what the two canvases actually draw the water from, and it is
+    /// not just `bounds` as a polygon: the strip is derived from the plot's
+    /// bounding box, so on an L-shaped plot it would otherwise spill across the
+    /// missing corner and paint a river over land the owner doesn't have.
+    @Test func theDrawnZoneIsClippedToTheBoundaryNotTheBoundingBox() throws {
+        #expect(WaterfrontModel.zone(of: plot()) == nil)
+
+        let rectangular = WaterfrontModel.zone(of: plot(waterfront: river))
+        #expect(rectangular?.category == .water)
+        #expect(rectangular?.locked == true)
+        #expect(rectangular?.label == "river")
+        #expect(Rect(bounding: rectangular?.boundary ?? []) == Rect(minX: 0, minY: 0, width: 10, height: 42))
+
+        // The notch is taken out of the north-west corner, which is exactly
+        // where a west-edge river runs, so the clip has to bite.
+        let notched = Plot(
+            boundary: PlotShape.lShape(width: 50, height: 42, notchWidth: 20, notchHeight: 15, corner: .nw),
+            waterfront: river
+        )
+        let clipped = WaterfrontModel.zone(of: notched)
+        let bounds = try #require(Rect(bounding: clipped?.boundary ?? []))
+        #expect(bounds.minY == 15)
+        #expect(bounds.maxY == 42)
+        #expect(bounds.maxX == 10)
+        // And no vertex of the drawn polygon sits in the corner that was cut.
+        #expect(!(clipped?.boundary ?? []).contains { $0.x < 20 && $0.y < 15 })
+    }
 }

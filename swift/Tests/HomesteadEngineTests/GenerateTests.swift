@@ -29,3 +29,36 @@ import Testing
         #expect(layout.warnings == fixture.output.warnings, comment)
     }
 }
+
+/// Water-loving types are the one part of the catalog the plot itself can
+/// veto: `Placement` drops a dock or a turbine when no waterfront is
+/// configured, because there is nowhere sensible to put one. That is correct,
+/// and it is also invisible — a brief asking for a dock on a dry plot comes
+/// back with no dock and nothing pointing at why. This pins both halves.
+@Test func aDockOnlyAppearsWhenThePlotHasAWaterfront() {
+    var inputs = StructuredInputs()
+    inputs.infrastructure = ["dock"]
+    let brief = Brief(structuredInputs: inputs)
+    let boundary = PlotShape.rectangle(width: 60, height: 45)
+
+    let dry = Generate.variant(plot: Plot(boundary: boundary), brief: brief, mode: .beautyBalanced, seed: 3)
+    #expect(!dry.objects.contains { $0.typeId == "dock" })
+    // It does warn — but with the generic "couldn't fit it anywhere, consider
+    // a larger plot" text, which is the wrong advice here: the plot is nearly
+    // empty and the real reason is that there is no water to build on. Ported
+    // faithfully from the TypeScript, noted in BACKLOG.md, and softened in the
+    // app by telling the user about the waterfront setting instead.
+    #expect(dry.warnings.contains { $0.messageParams?["itemType"] == .string("dock") })
+
+    let wet = Plot(
+        boundary: boundary,
+        waterfront: Waterfront(type: .river, edge: .north, widthM: 8, flowSpeedMps: 1.2, elevationDropM: 2)
+    )
+    let layout = Generate.variant(plot: wet, brief: brief, mode: .beautyBalanced, seed: 3)
+    let dock = layout.objects.first { $0.typeId == "dock" }
+    #expect(dock != nil)
+    // And it lands in the water it needs, not on dry land somewhere.
+    if let dock, let bounds = WaterfrontModel.bounds(of: wet) {
+        #expect(dock.transform.y >= bounds.minY && dock.transform.y <= bounds.maxY)
+    }
+}

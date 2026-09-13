@@ -189,8 +189,22 @@ In order — each stage assumes the previous one landed.
    canvas draws; `en` + `ru` with a key-parity test; `Canvas` is opaque to
    VoiceOver, so the plan needs a parallel accessible representation.
 
+## Known engine wrinkles
+
+- A water-loving type (`dock`, `micro-hydro`) requested on a plot with no
+  waterfront is dropped by `Placement` and reported through the generic
+  unplaced-item warning — "couldn't fit it, consider a larger plot", which is
+  the wrong advice: the plot size has nothing to do with it. Ported faithfully
+  and pinned by `aDockOnlyAppearsWhenThePlotHasAWaterfront`. The app works
+  around it by pointing at the waterfront setting in the brief editor; the
+  engine should grow a distinct warning key instead.
+
 ## Deferred
 
+- Dragging an object in the 3D view only pans the camera — the drag delta is
+  never mapped back onto the ground plane.
+- The 3D view's dimension text doesn't take part in the occupancy pass the
+  2D plan uses, so it can still collide at tight zooms.
 - iPad: separate input model, separate panel layout.
 - Object palette with drag-and-drop onto the canvas. The search palette from
   stage 7 covers the need; dragging adds a whole layer.

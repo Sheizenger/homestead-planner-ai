@@ -119,6 +119,15 @@ Decided deliberately. Honouring them costs less than re-deciding them.
 - **One `Canvas`.** ~300 objects as individual SwiftUI views will not hold a
   frame rate. Draw the plan in a single `Canvas`; overlay real views only for
   the selected object's handles.
+- **The plot is drawn from the plot, not from the variant.** Its boundary and
+  its waterfront belong to the land: every variant of the same plot shares
+  them, and they survive a re-roll. Both canvases take them from `plot`
+  directly — `WaterfrontModel.zone(of:)` is never a generated zone.
+- **A setting the document can hold, the editor can read back.** The document
+  stores geometry, not the choices that produced it, so anything the UI offers
+  as a setting needs an inverse in the engine (`PlotShape.describe`) rather
+  than a default the editor assumes. Assuming "rectangle" is how an L-shaped
+  plot squares itself off the first time its width is nudged.
 - **Two locales**, `en` and `ru`, with a test asserting key parity.
 - **macOS first.** iPad is a different input model, not a target flag.
 

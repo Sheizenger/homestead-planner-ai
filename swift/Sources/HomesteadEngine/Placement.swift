@@ -43,8 +43,10 @@ public enum Placement {
     private static let roofUsableFraction = 0.5
 
     /// Belong on/right at the water and are the only types allowed inside the
-    /// waterfront strip — everything else is excluded from it.
-    private static let waterLovingTypes: Set<String> = ["dock", "micro-hydro"]
+    /// waterfront strip — everything else is excluded from it. Public because
+    /// placement *drops* these when the plot has no waterfront, and a UI that
+    /// offers them needs to be able to say so rather than let them vanish.
+    public static let waterLovingTypes: Set<String> = ["dock", "micro-hydro"]
 
     /// Categories that read as "private/technical" and shouldn't crowd the
     /// direct house-to-gate approach — the one strip of yard every visitor

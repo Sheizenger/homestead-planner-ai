@@ -74,3 +74,54 @@ public enum PlotShape {
         }
     }
 }
+
+extension PlotShape {
+    /// What an existing boundary polygon *is*, recovered from its vertices.
+    ///
+    /// A document stores the polygon and nothing else — not "the user picked
+    /// L-shaped, north-west, 20 by 15" — so an editor reopening a saved plan
+    /// has to read those settings back off the geometry. Without this it would
+    /// have to assume, and assuming "rectangle" silently squares off an
+    /// L-shaped plot the first time someone nudges its width.
+    public enum Description: Equatable, Sendable {
+        case rectangle
+        case lShape(notchWidth: Double, notchHeight: Double, corner: PlotCorner)
+        /// Neither shape this type can build — a boundary that came from
+        /// somewhere else. Editors should leave it alone rather than round it
+        /// to the nearest thing they know how to draw.
+        case freeform
+    }
+
+    public static func describe(_ boundary: [Point]) -> Description {
+        let epsilon = 1e-6
+        guard let bounds = Rect(bounding: boundary), bounds.width > 0, bounds.height > 0 else { return .freeform }
+
+        let corners: [(corner: PlotCorner, point: Point)] = [
+            (.nw, Point(x: bounds.minX, y: bounds.minY)),
+            (.ne, Point(x: bounds.maxX, y: bounds.minY)),
+            (.sw, Point(x: bounds.minX, y: bounds.maxY)),
+            (.se, Point(x: bounds.maxX, y: bounds.maxY)),
+        ]
+        func isPresent(_ point: Point) -> Bool {
+            boundary.contains { abs($0.x - point.x) < epsilon && abs($0.y - point.y) < epsilon }
+        }
+
+        let missing = corners.filter { !isPresent($0.point) }
+        if boundary.count == 4, missing.isEmpty { return .rectangle }
+        guard boundary.count == 6, missing.count == 1, let cut = missing.first else { return .freeform }
+
+        // `lShape` puts exactly one vertex strictly inside the bounding box —
+        // the reflex corner where the notch turns — and its offsets from the
+        // cut-away corner are the notch's own width and height.
+        guard let reflex = boundary.first(where: {
+            $0.x > bounds.minX + epsilon && $0.x < bounds.maxX - epsilon
+                && $0.y > bounds.minY + epsilon && $0.y < bounds.maxY - epsilon
+        }) else { return .freeform }
+
+        return .lShape(
+            notchWidth: abs(reflex.x - cut.point.x),
+            notchHeight: abs(reflex.y - cut.point.y),
+            corner: cut.corner
+        )
+    }
+}

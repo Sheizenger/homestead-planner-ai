@@ -56,6 +56,7 @@ struct AxonometricPlanView: View {
         GeometryReader { geometry in
             Canvas { context, size in
                 drawGround(context)
+                drawWater(context)
                 drawFlatFeatures(context)
                 drawMassing(context)
                 drawScaleNote(context, size: size)
@@ -158,6 +159,77 @@ struct AxonometricPlanView: View {
             y += step
         }
         context.stroke(grid, with: .color(chrome.grid), lineWidth: 0.8)
+    }
+
+    /// The plot's waterfront, sunk slightly below grade so it reads as water
+    /// rather than as a blue paving slab — the one place this view deliberately
+    /// goes below z = 0. Drawn from `plot` rather than `variant`, because the
+    /// water is a property of the land and every variant shares it.
+    private func drawWater(_ context: GraphicsContext) {
+        guard let waterfront = plot.waterfront,
+              let zone = WaterfrontModel.zone(of: plot),
+              zone.boundary.count > 2,
+              let bounds = Rect(bounding: zone.boundary) else { return }
+
+        let surface = -0.15
+        var basin = Path()
+        basin.addLines(zone.boundary.map { screen($0, z: surface) })
+        basin.closeSubpath()
+
+        let style = CategoryStyle.of(.water, colorScheme)
+        context.fill(basin, with: .color(style.fill.opacity(0.75)))
+        context.stroke(basin, with: .color(style.stroke), lineWidth: 1.2)
+
+        drawWaves(context, in: bounds, z: surface, color: style.stroke)
+
+        context.draw(
+            Text(waterfront.type.rawValue.capitalized)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(style.stroke.opacity(0.85)),
+            at: screen(Point(x: bounds.midX, y: bounds.midY), z: surface)
+        )
+    }
+
+    /// Same alternating-bump wave the 2D plan draws, projected onto the water
+    /// surface so the two views show recognisably the same river.
+    private func drawWaves(_ context: GraphicsContext, in bounds: Rect, z: Double, color: Color) {
+        let horizontal = bounds.width >= bounds.height
+        let longLength = horizontal ? bounds.width : bounds.height
+        let shortLength = horizontal ? bounds.height : bounds.width
+        guard longLength * viewport.scale > 40, shortLength > 0 else { return }
+
+        let margin = min(1, shortLength * 0.15)
+        let amplitude = min(0.35, shortLength / 8)
+        let usable = shortLength - margin * 2
+        guard usable > 0 else { return }
+        let rows = max(1, Int(usable / 2.2) + 1)
+        let bumps = max(2, Int((longLength / 4).rounded()))
+        let step = (longLength - margin * 2) / Double(bumps * 2)
+        guard step > 0 else { return }
+
+        var path = Path()
+        for row in 0..<rows {
+            let across = rows == 1
+                ? (horizontal ? bounds.midY : bounds.midX)
+                : (horizontal ? bounds.minY : bounds.minX) + margin + usable * Double(row) / Double(rows - 1)
+            let point: (Double, Double) -> CGPoint = { along, offset in
+                horizontal
+                    ? self.screen(Point(x: along, y: across + offset), z: z)
+                    : self.screen(Point(x: across + offset, y: along), z: z)
+            }
+
+            var along = (horizontal ? bounds.minX : bounds.minY) + margin
+            path.move(to: point(along, 0))
+            for bump in 0..<(bumps * 2) {
+                let end = along + step
+                path.addQuadCurve(
+                    to: point(end, 0),
+                    control: point(along + step / 2, bump % 2 == 0 ? -amplitude : amplitude)
+                )
+                along = end
+            }
+        }
+        context.stroke(path, with: .color(color.opacity(0.55)), lineWidth: 1)
     }
 
     private func drawFlatFeatures(_ context: GraphicsContext) {

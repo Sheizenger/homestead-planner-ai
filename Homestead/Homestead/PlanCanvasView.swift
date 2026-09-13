@@ -35,6 +35,7 @@ struct PlanCanvasView: View {
     @State private var magnifyAnchor: CGFloat = 1
     @State private var draggingObjectID: String?
     @State private var dragResolved = false
+    @State private var legendExpanded = true
 
     private var chrome: CanvasChrome { CanvasChrome.of(colorScheme) }
 
@@ -43,6 +44,7 @@ struct PlanCanvasView: View {
             Canvas { context, size in
                 drawGrid(context, size: size)
                 drawPlot(context)
+                drawWaterfront(context)
                 drawZones(context)
                 drawFences(context)
                 drawPaths(context)
@@ -51,7 +53,7 @@ struct PlanCanvasView: View {
                 drawNorthArrow(context, size: size)
             }
             .contentShape(Rectangle())
-            .overlay(alignment: .topLeading) { legend.allowsHitTesting(false) }
+            .overlay(alignment: .topLeading) { legend }
             .overlay(alignment: .bottomTrailing) { zoomControls(in: geometry.size) }
             .gesture(
                 DragGesture(minimumDistance: 0)
@@ -121,19 +123,34 @@ struct PlanCanvasView: View {
 
     // MARK: - Controls
 
+    /// Collapsible, because it is screen-space furniture sitting on top of the
+    /// drawing: at the default zoom it covers whatever is in that corner.
     private var legend: some View {
         let categories = orderedCategories()
         return VStack(alignment: .leading, spacing: 3) {
-            ForEach(categories, id: \.self) { category in
-                HStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(CategoryStyle.of(category, colorScheme).fill)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 2)
-                                .stroke(CategoryStyle.of(category, colorScheme).stroke, lineWidth: 1)
-                        )
-                        .frame(width: 11, height: 11)
-                    Text(CategoryStyle.label(category)).font(.system(size: 10))
+            Button {
+                legendExpanded.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: legendExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 8, weight: .semibold))
+                    Text("Legend").font(.system(size: 10, weight: .semibold))
+                }
+            }
+            .buttonStyle(.plain)
+
+            if legendExpanded {
+                ForEach(categories, id: \.self) { category in
+                    HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(CategoryStyle.of(category, colorScheme).fill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .stroke(CategoryStyle.of(category, colorScheme).stroke, lineWidth: 1)
+                            )
+                            .frame(width: 11, height: 11)
+                        Text(CategoryStyle.label(category)).font(.system(size: 10))
+                    }
                 }
             }
         }
@@ -211,6 +228,80 @@ struct PlanCanvasView: View {
         context.stroke(path, with: .color(chrome.plotStroke), lineWidth: 2)
     }
 
+    /// The river/lake/pond frontage, ported from the web app's WaterfrontZone.
+    /// It belongs to the plot rather than to a variant — every variant of the
+    /// same plot shares the same water — so it is drawn from `plot`, not from
+    /// `variant.zones`, and it is the one thing here that survives a re-roll.
+    /// Without it a dock sat on what looked like bare grass.
+    private func drawWaterfront(_ context: GraphicsContext) {
+        guard let waterfront = plot.waterfront,
+              let zone = WaterfrontModel.zone(of: plot),
+              zone.boundary.count > 2,
+              let bounds = Rect(bounding: zone.boundary) else { return }
+
+        var surface = Path()
+        surface.addLines(zone.boundary.map(screen))
+        surface.closeSubpath()
+
+        let style = CategoryStyle.of(.water, colorScheme)
+        context.fill(surface, with: .color(style.fill.opacity(0.55)))
+        context.stroke(surface, with: .color(style.stroke), lineWidth: 1.5)
+
+        drawWaves(context, in: bounds, color: style.stroke)
+
+        // Named, because "river" and "pond" put very different constraints on
+        // what can go next to them and the shape alone doesn't say which.
+        let label = Text(waterfront.type.rawValue.capitalized)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(style.stroke.opacity(0.85))
+        context.draw(label, at: screen(Point(x: bounds.midX, y: bounds.midY)))
+    }
+
+    /// A chain of alternating quadratic bumps — the cheap way the web app
+    /// draws a long wavy line, kept so the two renderings read as the same
+    /// water. Laid out along whichever axis the strip is longer on.
+    private func drawWaves(_ context: GraphicsContext, in bounds: Rect, color: Color) {
+        let horizontal = bounds.width >= bounds.height
+        let longLength = horizontal ? bounds.width : bounds.height
+        let shortLength = horizontal ? bounds.height : bounds.width
+        guard longLength * viewport.scale > 40, shortLength > 0 else { return }
+
+        let margin = min(1, shortLength * 0.15)
+        let amplitude = min(0.35, shortLength / 8)
+        let usable = shortLength - margin * 2
+        guard usable > 0 else { return }
+        let rows = max(1, Int(usable / 2.2) + 1)
+        let bumps = max(2, Int((longLength / 4).rounded()))
+        let step = (longLength - margin * 2) / Double(bumps * 2)
+        guard step > 0 else { return }
+
+        var path = Path()
+        for row in 0..<rows {
+            let across = rows == 1
+                ? (horizontal ? bounds.midY : bounds.midX)
+                : (horizontal ? bounds.minY : bounds.minX) + margin + usable * Double(row) / Double(rows - 1)
+            // One helper so the two orientations differ only in which
+            // component the wave runs along, not in the wave itself.
+            let point: (Double, Double) -> CGPoint = { along, offset in
+                horizontal
+                    ? self.screen(Point(x: along, y: across + offset))
+                    : self.screen(Point(x: across + offset, y: along))
+            }
+
+            var along = (horizontal ? bounds.minX : bounds.minY) + margin
+            path.move(to: point(along, 0))
+            for bump in 0..<(bumps * 2) {
+                let end = along + step
+                path.addQuadCurve(
+                    to: point(end, 0),
+                    control: point(along + step / 2, bump % 2 == 0 ? -amplitude : amplitude)
+                )
+                along = end
+            }
+        }
+        context.stroke(path, with: .color(color.opacity(0.5)), lineWidth: 1)
+    }
+
     /// Zones (the future-expansion reserve today) sit under everything as a
     /// tinted, dashed region — they're areas the plan sets aside, not objects
     /// placed on it, and reading them as solid would misrepresent that.
@@ -269,13 +360,24 @@ struct PlanCanvasView: View {
     }
 
     private func drawObjects(_ context: GraphicsContext) {
+        // One occupancy map for every piece of text on the plan. Symbols are
+        // added first because they are the thing a label would otherwise be
+        // written straight on top of — which is exactly what happened before:
+        // both the symbol and the label were anchored at the object's centre.
+        var occupied: [CGRect] = []
+
         for object in variant.objects where !isRoofMounted(object) {
             drawFootprint(context, object: object, roofMounted: false)
         }
         for object in variant.objects where isRoofMounted(object) {
             drawFootprint(context, object: object, roofMounted: true)
         }
-        drawLabels(context)
+        for object in variant.objects {
+            if let rect = symbolRect(for: object) { occupied.append(rect) }
+        }
+
+        drawLabels(context, occupied: &occupied)
+        if showsDimensions { drawDimensionText(context, occupied: &occupied) }
     }
 
     private func drawFootprint(_ context: GraphicsContext, object: PlanObject, roofMounted: Bool) {
@@ -307,16 +409,26 @@ struct PlanCanvasView: View {
         if object.id == selectedObjectID {
             context.stroke(shape, with: .color(.accentColor), lineWidth: 2.5)
         }
-        if showsDimensions { drawDimensions(context, for: object) }
+        if showsDimensions { drawDimensionLines(context, for: object) }
     }
 
     /// A standard symbol per type, so a shape says what it is before anyone
     /// reads its label — and small objects, whose labels get skipped when
     /// space runs out, still identify themselves.
-    private func drawSymbol(_ context: GraphicsContext, object: PlanObject, style: CategoryStyle) {
+    private func symbolSize(for object: PlanObject) -> CGFloat? {
         let footprint = min(object.transform.width, object.transform.height) * viewport.scale
-        guard footprint > 24 else { return }
-        let size = min(20, max(10, footprint * 0.38))
+        guard footprint > 24 else { return nil }
+        return min(20, max(10, footprint * 0.38))
+    }
+
+    private func symbolRect(for object: PlanObject) -> CGRect? {
+        guard let size = symbolSize(for: object) else { return nil }
+        let centre = screen(object.transform.center)
+        return CGRect(x: centre.x - size / 2, y: centre.y - size / 2, width: size, height: size)
+    }
+
+    private func drawSymbol(_ context: GraphicsContext, object: PlanObject, style: CategoryStyle) {
+        guard let size = symbolSize(for: object) else { return }
         context.draw(
             Text(Image(systemName: ObjectSymbols.name(for: object)))
                 .font(.system(size: size))
@@ -325,24 +437,44 @@ struct PlanCanvasView: View {
         )
     }
 
-    private func drawDimensions(_ context: GraphicsContext, for object: PlanObject) {
+    /// Dimension lines are cheap and never collide with text, so they're
+    /// drawn with the footprint; their labels go through the shared
+    /// occupancy pass at the end, where they have the lowest priority.
+    private func drawDimensionLines(_ context: GraphicsContext, for object: PlanObject) {
         let corners = object.transform.corners
         guard corners.count == 4, object.transform.width * viewport.scale > 44 else { return }
 
-        for (a, b, metres) in [
-            (corners[3], corners[2], object.transform.width),
-            (corners[0], corners[3], object.transform.height),
-        ] {
+        for (a, b) in [(corners[3], corners[2]), (corners[0], corners[3])] {
             var line = Path()
             line.move(to: screen(a))
             line.addLine(to: screen(b))
             context.stroke(line, with: .color(chrome.furniture.opacity(0.85)), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+        }
+    }
 
-            let mid = Point(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
-            context.draw(
-                Text("\(Int(metres.rounded())) m").font(.system(size: 8)).foregroundColor(chrome.furniture),
-                at: screen(mid)
-            )
+    private func drawDimensionText(_ context: GraphicsContext, occupied: inout [CGRect]) {
+        for object in variant.objects {
+            let corners = object.transform.corners
+            guard corners.count == 4, object.transform.width * viewport.scale > 44 else { continue }
+
+            for (a, b, metres) in [
+                (corners[3], corners[2], object.transform.width),
+                (corners[0], corners[3], object.transform.height),
+            ] {
+                let text = "\(Int(metres.rounded())) m"
+                let mid = Point(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+                let anchor = screen(mid)
+                let size = CGSize(width: CGFloat(text.count) * 4.8 + 4, height: 10)
+                let rect = CGRect(x: anchor.x - size.width / 2, y: anchor.y - size.height / 2, width: size.width, height: size.height)
+                // A dimension is the first thing worth dropping when the plan
+                // gets crowded: the object's own name matters more.
+                guard !occupied.contains(where: { $0.intersects(rect) }) else { continue }
+                occupied.append(rect)
+                context.draw(
+                    Text(text).font(.system(size: 8)).foregroundColor(chrome.furniture),
+                    at: anchor
+                )
+            }
         }
     }
 
@@ -351,8 +483,7 @@ struct PlanCanvasView: View {
     /// against the labels already committed. Without this, neighbours write
     /// over each other: a roof-mounted array's name lands exactly on the
     /// house's, and a bed's name lands on the shelter next to it.
-    private func drawLabels(_ context: GraphicsContext) {
-        var occupied: [CGRect] = []
+    private func drawLabels(_ context: GraphicsContext, occupied: inout [CGRect]) {
         let byPriority = variant.objects.sorted {
             $0.transform.width * $0.transform.height > $1.transform.width * $1.transform.height
         }
@@ -365,10 +496,19 @@ struct PlanCanvasView: View {
             let textWidth = CGFloat(object.label.count) * 5.4
             let textSize = CGSize(width: textWidth + 4, height: 12)
             let centre = screen(object.transform.center)
-            let fitsInside = textWidth + 8 <= widthOnScreen && heightOnScreen > 26
+            let symbolHeight = symbolSize(for: object) ?? 0
+            // With a symbol at the centre, the label sits under it inside the
+            // footprint when there's room for both stacked; otherwise it goes
+            // outside. Trying the centre first is what wrote "Goat Paddock"
+            // across its own paw mark.
+            let insideOffset = symbolHeight / 2 + 9
+            let fitsInside = textWidth + 8 <= widthOnScreen
+                && heightOnScreen > symbolHeight + 26
 
             var candidates: [CGPoint] = []
-            if fitsInside { candidates.append(centre) }
+            if fitsInside {
+                candidates.append(CGPoint(x: centre.x, y: centre.y + insideOffset))
+            }
             candidates.append(CGPoint(x: centre.x, y: centre.y + heightOnScreen / 2 + 8))
             candidates.append(CGPoint(x: centre.x, y: centre.y - heightOnScreen / 2 - 8))
             candidates.append(CGPoint(x: centre.x + widthOnScreen / 2 + textWidth / 2 + 6, y: centre.y))

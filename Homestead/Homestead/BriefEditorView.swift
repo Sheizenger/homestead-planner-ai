@@ -27,24 +27,16 @@ struct BriefEditorView: View {
 
     var body: some View {
         Form {
-            Section("Plot") {
-                LabeledContent("Width") {
-                    Stepper(value: plotWidth, in: 10...500, step: 5) {
-                        Text("\(Int(plotWidth.wrappedValue)) m")
-                    }
-                }
-                LabeledContent("Depth") {
-                    Stepper(value: plotHeight, in: 10...500, step: 5) {
-                        Text("\(Int(plotHeight.wrappedValue)) m")
-                    }
-                }
+            PlotEditorView(model: model, edit: edit)
+
+            Section("Site") {
                 Picker("Climate", selection: input(\.climateZone)) {
                     ForEach(ClimateZone.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
                 }
                 Picker("Soil", selection: input(\.soilType)) {
                     ForEach(SoilType.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
                 }
-                Picker("Slope", selection: input(\.terrainSlope)) {
+                Picker("Terrain", selection: input(\.terrainSlope)) {
                     ForEach(TerrainSlope.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
                 }
             }
@@ -89,9 +81,34 @@ struct BriefEditorView: View {
                 ForEach(Sizing.infrastructureVocabulary) { term in
                     Toggle(term.label, isOn: membership(term.key, in: \.infrastructure))
                 }
+                if needsWaterfront {
+                    // The engine drops these when there's no water to put them
+                    // on, and warns with its generic "couldn't fit it, try a
+                    // bigger plot" text — which is the wrong advice, since the
+                    // plot size has nothing to do with it.
+                    Label(
+                        "A dock or micro-hydro turbine needs a waterfront — set one under Plot ▸ Water, or they'll be left out.",
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                }
             }
         }
         .formStyle(.grouped)
+    }
+
+    /// Placement drops a dock or a turbine outright when the plot has no water
+    /// (Placement.swift's "nowhere sensible to put it"), so ticking one here on
+    /// a dry plot produces nothing and an unrelated-sounding warning. The list
+    /// of types that care comes from the engine rather than a copy kept here,
+    /// so it cannot drift out of step with the rule it is describing.
+    private var needsWaterfront: Bool {
+        guard model.document.plot.waterfront == nil else { return false }
+        return model.document.brief.structuredInputs.infrastructure.contains { key in
+            guard let term = Sizing.infrastructureVocabulary.first(where: { $0.key == key }) else { return false }
+            return term.typeIds.contains { Placement.waterLovingTypes.contains($0) }
+        }
     }
 
     // MARK: - Bindings into the model
@@ -142,25 +159,4 @@ struct BriefEditorView: View {
         )
     }
 
-    private var plotWidth: Binding<Double> {
-        Binding(
-            get: { model.document.plot.bounds?.width ?? 0 },
-            set: { width in
-                edit("Resize Plot") {
-                    model.updatePlotBoundary(PlotShape.rectangle(width: width, height: model.document.plot.bounds?.height ?? 30))
-                }
-            }
-        )
-    }
-
-    private var plotHeight: Binding<Double> {
-        Binding(
-            get: { model.document.plot.bounds?.height ?? 0 },
-            set: { height in
-                edit("Resize Plot") {
-                    model.updatePlotBoundary(PlotShape.rectangle(width: model.document.plot.bounds?.width ?? 30, height: height))
-                }
-            }
-        )
-    }
 }
