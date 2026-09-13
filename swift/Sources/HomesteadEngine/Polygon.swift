@@ -91,6 +91,53 @@ public enum Polygon {
         return smallest
     }
 
+    /// Shortest distance between two footprints — the gap you could measure
+    /// with a tape between the two nearest walls — and 0 when they touch or
+    /// overlap.
+    ///
+    /// This is what every separation rule in `Constraints` is actually about.
+    /// Centre-to-centre, which is what the frozen web app measures, silently
+    /// scales the requirement with the size of the objects: a 12 m
+    /// animal-to-leisure separation between a 20 m paddock and a 9 m pool is
+    /// satisfied at a 5.7 m real gap, and a fire separation is satisfied while
+    /// two walls are close enough to spread a fire.
+    public static func clearance(_ a: [Point], _ b: [Point]) -> Double {
+        guard a.count >= 2, b.count >= 2 else { return .infinity }
+        // Touching or overlapping is a zero gap, not the distance between the
+        // nearest pair of vertices — which for crossed rectangles is positive.
+        if contains(a[0], polygon: b) || contains(b[0], polygon: a) { return 0 }
+        for i in a.indices where segmentsCross(a, i, b) { return 0 }
+
+        var smallest = Double.infinity
+        for (from, to) in [(a, b), (b, a)] {
+            for vertex in from {
+                for i in to.indices {
+                    let edgeStart = to[i]
+                    let edgeEnd = to[(i + 1) % to.count]
+                    smallest = min(smallest, distance(vertex, project(vertex, onto: edgeStart, edgeEnd)))
+                }
+            }
+        }
+        return smallest
+    }
+
+    private static func segmentsCross(_ a: [Point], _ i: Int, _ b: [Point]) -> Bool {
+        let a1 = a[i]
+        let a2 = a[(i + 1) % a.count]
+        return b.indices.contains { j in
+            segmentsIntersect(a1, a2, b[j], b[(j + 1) % b.count])
+        }
+    }
+
+    /// Distance from a whole footprint to the nearest plot edge — the setback
+    /// a surveyor would measure, from the wall rather than from the middle of
+    /// the building. Measuring from the centre lets a 12 m-wide house sit with
+    /// its wall on the fence and still report a 3 m setback as satisfied.
+    public static func clearanceToBoundary(_ footprint: [Point], polygon: [Point]) -> Double? {
+        guard !polygon.isEmpty, !footprint.isEmpty else { return nil }
+        return footprint.compactMap { distanceToBoundary($0, polygon: polygon) }.min()
+    }
+
     /// Sutherland–Hodgman clip of any polygon against an axis-aligned box.
     /// Keeps a bounds-derived shape — the waterfront strip, say — from
     /// spilling outside a plot whose boundary is not a plain rectangle.

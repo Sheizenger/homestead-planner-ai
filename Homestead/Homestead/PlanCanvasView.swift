@@ -24,6 +24,10 @@ struct PlanCanvasView: View {
     let variant: Variant
     @Binding var viewport: Viewport
     @Binding var selectedObjectID: String?
+    /// The objects a selected warning is about — drawn with a warning-coloured
+    /// halo so "these two are too close together" points at a pair on the plan
+    /// rather than at two labels in a list.
+    var highlightedObjectIDs: Set<String> = []
     var showsDimensions: Bool
     /// Called with a world-space delta while an object is being dragged, and
     /// once more with `committed: true` when the drag ends — so the owner can
@@ -406,6 +410,10 @@ struct PlanCanvasView: View {
         )
         drawSymbol(context, object: object, style: style)
 
+        if highlightedObjectIDs.contains(object.id) {
+            context.stroke(shape, with: .color(.orange.opacity(0.45)), lineWidth: 9)
+            context.stroke(shape, with: .color(.orange), lineWidth: 2)
+        }
         if object.id == selectedObjectID {
             context.stroke(shape, with: .color(.accentColor), lineWidth: 2.5)
         }

@@ -40,7 +40,10 @@ private struct PlacementFixture: Decodable {
         let program = fixture.input.program.map {
             Sizing.ProgramItem(typeId: $0.typeId, size: Size(width: $0.width, height: $0.height), count: $0.count, metadata: $0.metadata)
         }
-        let result = Placement.placeObjects(plot: fixture.input.plot, program: program, mode: fixture.mode, seed: fixture.seed)
+        let result = Placement.placeObjects(
+            plot: fixture.input.plot, program: program, mode: fixture.mode, seed: fixture.seed,
+            policy: .frozen
+        )
 
         let labelText = "\(fixture.scenario)--\(fixture.mode.rawValue)--\(fixture.seed)"
         #expect(result.objects.count == fixture.output.objects.count, Comment(rawValue: labelText))

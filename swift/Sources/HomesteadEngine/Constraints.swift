@@ -62,6 +62,47 @@ public enum RegulatoryRegion: String, CaseIterable, Codable, Sendable {
 }
 
 public enum Constraints {
+    /// How separation and setback rules are applied — both how the distance
+    /// is measured and how hard a shortfall counts against a candidate site.
+    ///
+    /// The frozen web app measures every one of them centre to centre, which
+    /// makes the requirement scale with the size of the objects instead of
+    /// staying the distance it says it is: on an ordinary 80 × 60 plot that
+    /// leaves a pool 5.7 m from a goat paddock satisfying a 12 m
+    /// animal-to-leisure separation, and a house 6.6 m from a shed satisfying
+    /// an 8 m *fire* separation — eight real violations in one plan, none of
+    /// them reported. It also penalises a shortfall linearly, so being a metre
+    /// short and being flat against the fence differ only by a factor of
+    /// twelve, which a single strong access or sun pull outbids either way.
+    /// Measured, not guessed: `SeparationQualityTests` is the measurement.
+    ///
+    /// `.frozen` exists because the 48 golden fixtures are that behaviour, and
+    /// they are the port's completion criterion — reproducing the frozen app
+    /// exactly is a claim worth keeping provable. Everything else, the app
+    /// included, uses `.corrected`: wall to wall, fence to fence, which is
+    /// what every norm these constraints quote actually means.
+    public enum SeparationPolicy: String, CaseIterable, Codable, Sendable {
+        case frozen
+        case corrected
+    }
+
+    /// The gap between two objects, as `policy` measures it.
+    public static func separation(_ a: Transform, _ b: Transform, _ policy: SeparationPolicy) -> Double {
+        switch policy {
+        case .frozen: return distance(a.center, b.center)
+        case .corrected: return Polygon.clearance(a.corners, b.corners)
+        }
+    }
+
+    /// The gap between an object and the plot boundary, as `policy` measures
+    /// it. `nil` for a plot with no boundary to measure to.
+    public static func boundaryClearance(_ transform: Transform, boundary: [Point], _ policy: SeparationPolicy) -> Double? {
+        switch policy {
+        case .frozen: return Polygon.distanceToBoundary(transform.center, polygon: boundary)
+        case .corrected: return Polygon.clearanceToBoundary(transform.corners, polygon: boundary)
+        }
+    }
+
     /// True if `entry`'s id or category appears in `list` — the matcher both
     /// placement and warnings use to test a `Constraint` or
     /// `BoundarySetback`'s `subjectTypes`/`relatedTypes`/`appliesTo`.

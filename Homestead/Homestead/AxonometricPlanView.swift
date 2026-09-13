@@ -44,6 +44,8 @@ struct AxonometricPlanView: View {
     let variant: Variant
     @Binding var viewport: Viewport
     @Binding var selectedObjectID: String?
+    /// See `PlanCanvasView` — the objects a selected warning is about.
+    var highlightedObjectIDs: Set<String> = []
     var showsDimensions: Bool
 
     @Environment(\.colorScheme) private var colorScheme
@@ -269,6 +271,17 @@ struct AxonometricPlanView: View {
             let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
             let roofTones = Massing.roofColor(for: object)
             let roof = Color(hex: colorScheme == .dark ? roofTones.dark : roofTones.light)
+
+            // Under the massing rather than over it: a halo on the ground
+            // reads as "this patch of the plot", and doesn't paint over the
+            // building it is pointing at.
+            if highlightedObjectIDs.contains(object.id) {
+                var halo = Path()
+                halo.addLines(corners.map { self.screen($0, z: base) })
+                halo.closeSubpath()
+                context.stroke(halo, with: .color(.orange.opacity(0.45)), lineWidth: 9)
+                context.stroke(halo, with: .color(.orange), lineWidth: 2)
+            }
 
             switch Massing.form(for: object) {
             case .flat(let height):

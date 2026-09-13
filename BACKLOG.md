@@ -191,6 +191,15 @@ In order — each stage assumes the previous one landed.
 
 ## Known engine wrinkles
 
+- Separation rules are enforced as scoring penalties, not filters (only
+  `hard` ones filter), so a plan on a plot too small for its program still
+  ships with real violations — correctly reported, but present. Making more
+  of them hard trades that for unplaced items; the sweep in
+  `SeparationQualityTests` is the place to test any change.
+- Adjacency rules now also measure between footprints, which is right for a
+  cable or a path run but was never separately verified against the frozen
+  app's intent.
+
 - A water-loving type (`dock`, `micro-hydro`) requested on a plot with no
   waterfront is dropped by `Placement` and reported through the generic
   unplaced-item warning — "couldn't fit it, consider a larger plot", which is

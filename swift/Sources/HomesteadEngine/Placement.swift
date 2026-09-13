@@ -42,6 +42,35 @@ public enum Placement {
     /// stand-in for a real roof-plane model.
     private static let roofUsableFraction = 0.5
 
+    /// How much harder a near-total separation failure is penalised than a
+    /// near-miss. Chosen from a 144-plan sweep (`SeparationQualityTests` runs
+    /// a smaller version of it); the total shortfall across the sweep falls
+    /// monotonically as this rises, so the value is set by what it costs
+    /// rather than by where it stops helping:
+    ///
+    ///     gain   shortfall   path length   unplaced
+    ///        0     985.8 m       23684 m          1
+    ///        3     661.3 m       24313 m          0
+    ///        8     487.6 m       24520 m          0
+    ///       12     408.2 m       24641 m          0
+    ///       20     330.1 m       24546 m          1
+    ///
+    /// 12 is the last point that still fits the whole program: past it the
+    /// penalty starts outbidding placement itself and an item goes unplaced,
+    /// which is a worse plan than a close one. Paths grow 4% along the way —
+    /// the real cost of keeping things apart, and a deliberate trade.
+    ///
+    /// 0 under `.frozen`, which is the flat penalty the fixtures are pinned
+    /// against: the policy covers how a shortfall is *weighed* as well as how
+    /// it is measured, because changing only the measurement still moves every
+    /// fixture.
+    private static func separationShortfallGain(_ policy: Constraints.SeparationPolicy) -> Double {
+        switch policy {
+        case .frozen: return 0
+        case .corrected: return 12
+        }
+    }
+
     /// Belong on/right at the water and are the only types allowed inside the
     /// waterfront strip — everything else is excluded from it. Public because
     /// placement *drops* these when the plot has no waterfront, and a UI that
@@ -91,7 +120,8 @@ public enum Placement {
         program: [Sizing.ProgramItem],
         mode: PlanningMode,
         seed: Int,
-        region: RegulatoryRegion = .generic
+        region: RegulatoryRegion = .generic,
+        policy: Constraints.SeparationPolicy = .corrected
     ) -> Result {
         let rand = RandomStream(seed: seed)
         let bounds = plot.bounds ?? Rect(minX: 0, minY: 0, width: 0, height: 0)
@@ -192,14 +222,16 @@ public enum Placement {
             var best = searchBestCandidate(
                 plot: plot, bounds: searchBounds, step: step, width: width, height: height,
                 entry: entry, placed: placed, houseCenter: houseCenter, weights: weights,
-                rand: rand, layout: layout, avoidBounds: avoidBounds, region: region
+                rand: rand, layout: layout, avoidBounds: avoidBounds, region: region,
+                policy: policy
             )
             for shrink in [0.8, 0.6, 0.45] {
                 if best != nil { break }
                 best = searchBestCandidate(
                     plot: plot, bounds: searchBounds, step: step, width: width * shrink, height: height * shrink,
                     entry: entry, placed: placed, houseCenter: houseCenter, weights: weights,
-                    rand: rand, layout: layout, avoidBounds: avoidBounds, region: region
+                    rand: rand, layout: layout, avoidBounds: avoidBounds, region: region,
+                    policy: policy
                 )
             }
             guard let chosen = best else {
@@ -246,7 +278,8 @@ public enum Placement {
         rand: RandomStream,
         layout: LayoutParams,
         avoidBounds: Rect?,
-        region: RegulatoryRegion
+        region: RegulatoryRegion,
+        policy: Constraints.SeparationPolicy
     ) -> Candidate? {
         let orientations = width == height ? [0] : [0, 90]
         var best: Candidate?
@@ -293,7 +326,7 @@ public enum Placement {
                                 ? Constraints.matches(otherEntry, constraint.relatedTypes)
                                 : Constraints.matches(otherEntry, constraint.subjectTypes)
                             guard otherMatches else { return false }
-                            return distance(transform.center, other.transform.center) < minDistance
+                            return Constraints.separation(transform, other.transform, policy) < minDistance
                         }
                     }
                     if hardViolation { continue }
@@ -301,7 +334,7 @@ public enum Placement {
                     let candidate = scoreCandidate(
                         transform: transform, entry: entry, placed: placed, houseCenter: houseCenter,
                         bounds: bounds, weights: weights, boundary: plot.boundary, layout: layout, plot: plot,
-                        region: region
+                        region: region, policy: policy
                     )
                     if best == nil || candidate.score > best!.score {
                         best = Candidate(transform: transform, score: candidate.score, reasons: candidate.reasons)
@@ -324,7 +357,8 @@ public enum Placement {
         boundary: [Point],
         layout: LayoutParams,
         plot: Plot,
-        region: RegulatoryRegion
+        region: RegulatoryRegion,
+        policy: Constraints.SeparationPolicy
     ) -> (score: Double, reasons: [String]) {
         var score = 0.0
         var reasons: [String] = []
@@ -396,7 +430,7 @@ public enum Placement {
 
         for setback in Constraints.boundarySetbacks(for: region) {
             guard Constraints.matches(entry, setback.appliesTo) else { continue }
-            guard let d = Polygon.distanceToBoundary(transform.center, polygon: boundary) else { continue }
+            guard let d = Constraints.boundaryClearance(transform, boundary: boundary, policy) else { continue }
             if d < setback.minDistanceM {
                 score -= (setback.minDistanceM - d) * weights.separation * 2
             } else {
@@ -418,10 +452,19 @@ public enum Placement {
                     ? Constraints.matches(otherEntry, constraint.relatedTypes)
                     : Constraints.matches(otherEntry, constraint.subjectTypes)
                 guard otherMatches else { continue }
-                let d = distance(transform.center, other.transform.center)
+                let d = Constraints.separation(transform, other.transform, policy)
                 if (constraint.kind == .separation || constraint.kind == .safety),
                    let minDistance = constraint.minDistance, d < minDistance {
-                    score -= (minDistance - d) * weights.separation
+                    // Superlinear in the shortfall, so the penalty says what
+                    // the rule means: missing a 12 m separation by a metre is
+                    // a mild preference, and putting the pool against the goat
+                    // pen is decisive. Under `.frozen` the gain is 0 and this
+                    // reduces to the web app's flat penalty, where those two
+                    // differ only by a factor of twelve — which a single
+                    // strong access or sun pull outbids either way.
+                    let shortfall = minDistance - d
+                    let severity = 1 + (shortfall / minDistance) * separationShortfallGain(policy)
+                    score -= shortfall * weights.separation * severity
                     reasons.append("apartFrom:\(other.typeId)")
                 }
                 if constraint.kind == .adjacency, let maxDistance = constraint.maxDistance {

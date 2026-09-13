@@ -128,6 +128,20 @@ Decided deliberately. Honouring them costs less than re-deciding them.
   as a setting needs an inverse in the engine (`PlotShape.describe`) rather
   than a default the editor assumes. Assuming "rectangle" is how an L-shaped
   plot squares itself off the first time its width is nudged.
+- **A separation is measured between footprints.** Wall to wall, fence to
+  fence — what every norm these constraints quote actually means, and the one
+  reading under which a 12 m rule still means 12 m when one side is a 20 m
+  paddock. The frozen web app measures centre to centre and penalises a
+  shortfall linearly; both live on together behind
+  `Constraints.SeparationPolicy.frozen`, which exists so the 48 golden
+  fixtures stay provable, and nothing but those fixtures uses it. Changing
+  only the measurement and not the penalty shape still moves every fixture —
+  the policy covers both on purpose.
+- **Tune against a sweep, not against one plan.** A placement weight that
+  looks better on the plan in front of you is an anecdote.
+  `SeparationQualityTests` scores a sweep of briefs × plot sizes × modes ×
+  seeds, and every constant it picked is recorded with the table it came
+  from and the counter-metric that bounded it (path length, unplaced items).
 - **Two locales**, `en` and `ru`, with a test asserting key parity.
 - **macOS first.** iPad is a different input model, not a target flag.
 

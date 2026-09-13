@@ -12,12 +12,21 @@ public enum Generate {
         .safetyFirst: "Safety-First",
     ]
 
-    public static func variant(plot: Plot, brief: Brief, mode: PlanningMode, seed: Int) -> Layout {
+    /// `measurement` defaults to the corrected `.footprints` reading of every
+    /// separation and setback rule. The golden fixtures pass `.centers` to pin
+    /// the frozen web app's behaviour — see `Constraints.SeparationPolicy`.
+    public static func variant(
+        plot: Plot,
+        brief: Brief,
+        mode: PlanningMode,
+        seed: Int,
+        policy: Constraints.SeparationPolicy = .corrected
+    ) -> Layout {
         let region = plot.regulatoryRegion ?? .generic
         let extraction = TextParser.parse(brief.freeText)
         let mergedInputs = TextParser.merge(brief.structuredInputs, with: extraction)
         let program = Sizing.buildProgram(mergedInputs, mode: mode)
-        let placed = Placement.placeObjects(plot: plot, program: program, mode: mode, seed: seed, region: region)
+        let placed = Placement.placeObjects(plot: plot, program: program, mode: mode, seed: seed, region: region, policy: policy)
         let paths = PathsAndFences.synthesizePaths(objects: placed.objects, plot: plot)
         let fences = PathsAndFences.synthesizeFences(objects: placed.objects, plot: plot)
         let zones = FutureExpansionZone.build(plot: plot, objects: placed.objects, mode: mode)
@@ -30,7 +39,8 @@ public enum Generate {
             householdSize: mergedInputs.householdSize,
             climateZone: mergedInputs.climateZone,
             crops: mergedInputs.crops,
-            region: region
+            region: region,
+            policy: policy
         )
 
         // `unshift`, once per unplaced item in array order: each prepend

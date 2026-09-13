@@ -15,7 +15,18 @@ import Testing
         let fixture = try Fixtures.golden(entry.file)
         let comment = Comment(rawValue: entry.file)
 
-        let layout = Generate.variant(plot: fixture.input.plot, brief: fixture.input.brief, mode: fixture.input.mode, seed: fixture.input.seed)
+        // `.centers` is the frozen app's own (wrong) way of measuring a
+        // separation, and these fixtures are its output — so the comparison
+        // asks for it explicitly. The port's claim is "identical given the
+        // same rules", not "identical forever"; `Constraints.SeparationPolicy`
+        // says why the shipping default differs.
+        let layout = Generate.variant(
+            plot: fixture.input.plot,
+            brief: fixture.input.brief,
+            mode: fixture.input.mode,
+            seed: fixture.input.seed,
+            policy: .frozen
+        )
 
         #expect(layout.strategyLabel == fixture.output.strategyLabel, comment)
         #expect(layout.mode == fixture.output.mode, comment)

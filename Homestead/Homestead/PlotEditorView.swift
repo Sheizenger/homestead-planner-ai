@@ -66,6 +66,20 @@ struct PlotEditorView: View {
             }
         }
 
+        Section("Planning norms") {
+            Picker("Region", selection: regulatoryRegion) {
+                ForEach(RegulatoryRegion.allCases, id: \.self) { Text(regionLabel($0)).tag($0) }
+            }
+            // The engine's own framing, repeated where the choice is made
+            // rather than buried in a warning nobody reads until it fires.
+            Label(
+                "Planning orientation, not certified compliance — confirm every distance against the current text of the relevant code before building.",
+                systemImage: "info.circle"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+
         Section("Water") {
             Picker("Waterfront", selection: waterfrontType) {
                 Text("None").tag(Optional<WaterfrontType>.none)
@@ -168,6 +182,24 @@ struct PlotEditorView: View {
                 notchHeight: min(notchDepth, depth - 1),
                 corner: notchCorner
             )
+        }
+    }
+
+    private var regulatoryRegion: Binding<RegulatoryRegion> {
+        Binding(
+            get: { model.document.plot.regulatoryRegion ?? .generic },
+            set: { region in
+                edit("Change Planning Region") { model.updateRegulatoryRegion(region) }
+            }
+        )
+    }
+
+    private func regionLabel(_ region: RegulatoryRegion) -> String {
+        switch region {
+        case .generic: return "Generic"
+        case .ruSanPiN: return "Russia — SanPiN / SP"
+        case .deGeneric: return "Germany — Abstandsflächen"
+        case .esGeneric: return "Spain — PGOU"
         }
     }
 

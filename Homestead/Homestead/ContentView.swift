@@ -32,6 +32,7 @@ struct ContentView: View {
     @State private var showsDimensions = false
     @State private var selectedVariantID: Variant.ID?
     @State private var selectedObjectID: String?
+    @State private var selectedWarningID: String?
     @State private var viewport = Viewport()
 
     private var model: ProjectModel { store.model }
@@ -44,6 +45,15 @@ struct ContentView: View {
     private var selectedObject: PlanObject? {
         guard let id = selectedObjectID else { return nil }
         return selectedVariant?.objects.first { $0.id == id }
+    }
+
+    /// The objects a selected warning is about. A warning names them by
+    /// label; on a plan of fifteen objects that isn't enough to find them.
+    private func highlightedObjectIDs(in variant: Variant) -> Set<String> {
+        guard let id = selectedWarningID,
+              let warning = model.warnings(for: variant.id).first(where: { $0.id == id })
+        else { return [] }
+        return Set(warning.objectIds)
     }
 
     var body: some View {
@@ -86,12 +96,16 @@ struct ContentView: View {
             }
         }
         .onAppear { selectedVariantID = model.activeVariant?.id }
-        .onChange(of: selectedVariantID) { selectedObjectID = nil }
+        .onChange(of: selectedVariantID) {
+            selectedObjectID = nil
+            selectedWarningID = nil
+        }
         // Opening a file swaps the whole document, so the selection that
         // pointed into the old one has to go with it.
         .onChange(of: model.document.id) {
             selectedVariantID = model.activeVariant?.id
             selectedObjectID = nil
+            selectedWarningID = nil
         }
     }
 
@@ -109,6 +123,7 @@ struct ContentView: View {
                                 variant: variant,
                                 viewport: $viewport,
                                 selectedObjectID: $selectedObjectID,
+                                highlightedObjectIDs: highlightedObjectIDs(in: variant),
                                 showsDimensions: showsDimensions,
                                 moveObject: { id, delta, committed in
                                     drag(id, by: delta, in: variant.id, committed: committed)
@@ -121,6 +136,7 @@ struct ContentView: View {
                                 variant: variant,
                                 viewport: $viewport,
                                 selectedObjectID: $selectedObjectID,
+                                highlightedObjectIDs: highlightedObjectIDs(in: variant),
                                 showsDimensions: showsDimensions
                             )
                             .transition(.opacity)
@@ -133,7 +149,10 @@ struct ContentView: View {
                             selectionBar(for: object, in: variant)
                             Divider()
                         }
-                        WarningsListView(warnings: model.warnings(for: variant.id))
+                        WarningsListView(
+                            warnings: model.warnings(for: variant.id),
+                            selectedWarningID: $selectedWarningID
+                        )
                     }
                     .frame(minHeight: 150, idealHeight: 210)
                 }

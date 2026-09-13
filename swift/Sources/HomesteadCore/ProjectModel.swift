@@ -130,6 +130,14 @@ public final class ProjectModel {
         touch()
     }
 
+    /// Which jurisdiction's fire/sanitary/setback figures layer on top of the
+    /// baseline. Optional in the document so plans written before regions
+    /// existed still decode; `nil` reads as `.generic`.
+    public func updateRegulatoryRegion(_ region: RegulatoryRegion?) {
+        document.plot.regulatoryRegion = region
+        touch()
+    }
+
     // MARK: - Variants
 
     /// Appends a freshly generated variant and leaves everything else

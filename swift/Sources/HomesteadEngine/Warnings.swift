@@ -109,7 +109,8 @@ public enum Warnings {
         householdSize: Int,
         climateZone: ClimateZone,
         crops: [String],
-        region: RegulatoryRegion = .generic
+        region: RegulatoryRegion = .generic,
+        policy: Constraints.SeparationPolicy = .corrected
     ) -> [Warning] {
         var warnings: [Warning] = []
 
@@ -145,7 +146,7 @@ public enum Warnings {
                     }
                     let pairKey = "\(constraint.id):\([subject.id, related.id].sorted().joined(separator: "|"))"
                     guard !reportedPairs.contains(pairKey) else { continue }
-                    let d = distance(subject.transform.center, related.transform.center)
+                    let d = Constraints.separation(subject.transform, related.transform, policy)
                     if (constraint.kind == .separation || constraint.kind == .safety),
                        let minDistance = constraint.minDistance, d < minDistance {
                         reportedPairs.insert(pairKey)
@@ -197,7 +198,7 @@ public enum Warnings {
             guard let entry = ObjectLibrary[object.typeId] else { continue }
             for setback in Constraints.boundarySetbacks(for: region) {
                 guard Constraints.matches(entry, setback.appliesTo) else { continue }
-                guard let d = Polygon.distanceToBoundary(object.transform.center, polygon: plot.boundary) else { continue }
+                guard let d = Constraints.boundaryClearance(object.transform, boundary: plot.boundary, policy) else { continue }
                 if d < setback.minDistanceM {
                     warnings.append(Warning(
                         id: "warn-\(setback.id)-\(object.id)",
