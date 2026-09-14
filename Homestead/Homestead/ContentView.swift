@@ -151,7 +151,8 @@ struct ContentView: View {
                         }
                         WarningsListView(
                             warnings: model.warnings(for: variant.id),
-                            selectedWarningID: $selectedWarningID
+                            selectedWarningID: $selectedWarningID,
+                            applyFix: { warning in fix(warning, in: variant.id) }
                         )
                     }
                     .frame(minHeight: 150, idealHeight: 210)
@@ -164,6 +165,17 @@ struct ContentView: View {
                 description: Text("Describe the homestead on the left, then press Generate.")
             )
         }
+    }
+
+    /// One undo step per fix, labelled with what it did — a plan that moved
+    /// on its own is exactly the kind of change you want to be able to take
+    /// back in one keystroke.
+    private func fix(_ warning: Warning, in variantID: Variant.ID) -> Resolve.Fix? {
+        var applied: Resolve.Fix?
+        store.edit(warning.suggestedFix?.label ?? "Fix Warning") {
+            applied = model.applyFix(for: warning, in: variantID)
+        }
+        return applied
     }
 
     /// Live movement applies straight to the model; the undo step is opened

@@ -186,6 +186,23 @@ public final class ProjectModel {
         mutateObject(objectID, in: variantID) { $0.transform = transform }
     }
 
+    /// Applies the smallest move that clears `warning`, and returns what it
+    /// did — `nil` when there is no small answer, so the UI can say "no
+    /// automatic fix" rather than appearing to do nothing. FR-18.
+    @discardableResult
+    public func applyFix(for warning: Warning, in variantID: Variant.ID) -> Resolve.Fix? {
+        guard let variant = variant(variantID),
+              let fix = Resolve.fix(
+                  for: warning,
+                  objects: variant.objects,
+                  plot: document.plot,
+                  region: document.plot.regulatoryRegion ?? .generic
+              )
+        else { return nil }
+        moveObject(fix.objectId, in: variantID, to: fix.transform)
+        return fix
+    }
+
     public func toggleLock(_ objectID: String, in variantID: Variant.ID) {
         withVariant(variantID) { variant in
             guard let index = variant.objects.firstIndex(where: { $0.id == objectID }) else { return }

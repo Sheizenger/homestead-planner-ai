@@ -11,6 +11,62 @@ struct ProjectModelTests {
         return ProjectModel(document: doc)
     }
 
+    private func crowdedModel() -> ProjectModel {
+        var doc = PlanDocument.blank(name: "Crowded", widthM: 80, heightM: 60)
+        doc.brief.structuredInputs.householdSize = 4
+        doc.brief.structuredInputs.animals = [AnimalRequest(type: "goats", count: 6), AnimalRequest(type: "poultry", count: 20)]
+        doc.brief.structuredInputs.infrastructure = ["pool", "well", "septic", "workshop", "sauna", "compost"]
+        doc.brief.structuredInputs.crops = ["vegetables", "orchard"]
+        return ProjectModel(document: doc)
+    }
+
+    // MARK: - Fixing a warning
+
+    /// FR-18's one-click fix, end to end through the layer the app talks to:
+    /// the warning it was asked about is gone afterwards, and the answer says
+    /// which object moved so the caller can label an undo step with it.
+    @Test func applyingAFixClearsTheWarningItAddresses() {
+        let m = crowdedModel()
+        var target: (Variant.ID, Warning)?
+        for seed in 1...12 {
+            let id = m.generateVariant(mode: .beautyBalanced, seed: seed)
+            if let warning = m.warnings(for: id).first(where: { $0.suggestedFix != nil }) {
+                target = (id, warning)
+                break
+            }
+        }
+        guard let (variantID, warning) = target else {
+            Issue.record("no fixable warning in twelve variants — the fixture brief stopped being crowded")
+            return
+        }
+
+        let fix = m.applyFix(for: warning, in: variantID)
+        #expect(fix != nil)
+        #expect(!m.warnings(for: variantID).contains { $0.id == warning.id })
+    }
+
+    /// A locked object is not moved by the planner's own initiative either,
+    /// and the refusal is legible rather than silent.
+    @Test func aFixIsDeclinedRatherThanForcedOnALockedObject() {
+        let m = crowdedModel()
+        var target: (Variant.ID, Warning)?
+        for seed in 1...12 {
+            let id = m.generateVariant(mode: .beautyBalanced, seed: seed)
+            if let warning = m.warnings(for: id).first(where: { $0.suggestedFix != nil && !$0.objectIds.isEmpty }) {
+                target = (id, warning)
+                break
+            }
+        }
+        guard let (variantID, warning) = target else {
+            Issue.record("no fixable warning in twelve variants — the fixture brief stopped being crowded")
+            return
+        }
+        for id in warning.objectIds { m.toggleLock(id, in: variantID) }
+
+        #expect(m.applyFix(for: warning, in: variantID) == nil)
+        #expect(m.warnings(for: variantID).contains { $0.id == warning.id })
+    }
+
     // MARK: - Generation accumulates
 
     /// The decision this whole layer exists to protect: generating never

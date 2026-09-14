@@ -276,8 +276,6 @@ divergence cannot mask a genuine porting error.
   types already placed, so the quick-edit route is closed too.
 - `layerLocked` is toggled and never read — the layer lock button does
   nothing.
-- `suggestedFix` is computed for every warning and rendered nowhere, so
-  FR-18's one-click fix does not exist.
 - Deleting a locked object clears the selection and does nothing else, with
   no feedback (`projectStore.ts:416`).
 - `copyObjectToActive` returns silently on collision (`:501`) instead of
