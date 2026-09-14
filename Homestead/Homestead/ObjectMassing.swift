@@ -31,6 +31,59 @@ enum Massing {
         case canopy(height: Double, radius: Double, conifer: Bool)
     }
 
+    /// What a building is made of. Two gabled boxes of the same size read as
+    /// the same thing whatever colour they are; a plank barn under corrugated
+    /// iron and a plastered house under tile do not. This is most of what
+    /// makes the catalog legible at a glance.
+    struct Surfaces {
+        var roof: AxoMaterial
+        var wall: AxoMaterial
+    }
+
+    static func surfaces(for object: PlanObject) -> Surfaces {
+        if let specific = surfaceTable[object.typeId] { return specific }
+        switch object.category {
+        case .residential: return Surfaces(roof: .shingle, wall: .plaster)
+        case .animal: return Surfaces(roof: .metalRoof, wall: .plank)
+        case .storage: return Surfaces(roof: .metalRoof, wall: .board)
+        default: return Surfaces(roof: .shingle, wall: .plank)
+        }
+    }
+
+    private static let surfaceTable: [String: Surfaces] = [
+        "house": Surfaces(roof: .shingle, wall: .plaster),
+        "house-l": Surfaces(roof: .shingle, wall: .plaster),
+        "barn": Surfaces(roof: .metalRoof, wall: .plank),
+        "workshop": Surfaces(roof: .metalRoof, wall: .board),
+        "garage": Surfaces(roof: .metalRoof, wall: .board),
+        "shed": Surfaces(roof: .metalRoof, wall: .board),
+        "woodshed": Surfaces(roof: .thatch, wall: .board),
+        "goat-shelter": Surfaces(roof: .shingle, wall: .plank),
+        "poultry-coop": Surfaces(roof: .shingle, wall: .plank),
+        "banya": Surfaces(roof: .shingle, wall: .plank),
+        "smokehouse": Surfaces(roof: .shingle, wall: .brick),
+        "root-cellar": Surfaces(roof: .thatch, wall: .brick),
+        "greenhouse": Surfaces(roof: .glass, wall: .glass),
+        "summer-kitchen": Surfaces(roof: .shingle, wall: .plaster),
+        "guest-house": Surfaces(roof: .shingle, wall: .plaster),
+    ]
+
+    /// How tall a thing is for the purpose of casting a shadow — the ridge
+    /// for a roof, the canopy top for a tree, near nothing for a path. Flat
+    /// features return 0 and cast none: a gravel path with a shadow under it
+    /// reads as a floating slab.
+    static func shadowHeight(for object: PlanObject) -> Double {
+        switch form(for: object) {
+        case let .gabled(_, ridge): return ridge
+        case let .glass(_, ridge): return ridge * 0.9
+        case let .cylinder(height, _): return height
+        case let .block(height): return height
+        case .flat: return 0
+        case let .rows(height, _): return height * 0.6
+        case let .canopy(height, _, _): return height * 0.85
+        }
+    }
+
     static func form(for object: PlanObject) -> Form {
         if object.metadata["roofMounted"]?.boolValue == true { return .flat(height: 0.35) }
         if let specific = forms[object.typeId] { return specific }
