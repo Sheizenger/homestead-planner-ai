@@ -439,6 +439,20 @@ struct AxonometricPlanView: View {
             guard object.metadata["roofMounted"]?.boolValue != true else { continue }
             let height = Massing.shadowHeight(for: object)
             guard height > 0.15 else { continue }
+
+            // A grove is many trees, not one crate: shadowing its footprint
+            // put a soft rectangle under the whole orchard.
+            if case let .canopy(_, radius, _) = Massing.form(for: object) {
+                for position in Massing.grovePositions(for: object) {
+                    let offset = AxoLight.shadowOffset(height: height)
+                    let centre = screen(Point(x: position.x + offset.x, y: position.y + offset.y))
+                    let rx = CGFloat(radius * 1.414 * Axonometry.cosA * viewport.scale)
+                    shadow.addEllipse(in: CGRect(x: centre.x - rx, y: centre.y - rx * 0.6, width: rx * 2, height: rx * 1.2))
+                    any = true
+                }
+                continue
+            }
+
             let corners = object.transform.corners
             guard corners.count == 4 else { continue }
             let offset = AxoLight.shadowOffset(height: height)
@@ -486,8 +500,13 @@ struct AxonometricPlanView: View {
             let corners = object.transform.corners
             let selected = object.id == selectedObjectID
             let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
-            let roofTones = Massing.roofColor(for: object)
-            let roof = Color(hex: roofTones.light)
+            // Walls and roof come from the per-type palette, not the
+            // category: on this view "a barn" has to be distinguishable from
+            // "a coop", which sharing an `animal` fill made impossible.
+            let palette = Massing.palette(for: object)
+            let roof = Color(hex: palette.roof)
+            let wallColor = Color(hex: palette.wall)
+            let wallOutline = Color(hex: palette.wall).mix(with: .black, by: 0.32)
 
             // Under the massing rather than over it: a halo on the ground
             // reads as "this patch of the plot", and doesn't paint over the
@@ -515,15 +534,31 @@ struct AxonometricPlanView: View {
                     base: base,
                     eaves: eaves,
                     ridge: ridge,
-                    wall: style.fill,
-                    wallOutline: style.stroke,
+                    wall: wallColor,
+                    wallOutline: wallOutline,
                     roof: roof,
                     glazed: false,
                     surfaces: Massing.surfaces(for: object)
                 )
                 if ["house", "house-l", "banya", "smokehouse"].contains(object.typeId) {
-                    AxoKit.chimney(painter, object: object, base: base, ridgeZ: base + ridge, wall: style.fill, outline: style.stroke)
+                    AxoKit.chimney(painter, object: object, base: base, ridgeZ: base + ridge, wall: Color(hex: palette.trim), outline: wallOutline)
                 }
+                if selected { outlineFootprint(context, corners: corners, z: base) }
+
+            case .gambrel(let eaves, let knuckle, let ridge):
+                AxoKit.gambrelBuilding(
+                    painter,
+                    object: object,
+                    base: base,
+                    eaves: eaves,
+                    knuckle: knuckle,
+                    ridge: ridge,
+                    wall: wallColor,
+                    wallOutline: wallOutline,
+                    roof: roof,
+                    trim: Color(hex: palette.trim),
+                    surfaces: Massing.surfaces(for: object)
+                )
                 if selected { outlineFootprint(context, corners: corners, z: base) }
 
             case .glass(let eaves, let ridge):
@@ -533,8 +568,8 @@ struct AxonometricPlanView: View {
                     base: base,
                     eaves: eaves,
                     ridge: ridge,
-                    wall: style.fill.opacity(0.8),
-                    wallOutline: style.stroke,
+                    wall: wallColor.opacity(0.55),
+                    wallOutline: Color(hex: palette.trim),
                     roof: Color(hex: 0xbfe3e8).opacity(0.75),
                     glazed: true,
                     surfaces: Massing.surfaces(for: object)
@@ -548,9 +583,10 @@ struct AxonometricPlanView: View {
                     radius: radius,
                     from: base,
                     to: base + height,
-                    fill: style.fill,
-                    outline: style.stroke,
-                    shade: 0.22
+                    fill: wallColor,
+                    outline: wallOutline,
+                    shade: 0.22,
+                    cap: Self.cylinderCap(for: object)
                 )
                 if selected { outlineFootprint(context, corners: corners, z: base) }
 
@@ -574,6 +610,16 @@ struct AxonometricPlanView: View {
         }
     }
 
+    /// A drum, a silo or a wellhead. Same cylinder, three silhouettes, and
+    /// that is enough to tell them apart across the plot without a label.
+    private static func cylinderCap(for object: PlanObject) -> AxoPainter.Cap {
+        switch object.typeId {
+        case "water-tank", "rainwater-cistern", "silo", "grain-silo": return .dome
+        case "well": return .cone
+        default: return .flat
+        }
+    }
+
     private func outlineFootprint(_ context: GraphicsContext, corners: [Point], z: Double) {
         var path = Path()
         path.addLines(corners.map { screen($0, z: z) })
@@ -582,37 +628,30 @@ struct AxonometricPlanView: View {
     }
 
     private func drawOrchard(_ painter: AxoPainter, object: PlanObject, height: Double, radius: Double, conifer: Bool, style: CategoryStyle) {
-        let w = object.transform.width
-        let h = object.transform.height
-        let cols = min(4, max(1, Int(w / 5)))
-        let rows = min(4, max(1, Int(h / 5)))
-        let centre = object.transform.center
-
-        // Back to front within the grove, so near trees overlap far ones.
-        var positions: [Point] = []
-        for r in 0..<rows {
-            for c in 0..<cols {
-                let x = cols == 1 ? centre.x : centre.x - w / 2 + 1.5 + Double(c) * (w - 3) / Double(cols - 1)
-                let y = rows == 1 ? centre.y : centre.y - h / 2 + 1.5 + Double(r) * (h - 3) / Double(rows - 1)
-                positions.append(Point(x: x, y: y))
-            }
-        }
-        // A grove where every tree is identical reads as wallpaper, so each
-        // gets its own seed, a little jitter off the grid, and its own size.
-        for (index, position) in positions.sorted(by: { $0.x + $0.y < $1.x + $1.y }).enumerated() {
+        let base = Color(hex: Massing.foliage(for: object))
+        // Back to front within the grove, so near trees overlap far ones, and
+        // every tree its own seed: a grove where each one is identical reads
+        // as wallpaper.
+        for (index, position) in Massing.grovePositions(for: object).sorted(by: { $0.x + $0.y < $1.x + $1.y }).enumerated() {
             let seed = object.id + "-\(index)"
             let jittered = Point(
                 x: position.x + AxoNoise.jitter(seed, index, 1, 0.55),
                 y: position.y + AxoNoise.jitter(seed, index, 2, 0.55)
             )
             let vary = 0.84 + AxoNoise.value(seed, index, 3) * 0.32
+            // A little tonal drift tree to tree, the way a real row of them
+            // is never one flat green.
+            let tint = AxoNoise.value(seed, index, 4)
+            let foliage = tint > 0.5
+                ? base.mix(with: Color(hex: 0x2f6b46), by: (tint - 0.5) * 0.5)
+                : base.mix(with: Color(hex: 0x8dc63f), by: (0.5 - tint) * 0.5)
             AxoKit.tree(
                 painter,
                 at: jittered,
                 height: height * vary,
                 radius: radius * vary,
                 conifer: conifer,
-                foliage: style.fill,
+                foliage: foliage,
                 outline: style.stroke,
                 seed: seed
             )

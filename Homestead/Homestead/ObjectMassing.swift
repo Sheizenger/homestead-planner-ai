@@ -19,6 +19,10 @@ enum Massing {
         case gabled(eaves: Double, ridge: Double)
         /// Same shape, glazed — low walls and a translucent roof.
         case glass(eaves: Double, ridge: Double)
+        /// The barn shape: a steep lower roof slope breaking at a knuckle
+        /// into a shallow upper one. Unmistakable, and the reason a barn is
+        /// the one building in an isometric farm nobody has to label.
+        case gambrel(eaves: Double, knuckle: Double, ridge: Double)
         /// Upright cylinder: tanks, cisterns, well rings.
         case cylinder(height: Double, radiusScale: Double)
         /// Flat-topped box, for kit with no roof worth drawing.
@@ -76,6 +80,7 @@ enum Massing {
         switch form(for: object) {
         case let .gabled(_, ridge): return ridge
         case let .glass(_, ridge): return ridge * 0.9
+        case let .gambrel(_, _, ridge): return ridge
         case let .cylinder(height, _): return height
         case let .block(height): return height
         case .flat: return 0
@@ -108,7 +113,7 @@ enum Massing {
         // Roofed
         "house": .gabled(eaves: 3.4, ridge: 6.4),
         "house-l": .gabled(eaves: 3.4, ridge: 6.4),
-        "barn": .gabled(eaves: 4.0, ridge: 7.2),
+        "barn": .gambrel(eaves: 3.2, knuckle: 5.4, ridge: 6.8),
         "workshop": .gabled(eaves: 2.8, ridge: 4.0),
         "garage": .gabled(eaves: 2.6, ridge: 3.4),
         "shed": .gabled(eaves: 2.0, ridge: 2.9),
@@ -167,6 +172,8 @@ enum Massing {
         case .gabled(let eaves, let ridge), .glass(let eaves, let ridge):
             // On the slope, a little above the eaves.
             return eaves + (ridge - eaves) * 0.35
+        case .gambrel(let eaves, _, let ridge):
+            return eaves + (ridge - eaves) * 0.35
         case .block(let height), .cylinder(let height, _), .flat(let height), .rows(let height, _):
             return height
         case .canopy(let height, _, _):
@@ -174,17 +181,87 @@ enum Massing {
         }
     }
 
-    /// Roofs are what make the reference illustrations read as buildings, so
-    /// they get their own hues rather than a shade of the category fill.
-    static func roofColor(for object: PlanObject) -> (light: UInt32, dark: UInt32) {
+    /// Where a grove's trees stand. Shared, because the shadow pass needs the
+    /// same positions the drawing pass uses: a grove that casts one big
+    /// rectangular shadow for its whole footprint reads as a crate of trees.
+    static func grovePositions(for object: PlanObject) -> [Point] {
+        let width = object.transform.width
+        let depth = object.transform.height
+        let columns = min(4, max(1, Int(width / 5)))
+        let rows = min(4, max(1, Int(depth / 5)))
+        let centre = object.transform.center
+
+        var positions: [Point] = []
+        for row in 0..<rows {
+            for column in 0..<columns {
+                let x = columns == 1 ? centre.x : centre.x - width / 2 + 1.5 + Double(column) * (width - 3) / Double(columns - 1)
+                let y = rows == 1 ? centre.y : centre.y - depth / 2 + 1.5 + Double(row) * (depth - 3) / Double(rows - 1)
+                positions.append(Point(x: x, y: y))
+            }
+        }
+        return positions
+    }
+
+    /// Foliage is a material, not a category. The 2D plan's category `fill` is
+    /// a pale background tint — right for a tinted footprint on a white page,
+    /// and the reason the first pass's orchards came out as white cauliflower:
+    /// a pale green mixed toward white for the lit lobes is just white.
+    static func foliage(for object: PlanObject) -> UInt32 {
         switch object.typeId {
-        case "house", "house-l": return (0xc4553f, 0x8f3d2d)
-        case "barn": return (0x8c3b2f, 0x6b2c23)
-        case "garage", "workshop": return (0x4a5b6b, 0x36434f)
-        case "banya", "smokehouse": return (0x7a4a3a, 0x5c382c)
-        case "gazebo": return (0x6b5b8a, 0x4e4266)
-        case "poultry-coop", "goat-shelter": return (0x9a6b4a, 0x734f37)
-        default: return (0x7d6b56, 0x5c4e3f)
+        case "orchard-trees": return 0x4e8f3a
+        case "berry-rows", "vineyard": return 0x6ba33c
+        case "windbreak", "hedge": return 0x2f6b46
+        case "ornamental-tree": return 0x57a04a
+        default: return 0x4a8c3d
         }
     }
+
+    /// Wall and roof colour per catalog type, in daylight.
+    ///
+    /// The first pass took walls from the category `fill`, which meant every
+    /// roofed thing on the plot — house, workshop, coop, sauna, shed — was the
+    /// same tan box under a slightly different roof, because they share two or
+    /// three categories between them. The references are the opposite: a red
+    /// barn, a cream house, a white coop, a weathered grey shed, and you know
+    /// which is which before you read a label. Category still drives the *2D*
+    /// plan, where the colour means "this is animal infrastructure"; here it
+    /// has to mean "this is a barn".
+    struct Palette {
+        var wall: UInt32
+        var roof: UInt32
+        /// Trim: window frames, door surrounds, corner boards. White on a red
+        /// barn is the whole look.
+        var trim: UInt32
+    }
+
+    static func palette(for object: PlanObject) -> Palette {
+        if let specific = palettes[object.typeId] { return specific }
+        switch object.category {
+        case .residential: return Palette(wall: 0xf0e2c6, roof: 0xc4553f, trim: 0xffffff)
+        case .animal: return Palette(wall: 0xd9cdb4, roof: 0x9a6b4a, trim: 0xfaf6ec)
+        case .storage: return Palette(wall: 0xb09068, roof: 0x5c6a76, trim: 0xe8e0cf)
+        case .leisure: return Palette(wall: 0xe4d6bd, roof: 0x7d8f74, trim: 0xffffff)
+        default: return Palette(wall: 0xc9b696, roof: 0x7d6b56, trim: 0xf0e8d8)
+        }
+    }
+
+    private static let palettes: [String: Palette] = [
+        "house": Palette(wall: 0xf5e7c8, roof: 0xc4553f, trim: 0xffffff),
+        "house-l": Palette(wall: 0xf5e7c8, roof: 0xc4553f, trim: 0xffffff),
+        "guest-house": Palette(wall: 0xe6eef2, roof: 0x8c6a4e, trim: 0xffffff),
+        "summer-kitchen": Palette(wall: 0xf7eed6, roof: 0xb9705a, trim: 0xffffff),
+        "barn": Palette(wall: 0xb5442f, roof: 0xe9e4da, trim: 0xffffff),
+        "workshop": Palette(wall: 0x9fb0bd, roof: 0x44515e, trim: 0xf2f4f6),
+        "garage": Palette(wall: 0xc8cdd2, roof: 0x4a5b6b, trim: 0xffffff),
+        "shed": Palette(wall: 0xa8865c, roof: 0x5c6a76, trim: 0xe4d9c4),
+        "woodshed": Palette(wall: 0x9a7a52, roof: 0xa08a5e, trim: 0xd8c9a8),
+        "root-cellar": Palette(wall: 0x9d968a, roof: 0x6f7a5e, trim: 0xd6d2c8),
+        "goat-shelter": Palette(wall: 0xe8d9a8, roof: 0x8a5b3a, trim: 0xfaf4e4),
+        "poultry-coop": Palette(wall: 0xfaf4e8, roof: 0xc4553f, trim: 0xd8c9a8),
+        "apiary": Palette(wall: 0xf0c765, roof: 0x8a6a3a, trim: 0xfff6d8),
+        "banya": Palette(wall: 0x7d5a3c, roof: 0x5c483a, trim: 0xc9ab84),
+        "smokehouse": Palette(wall: 0x8d8377, roof: 0x5c483a, trim: 0xcfc7ba),
+        "gazebo": Palette(wall: 0xf2ece0, roof: 0x6b5b8a, trim: 0xffffff),
+        "greenhouse": Palette(wall: 0xdff0f2, roof: 0xbfe3e8, trim: 0xa8c4cc),
+    ]
 }

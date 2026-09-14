@@ -172,10 +172,17 @@ struct AxoPainter {
         context.stroke(path, with: .color(color), lineWidth: width)
     }
 
+    /// What sits on top of a cylinder. A flat disc is a drum; a dome is a
+    /// silo and a little cone is a wellhead, and telling those apart at a
+    /// glance is free once the shape does the work.
+    enum Cap {
+        case flat, dome, cone
+    }
+
     /// A horizontal circle projects to a screen-axis-aligned ellipse under
     /// this projection, so a cylinder is two ellipses plus the strip between
     /// their tangents.
-    func cylinder(center: Point, radius: Double, from: Double, to: Double, fill: Color, outline: Color, shade: Double) {
+    func cylinder(center: Point, radius: Double, from: Double, to: Double, fill: Color, outline: Color, shade: Double, cap: Cap = .flat) {
         let rx = CGFloat(radius * 1.414 * Axonometry.cosA * scale)
         let ry = CGFloat(radius * 1.414 * Axonometry.sinA * scale)
         guard rx > 1 else { return }
@@ -201,6 +208,32 @@ struct AxoPainter {
         context.fill(topCap, with: .color(.white.opacity(0.12)))
         context.stroke(topCap, with: .color(outline), lineWidth: 0.8)
         context.stroke(body, with: .color(outline), lineWidth: 0.8)
+
+        switch cap {
+        case .flat:
+            break
+        case .dome, .cone:
+            let apexHeight = radius * (cap == .dome ? 0.85 : 1.2)
+            let apex = project(center, to + apexHeight)
+            var shell = Path()
+            shell.move(to: CGPoint(x: top.x - rx, y: top.y))
+            if cap == .dome {
+                shell.addQuadCurve(to: apex, control: CGPoint(x: top.x - rx, y: apex.y + ry * 0.4))
+                shell.addQuadCurve(to: CGPoint(x: top.x + rx, y: top.y), control: CGPoint(x: top.x + rx, y: apex.y + ry * 0.4))
+            } else {
+                shell.addLine(to: apex)
+                shell.addLine(to: CGPoint(x: top.x + rx, y: top.y))
+            }
+            shell.addCurve(
+                to: CGPoint(x: top.x - rx, y: top.y),
+                control1: CGPoint(x: top.x + rx * 0.55, y: top.y + ry * 1.15),
+                control2: CGPoint(x: top.x - rx * 0.55, y: top.y + ry * 1.15)
+            )
+            shell.closeSubpath()
+            context.fill(shell, with: .color(fill))
+            context.fill(shell, with: .color(.white.opacity(0.10)))
+            context.stroke(shell, with: .color(outline), lineWidth: 0.8)
+        }
     }
 }
 
@@ -284,25 +317,43 @@ enum AxoKit {
             )
         }
 
-        // Roof planes, oversailing the walls. The overhang is the detail that
-        // separates a roof from a lid: it throws the eaves line clear of the
-        // wall below and puts a band of shadow under it.
+        // Roof planes, oversailing the walls on all four sides.
+        //
+        // The overhang has to go out over the gable ends too, not just the
+        // eaves. Pushing only the eaves out left each plane's raked edge
+        // running from a corner that had moved to a ridge end that hadn't, so
+        // the roof's rake and the gable wall below it sloped at different
+        // angles and every roof in the scene looked twisted. Extending the
+        // ridge by the same verge keeps each plane a parallelogram sitting
+        // squarely over the building, with the gable wall inside it.
         let run = min(object.transform.width, object.transform.height) / 2
         let rise = max(0.1, ridge - eaves)
         let overhang = min(0.45, run * 0.22)
+        let verge = overhang
 
+        let ridgeSpan = (ridgeB.x - ridgeA.x, ridgeB.y - ridgeA.y)
+        let ridgeLength = (ridgeSpan.0 * ridgeSpan.0 + ridgeSpan.1 * ridgeSpan.1).squareRoot()
+        let along = ridgeLength > 0
+            ? Point(x: ridgeSpan.0 / ridgeLength * verge, y: ridgeSpan.1 / ridgeLength * verge)
+            : Point(x: 0, y: 0)
+        let ridgeStart = Point(x: ridgeA.x - along.x, y: ridgeA.y - along.y)
+        let ridgeEnd = Point(x: ridgeB.x + along.x, y: ridgeB.y + along.y)
+
+        // `longEdges` is ordered so that edge.0 sits at the ridgeA end and
+        // edge.1 at the ridgeB end, in both the along-x and along-y cases —
+        // which is what lets the verge be applied to matching ends.
         for edge in longEdges.sorted(by: { depth($0) < depth($1) }) {
             let normal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: run, rise: rise)
             let flat = (normal.x * normal.x + normal.y * normal.y).squareRoot()
             let outward = flat > 0
                 ? Point(x: normal.x / flat * overhang, y: normal.y / flat * overhang)
                 : Point(x: 0, y: 0)
-            let a = Point(x: edge.0.x + outward.x, y: edge.0.y + outward.y)
-            let b = Point(x: edge.1.x + outward.x, y: edge.1.y + outward.y)
+            let a = Point(x: edge.0.x + outward.x - along.x, y: edge.0.y + outward.y - along.y)
+            let b = Point(x: edge.1.x + outward.x + along.x, y: edge.1.y + outward.y + along.y)
             let eavesDrop = eavesZ - overhang * (rise / max(run, 0.1)) - 0.05
 
             painter.face(
-                [(a, eavesDrop), (b, eavesDrop), (ridgeB, ridgeZ), (ridgeA, ridgeZ)],
+                [(a, eavesDrop), (b, eavesDrop), (ridgeEnd, ridgeZ), (ridgeStart, ridgeZ)],
                 fill: roof,
                 shade: AxoLight.shade(normal: normal),
                 outline: Color.black.opacity(0.22),
@@ -310,24 +361,198 @@ enum AxoKit {
                 material: glazed ? .glass : surfaces.roof,
                 seed: object.id + "roof"
             )
-            // Fascia: the cut end of the roof, seen edge-on. Thin, but it is
-            // what gives the overhang thickness instead of being a paper flap.
+            // Fascia along the eaves and a bargeboard up each rake: the cut
+            // edges of the roof, seen end-on. Thin, but they are what give the
+            // overhang thickness instead of leaving it a paper flap.
+            let thickness = 0.18
             painter.face(
-                [(a, eavesDrop), (b, eavesDrop), (b, eavesDrop - 0.18), (a, eavesDrop - 0.18)],
+                [(a, eavesDrop), (b, eavesDrop), (b, eavesDrop - thickness), (a, eavesDrop - thickness)],
                 fill: roof,
-                shade: 0.32,
+                shade: 0.34,
+                outline: nil
+            )
+            painter.face(
+                [(a, eavesDrop), (ridgeStart, ridgeZ), (ridgeStart, ridgeZ - thickness), (a, eavesDrop - thickness)],
+                fill: roof,
+                shade: 0.26,
+                outline: nil
+            )
+            painter.face(
+                [(b, eavesDrop), (ridgeEnd, ridgeZ), (ridgeEnd, ridgeZ - thickness), (b, eavesDrop - thickness)],
+                fill: roof,
+                shade: 0.26,
                 outline: nil
             )
         }
 
         // Ridge cap, which is what makes the two planes read as a pitch.
-        painter.line((ridgeA, ridgeZ), (ridgeB, ridgeZ), color: .black.opacity(0.28), width: 1.6)
+        painter.line((ridgeStart, ridgeZ), (ridgeEnd, ridgeZ), color: .black.opacity(0.28), width: 1.6)
 
         if glazed {
             glazingBars(painter, longEdges: longEdges, ridgeA: ridgeA, ridgeB: ridgeB, eavesZ: eavesZ, ridgeZ: ridgeZ, color: wallOutline)
         } else {
             openings(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, outline: wallOutline)
         }
+    }
+
+    /// The barn: walls, then a steep lower roof slope breaking at a knuckle
+    /// into a shallow upper one, with a five-sided gable end. Built on the
+    /// same ridge/eaves scaffolding as `gabledBuilding` so the two agree
+    /// about which way the building faces.
+    static func gambrelBuilding(
+        _ painter: AxoPainter,
+        object: PlanObject,
+        base: Double,
+        eaves: Double,
+        knuckle: Double,
+        ridge: Double,
+        wall: Color,
+        wallOutline: Color,
+        roof: Color,
+        trim: Color,
+        surfaces: Massing.Surfaces
+    ) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+
+        let eavesZ = base + eaves
+        let knuckleZ = base + knuckle
+        let ridgeZ = base + ridge
+        let alongX = object.transform.width >= object.transform.height
+
+        let (ridgeA, ridgeB, longEdges, gableEnds): (Point, Point, [(Point, Point)], [(Point, Point)]) = alongX
+            ? (
+                mid(corners[0], corners[3]), mid(corners[1], corners[2]),
+                [(corners[0], corners[1]), (corners[3], corners[2])],
+                [(corners[0], corners[3]), (corners[1], corners[2])]
+            )
+            : (
+                mid(corners[0], corners[1]), mid(corners[3], corners[2]),
+                [(corners[0], corners[3]), (corners[1], corners[2])],
+                [(corners[0], corners[1]), (corners[3], corners[2])]
+            )
+
+        let walls = [
+            (corners[0], corners[1]), (corners[1], corners[2]),
+            (corners[2], corners[3]), (corners[3], corners[0]),
+        ].sorted { depth($0) < depth($1) }
+        for wallEdge in walls {
+            painter.face(
+                [(wallEdge.0, base), (wallEdge.1, base), (wallEdge.1, eavesZ), (wallEdge.0, eavesZ)],
+                fill: wall,
+                shade: AxoLight.shade(normal: AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1)),
+                outline: wallOutline,
+                material: surfaces.wall,
+                seed: object.id
+            )
+        }
+
+        // The knuckle sits partway in from the eaves — that break is the
+        // whole silhouette.
+        let run = min(object.transform.width, object.transform.height) / 2
+        let knuckleInset = run * 0.45
+
+        /// `point` moved straight in from its own long edge, which is the
+        /// direction the roof climbs.
+        func inward(_ point: Point, from edge: (Point, Point), by amount: Double) -> Point {
+            let normal = AxoLight.wallNormal(from: edge.0, to: edge.1)
+            let length = (normal.x * normal.x + normal.y * normal.y).squareRoot()
+            guard length > 0 else { return point }
+            return Point(x: point.x - normal.x / length * amount, y: point.y - normal.y / length * amount)
+        }
+
+        for edge in longEdges.sorted(by: { depth($0) < depth($1) }) {
+            let kneeA = inward(edge.0, from: edge, by: knuckleInset)
+            let kneeB = inward(edge.1, from: edge, by: knuckleInset)
+
+            let lowerNormal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: knuckleInset, rise: knuckle - eaves)
+            painter.face(
+                [(edge.0, eavesZ), (edge.1, eavesZ), (kneeB, knuckleZ), (kneeA, knuckleZ)],
+                fill: roof,
+                shade: AxoLight.shade(normal: lowerNormal),
+                outline: Color.black.opacity(0.2),
+                lineWidth: 0.7,
+                material: surfaces.roof,
+                seed: object.id + "lower"
+            )
+
+            let upperNormal = AxoLight.roofNormal(from: kneeA, to: kneeB, run: max(0.1, run - knuckleInset), rise: ridge - knuckle)
+            painter.face(
+                [(kneeA, knuckleZ), (kneeB, knuckleZ), (ridgeB, ridgeZ), (ridgeA, ridgeZ)],
+                fill: roof,
+                shade: AxoLight.shade(normal: upperNormal),
+                outline: Color.black.opacity(0.2),
+                lineWidth: 0.7,
+                material: surfaces.roof,
+                seed: object.id + "upper"
+            )
+        }
+
+        // Gable ends: the five-sided profile, drawn as a trapezoid under a
+        // triangle so each piece is a quad the texture can follow without a
+        // clip. Moving a gable corner "in from its long edge" is the same as
+        // moving it along the gable end, so the insets come from lerping.
+        for (index, end) in gableEnds.enumerated() {
+            let apex = index == 0 ? ridgeA : ridgeB
+            let span = distance(end.0, end.1)
+            guard span > 0 else { continue }
+            let fraction = min(0.45, knuckleInset / span)
+            let kneeA = lerp(end.0, end.1, fraction)
+            let kneeB = lerp(end.1, end.0, fraction)
+            let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: end.0, to: end.1))
+
+            painter.face(
+                [(end.0, eavesZ), (end.1, eavesZ), (kneeB, knuckleZ), (kneeA, knuckleZ)],
+                fill: wall,
+                shade: shade,
+                outline: wallOutline,
+                material: surfaces.wall,
+                seed: object.id + "gableLower"
+            )
+            painter.face(
+                [(kneeA, knuckleZ), (kneeB, knuckleZ), (apex, ridgeZ), (apex, ridgeZ)],
+                fill: wall,
+                shade: shade,
+                outline: wallOutline,
+                material: surfaces.wall,
+                seed: object.id + "gableUpper"
+            )
+        }
+
+        painter.line((ridgeA, ridgeZ), (ridgeB, ridgeZ), color: .black.opacity(0.28), width: 1.6)
+        barnDoors(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, trim: trim)
+    }
+
+    /// The big sliding door with its diagonal brace. Every barn in every
+    /// reference has one, and it is what stops a red box being a red box.
+    private static func barnDoors(
+        _ painter: AxoPainter,
+        object: PlanObject,
+        corners: [Point],
+        base: Double,
+        eavesZ: Double,
+        trim: Color
+    ) {
+        let front = (corners[3], corners[2])
+        let width = object.transform.width
+        guard width * painter.scale > 40, eavesZ - base > 1.8 else { return }
+
+        let doorHeight = min(3.2, (eavesZ - base) * 0.82)
+        let half = min(0.28, 2.2 / width)
+        let a = lerp(front.0, front.1, 0.5 - half)
+        let b = lerp(front.0, front.1, 0.5 + half)
+        painter.face(
+            [(a, base), (b, base), (b, base + doorHeight), (a, base + doorHeight)],
+            fill: trim,
+            shade: 0.06,
+            outline: Color.black.opacity(0.3),
+            lineWidth: 0.7
+        )
+        // The X brace.
+        painter.line((a, base), (b, base + doorHeight), color: .black.opacity(0.28), width: 1.2)
+        painter.line((b, base), (a, base + doorHeight), color: .black.opacity(0.28), width: 1.2)
+        let centre = lerp(a, b, 0.5)
+        painter.line((centre, base), (centre, base + doorHeight), color: .black.opacity(0.3), width: 1.2)
     }
 
     private static func depth(_ edge: (Point, Point)) -> Double {
@@ -536,9 +761,12 @@ enum AxoKit {
         painter.line((position, 0), (position, trunkTop), color: Color(hex: 0x7b5433), width: trunkWidth)
         painter.line((position, 0), (position, trunkTop * 0.55), color: Color(hex: 0x5f3f26), width: trunkWidth * 0.45)
 
-        let dark = foliage.opacity(1)
-        let mid = mixed(foliage, with: .white, 0.16)
-        let light = mixed(foliage, with: .white, 0.34)
+        // Three tones around the foliage colour rather than up from it — the
+        // base hue stays the tree's colour, instead of every lobe drifting
+        // pale.
+        let dark = mixed(foliage, with: .black, 0.20)
+        let mid = foliage
+        let light = mixed(foliage, with: .white, 0.20)
 
         if conifer {
             // Three rounded skirts, widest at the bottom, each a little
