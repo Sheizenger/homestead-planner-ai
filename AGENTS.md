@@ -145,6 +145,24 @@ Decided deliberately. Honouring them costs less than re-deciding them.
 - **Two locales**, `en` and `ru`, with a test asserting key parity.
 - **macOS first.** iPad is a different input model, not a target flag.
 
+## Editing this repo with scripts
+
+Two build breaks in a row came from the same habit, so it is worth naming.
+Scripted edits here read the whole file, mutate a string, and write it back
+at the end. That makes a mid-script failure silent and total: an assertion
+on the fourth replacement discards the three that already succeeded, and the
+file on disk still parses, still passes `swift test`, and is missing a
+parameter the call sites use. It cost a build with `walled` never reaching
+`AxoKit`. Slicing between two anchors is the same trap from the other side —
+`s[index(a):index(b)]` swallowed the `Palette` struct that happened to sit
+between them.
+
+So: after every scripted edit, grep for a marker that proves it landed.
+`swiftc -parse` does not — it only checks syntax, and every one of these
+failures parsed cleanly. The app target cannot be built or type-checked on
+Linux at all, so a missing symbol reaches the user's Xcode or nothing
+catches it.
+
 ## Working agreement
 
 The user sets direction. Implementation, debugging, and verification belong

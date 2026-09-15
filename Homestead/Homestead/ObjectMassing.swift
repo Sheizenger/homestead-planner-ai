@@ -271,6 +271,24 @@ enum Massing {
         }
     }
 
+    /// Wall and roof colour per catalog type, in daylight.
+    ///
+    /// The first pass took walls from the category `fill`, which meant every
+    /// roofed thing on the plot — house, workshop, coop, sauna, shed — was the
+    /// same tan box under a slightly different roof, because they share two or
+    /// three categories between them. The references are the opposite: a red
+    /// barn, a cream house, a white coop, a weathered grey shed, and you know
+    /// which is which before you read a label. Category still drives the *2D*
+    /// plan, where the colour means "this is animal infrastructure"; here it
+    /// has to mean "this is a barn".
+    struct Palette {
+        var wall: UInt32
+        var roof: UInt32
+        /// Trim: window frames, door surrounds, corner boards. White on a red
+        /// barn is the whole look.
+        var trim: UInt32
+    }
+
     static func palette(for object: PlanObject) -> Palette {
         if let specific = palettes[object.typeId] { return specific }
         switch object.category {

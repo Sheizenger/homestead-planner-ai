@@ -262,6 +262,11 @@ enum AxoKit {
         roof: Color,
         trim: Color,
         glazed: Bool,
+        // False for an open-sided pavilion: posts hold the roof up and there
+        // is nothing to put a door in. One flag reuses the whole roof rather
+        // than duplicating it — the roof is the only part a gazebo shares
+        // with a shed.
+        walled: Bool = true,
         surfaces: Massing.Surfaces
     ) {
         let corners = object.transform.corners
@@ -290,6 +295,30 @@ enum AxoKit {
                 [(corners[0], corners[1]), (corners[3], corners[2])]
             )
 
+        if !walled {
+            // A deck to stand the posts on, then the posts themselves.
+            painter.face(
+                corners.map { ($0, base + 0.12) },
+                fill: trim,
+                shade: AxoLight.shade(normal: AxoLight.up),
+                outline: wallOutline,
+                lineWidth: 0.7
+            )
+            for index in 0..<4 {
+                let a = corners[index]
+                let b = corners[(index + 1) % 4]
+                let normal = AxoLight.wallNormal(from: a, to: b)
+                guard normal.x + normal.y > 0 else { continue }
+                painter.face([(a, base + 0.12), (b, base + 0.12), (b, base), (a, base)], fill: trim, shade: 0.28, outline: nil)
+            }
+            let centre = object.transform.center
+            for corner in corners {
+                let insetX: Double = corner.x + (centre.x - corner.x) * 0.12
+                let insetY: Double = corner.y + (centre.y - corner.y) * 0.12
+                fencePost(painter, at: Point(x: insetX, y: insetY), height: eavesZ - base, color: wall)
+            }
+        }
+
         // Walls, far ones first so near ones paint over them. Each takes its
         // tone from where the sun is rather than from its draw order, so two
         // buildings at right angles agree about which side is lit.
@@ -298,7 +327,7 @@ enum AxoKit {
             (corners[2], corners[3]), (corners[3], corners[0]),
         ].sorted { depth($0) < depth($1) }
 
-        for wallEdge in walls {
+        for wallEdge in walls where walled {
             let normal = AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1)
             painter.face(
                 [(wallEdge.0, base), (wallEdge.1, base), (wallEdge.1, eavesZ), (wallEdge.0, eavesZ)],
@@ -315,7 +344,7 @@ enum AxoKit {
         // sliver of wall showing above the roof at the gable whenever the two
         // meet at exactly the same height.
         let deckThickness = 0.18
-        for (index, end) in gableEnds.enumerated() {
+        for (index, end) in gableEnds.enumerated() where walled {
             let apex = index == 0 ? ridgeA : ridgeB
             let normal = AxoLight.wallNormal(from: end.0, to: end.1)
             painter.face(
@@ -399,7 +428,9 @@ enum AxoKit {
         // Ridge cap, which is what makes the two planes read as a pitch.
         painter.line((ridgeStart, ridgeZ), (ridgeEnd, ridgeZ), color: .black.opacity(0.28), width: 1.6)
 
-        if glazed {
+        if !walled {
+            // An open pavilion has no glazing and no door.
+        } else if glazed {
             glazingBars(painter, longEdges: longEdges, ridgeA: ridgeA, ridgeB: ridgeB, eavesZ: eavesZ, ridgeZ: ridgeZ, color: wallOutline)
             // The frame last, over everything: corner posts, a cill rail and
             // a ridge beam. Glass is mostly invisible, so a glasshouse is
