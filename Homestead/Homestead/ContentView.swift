@@ -60,13 +60,20 @@ struct ContentView: View {
         HSplitView {
             VStack(spacing: 0) {
                 BriefEditorView(model: model, edit: store.edit)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Divider()
                 generateBar
             }
-            .frame(minWidth: 290, idealWidth: 320, maxWidth: 420)
+            // `maxHeight: .infinity` is the load-bearing part. Without it the
+            // column sized itself to its content's ideal height and sat
+            // centred in the pane, and the form's ideal height resolved to a
+            // single row — so the whole brief was one "Width" field with a
+            // fifth of the window above and below it, and no scrollbar to
+            // suggest there was more.
+            .frame(minWidth: 290, idealWidth: 340, maxWidth: 460, maxHeight: .infinity)
 
             detailPane
-                .frame(minWidth: 560)
+                .frame(minWidth: 560, maxHeight: .infinity)
         }
         .frame(minWidth: 960, minHeight: 640)
         .toolbar {

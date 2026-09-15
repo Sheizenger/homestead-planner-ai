@@ -33,108 +33,113 @@ struct PlotEditorView: View {
     @State private var notchWidth: Double = 15
     @State private var notchDepth: Double = 12
 
+    // A `Group` of sections, not a bare tuple of them: a custom view that
+    // yields several sections into a parent `Form` is flattened reliably this
+    // way, and a Form that mis-resolves its content is how the panel collapsed.
     var body: some View {
-        Section("Plot") {
-            // Typed, not just stepped: a 5 m stepper is a slow way to say
-            // "37", and there was no way at all to say "eight hundred square
-            // metres", which is how plots are actually described and sold.
-            LabeledContent("Width") { metreField(plotWidth) }
-            LabeledContent("Depth") { metreField(plotDepth) }
-            LabeledContent("Area") {
-                HStack(spacing: 6) {
-                    TextField("", value: areaBinding, format: .number.precision(.fractionLength(0)))
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 80)
-                        .multilineTextAlignment(.trailing)
-                    Text("m²")
-                        .foregroundStyle(.secondary)
-                    Text(hectareNote)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Picker("Shape", selection: $shape) {
-                ForEach(Shape.allCases) { Text($0.label).tag($0) }
-            }
-            .onChange(of: shape) { applyShape() }
-
-            if shape == .lShape {
-                Picker("Missing corner", selection: $notchCorner) {
-                    ForEach(PlotCorner.allCases, id: \.self) { Text(cornerLabel($0)).tag($0) }
-                }
-                .onChange(of: notchCorner) { applyShape() }
-                LabeledContent("Notch width") {
-                    Stepper(value: $notchWidth, in: 2...400, step: 1) { Text("\(Int(notchWidth)) m") }
-                        .onChange(of: notchWidth) { applyShape() }
-                }
-                LabeledContent("Notch depth") {
-                    Stepper(value: $notchDepth, in: 2...400, step: 1) { Text("\(Int(notchDepth)) m") }
-                        .onChange(of: notchDepth) { applyShape() }
-                }
-            }
-        }
-
-        Section("Planning norms") {
-            Picker("Region", selection: regulatoryRegion) {
-                ForEach(RegulatoryRegion.allCases, id: \.self) { Text(regionLabel($0)).tag($0) }
-            }
-            // The engine's own framing, repeated where the choice is made
-            // rather than buried in a warning nobody reads until it fires.
-            Label(
-                "Planning orientation, not certified compliance — confirm every distance against the current text of the relevant code before building.",
-                systemImage: "info.circle"
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-
-        Section("Water") {
-            Picker("Waterfront", selection: waterfrontType) {
-                Text("None").tag(Optional<WaterfrontType>.none)
-                ForEach(WaterfrontType.allCases, id: \.self) { type in
-                    Text(type.rawValue.capitalized).tag(Optional(type))
-                }
-            }
-
-            if let waterfront = model.document.plot.waterfront {
-                Picker("Along edge", selection: waterfrontEdge) {
-                    ForEach(PlotEdge.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
-                }
-                LabeledContent("Width into plot") {
-                    Stepper(value: waterfrontWidth, in: 1...200, step: 1) {
-                        Text("\(Int(waterfront.widthM)) m")
+        Group {
+            Section("Plot") {
+                // Typed, not just stepped: a 5 m stepper is a slow way to say
+                // "37", and there was no way at all to say "eight hundred square
+                // metres", which is how plots are actually described and sold.
+                LabeledContent("Width") { metreField(plotWidth) }
+                LabeledContent("Depth") { metreField(plotDepth) }
+                LabeledContent("Area") {
+                    HStack(spacing: 6) {
+                        TextField("", value: areaBinding, format: .number.precision(.fractionLength(0)))
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                            .multilineTextAlignment(.trailing)
+                        Text("m²")
+                            .foregroundStyle(.secondary)
+                        Text(hectareNote)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                // Micro-hydro needs one of these two to clear its threshold;
-                // without them the turbine gets a "not feasible here" warning
-                // rather than silence.
-                LabeledContent("Flow speed") {
-                    Stepper(value: waterfrontFlow, in: 0...6, step: 0.1) {
-                        Text("\(waterfront.flowSpeedMps ?? 0, specifier: "%.1f") m/s")
-                    }
+                Picker("Shape", selection: $shape) {
+                    ForEach(Shape.allCases) { Text($0.label).tag($0) }
                 }
-                LabeledContent("Head drop") {
-                    Stepper(value: waterfrontDrop, in: 0...50, step: 0.5) {
-                        Text("\(waterfront.elevationDropM ?? 0, specifier: "%.1f") m")
+                .onChange(of: shape) { applyShape() }
+
+                if shape == .lShape {
+                    Picker("Missing corner", selection: $notchCorner) {
+                        ForEach(PlotCorner.allCases, id: \.self) { Text(cornerLabel($0)).tag($0) }
+                    }
+                    .onChange(of: notchCorner) { applyShape() }
+                    LabeledContent("Notch width") {
+                        Stepper(value: $notchWidth, in: 2...400, step: 1) { Text("\(Int(notchWidth)) m") }
+                            .onChange(of: notchWidth) { applyShape() }
+                    }
+                    LabeledContent("Notch depth") {
+                        Stepper(value: $notchDepth, in: 2...400, step: 1) { Text("\(Int(notchDepth)) m") }
+                            .onChange(of: notchDepth) { applyShape() }
                     }
                 }
             }
-        }
 
-        Section("Slope") {
-            Picker("Highest edge", selection: elevationEdge) {
-                Text("Flat").tag(Optional<PlotEdge>.none)
-                ForEach(PlotEdge.allCases, id: \.self) { Text($0.rawValue.capitalized).tag(Optional($0)) }
+            Section("Planning norms") {
+                Picker("Region", selection: regulatoryRegion) {
+                    ForEach(RegulatoryRegion.allCases, id: \.self) { Text(regionLabel($0)).tag($0) }
+                }
+                // The engine's own framing, repeated where the choice is made
+                // rather than buried in a warning nobody reads until it fires.
+                Label(
+                    "Planning orientation, not certified compliance — confirm every distance against the current text of the relevant code before building.",
+                    systemImage: "info.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-            if let elevation = model.document.plot.elevation {
-                LabeledContent("Fall across plot") {
-                    Stepper(value: elevationDrop, in: 0.5...60, step: 0.5) {
-                        Text("\(elevation.dropM, specifier: "%.1f") m")
+
+            Section("Water") {
+                Picker("Waterfront", selection: waterfrontType) {
+                    Text("None").tag(Optional<WaterfrontType>.none)
+                    ForEach(WaterfrontType.allCases, id: \.self) { type in
+                        Text(type.rawValue.capitalized).tag(Optional(type))
+                    }
+                }
+
+                if let waterfront = model.document.plot.waterfront {
+                    Picker("Along edge", selection: waterfrontEdge) {
+                        ForEach(PlotEdge.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
+                    }
+                    LabeledContent("Width into plot") {
+                        Stepper(value: waterfrontWidth, in: 1...200, step: 1) {
+                            Text("\(Int(waterfront.widthM)) m")
+                        }
+                    }
+                    // Micro-hydro needs one of these two to clear its threshold;
+                    // without them the turbine gets a "not feasible here" warning
+                    // rather than silence.
+                    LabeledContent("Flow speed") {
+                        Stepper(value: waterfrontFlow, in: 0...6, step: 0.1) {
+                            Text("\(waterfront.flowSpeedMps ?? 0, specifier: "%.1f") m/s")
+                        }
+                    }
+                    LabeledContent("Head drop") {
+                        Stepper(value: waterfrontDrop, in: 0...50, step: 0.5) {
+                            Text("\(waterfront.elevationDropM ?? 0, specifier: "%.1f") m")
+                        }
                     }
                 }
             }
+
+            Section("Slope") {
+                Picker("Highest edge", selection: elevationEdge) {
+                    Text("Flat").tag(Optional<PlotEdge>.none)
+                    ForEach(PlotEdge.allCases, id: \.self) { Text($0.rawValue.capitalized).tag(Optional($0)) }
+                }
+                if let elevation = model.document.plot.elevation {
+                    LabeledContent("Fall across plot") {
+                        Stepper(value: elevationDrop, in: 0.5...60, step: 0.5) {
+                            Text("\(elevation.dropM, specifier: "%.1f") m")
+                        }
+                    }
+                }
+            }
+            .onAppear(perform: adoptCurrentShape)
         }
-        .onAppear(perform: adoptCurrentShape)
     }
 
     // MARK: - Shape
