@@ -374,16 +374,14 @@ struct AxonometricPlanView: View {
             )
         }
         drawPebbles(context)
-
-        let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
-        for fence in variant.fences {
-            AxoKit.fence(painter, points: fence.points, height: 1.3, color: Self.timber)
-        }
+        // Fences are not a flat feature: they stand 1.3 m up and have to sort
+        // against the buildings, so they are drawn in `drawMassing`.
     }
 
     private static let path = Color(hex: 0xe8d9b0)
     private static let pathEdge = Color(hex: 0xc4b083)
     private static let timber = Color(hex: 0xa9793f)
+    private static let fenceHeight = 1.3
 
     /// Speckle along the paths, only once they are wide enough on screen for
     /// a pebble to be a pebble rather than a stray pixel.
@@ -484,22 +482,86 @@ struct AxonometricPlanView: View {
         }
     }
 
-    /// Back to front: an object further from the viewer is drawn first, so
-    /// nearer massing paints over it. Depth in this projection is x + y.
-    private func drawMassing(_ context: GraphicsContext) {
-        let ordered = variant.objects.sorted { a, b in
-            let da = a.transform.x + a.transform.y
-            let db = b.transform.x + b.transform.y
-            if da == db { return a.id < b.id }
-            return da < db
+    /// One thing to draw, at one depth. Fences belong in this list rather
+    /// than in a pass of their own: drawn before all the buildings, a fence
+    /// nearer the camera than a building was still painted over by it, and
+    /// the run appeared to walk into the wall and stop. Measured first — the
+    /// engine routes no fence through a building, so this was never a
+    /// geometry problem, only a painting-order one.
+    private enum Drawable {
+        case object(PlanObject)
+        case rail(Point, Point)
+        case post(Point)
+
+        /// Depth in this projection is x + y.
+        var depth: Double {
+            switch self {
+            case let .object(object): return object.transform.x + object.transform.y
+            case let .rail(a, b): return (a.x + a.y + b.x + b.y) / 2
+            case let .post(at): return at.x + at.y
+            }
         }
 
-        for object in ordered {
+        var tiebreak: String {
+            switch self {
+            case let .object(object): return object.id
+            case let .rail(a, _): return "rail-\(a.x)-\(a.y)"
+            case let .post(at): return "post-\(at.x)-\(at.y)"
+            }
+        }
+    }
+
+    /// A rail spanning half the plot has one depth for its whole length, so
+    /// it would sort wrong against everything it passes. Cutting runs into
+    /// short pieces is what makes a painter's algorithm behave.
+    private static let railPieceM = 2.0
+
+    private func drawables() -> [Drawable] {
+        var items = variant.objects.map(Drawable.object)
+        for fence in variant.fences {
+            guard fence.points.count > 1 else { continue }
+            for index in 0..<(fence.points.count - 1) {
+                let a = fence.points[index], b = fence.points[index + 1]
+                let pieces = max(1, Int((distance(a, b) / Self.railPieceM).rounded(.up)))
+                for piece in 0..<pieces {
+                    let t0 = Double(piece) / Double(pieces)
+                    let t1 = Double(piece + 1) / Double(pieces)
+                    items.append(.rail(
+                        Point(x: a.x + (b.x - a.x) * t0, y: a.y + (b.y - a.y) * t0),
+                        Point(x: a.x + (b.x - a.x) * t1, y: a.y + (b.y - a.y) * t1)
+                    ))
+                }
+            }
+            items.append(contentsOf: AxoKit.fencePosts(along: fence.points).map(Drawable.post))
+        }
+        return items.sorted { a, b in
+            if a.depth == b.depth { return a.tiebreak < b.tiebreak }
+            return a.depth < b.depth
+        }
+    }
+
+    /// Back to front: whatever is further from the viewer is drawn first, so
+    /// nearer things paint over it.
+    private func drawMassing(_ context: GraphicsContext) {
+        let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
+
+        for item in drawables() {
+            let object: PlanObject
+            switch item {
+            case let .rail(a, b):
+                AxoKit.fenceRail(painter, from: a, to: b, height: Self.fenceHeight, color: Self.timber)
+                continue
+            case let .post(at):
+                AxoKit.fencePost(painter, at: at, height: Self.fenceHeight, color: Self.timber)
+                continue
+            case let .object(value):
+                object = value
+            }
+
             let style = CategoryStyle.of(object.category, daylight)
             let base = Massing.baseElevation(for: object, among: variant.objects)
             let corners = object.transform.corners
             let selected = object.id == selectedObjectID
-            let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
             // Walls and roof come from the per-type palette, not the
             // category: on this view "a barn" has to be distinguishable from
             // "a coop", which sharing an `animal` fill made impossible.
@@ -521,6 +583,12 @@ struct AxonometricPlanView: View {
 
             switch Massing.form(for: object) {
             case .flat(let height):
+                // A slab with visible sides, not a sticker. A patio or a pool
+                // painted flat on the grass is the one thing in the scene with
+                // no thickness at all, and it reads as a decal among solids.
+                if height > 0.04 {
+                    drawWalls(context, corners: corners, from: base, to: base + height, fill: style.fill, outline: style.stroke)
+                }
                 drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0)
 
             case .block(let height):
@@ -596,13 +664,12 @@ struct AxonometricPlanView: View {
                 )
                 if selected { outlineFootprint(context, corners: corners, z: base) }
 
-            case .rows(let height, _):
+            case .rows:
                 AxoKit.plantedRows(
                     painter,
                     object: object,
                     base: base,
-                    height: height,
-                    crop: style.stroke.opacity(0.85),
+                    crop: Color(hex: Massing.foliage(for: object)),
                     outline: style.stroke
                 )
                 if selected { outlineFootprint(context, corners: corners, z: base) }

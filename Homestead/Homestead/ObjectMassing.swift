@@ -82,7 +82,7 @@ enum Massing {
         case let .cylinder(height, _): return height
         case let .block(height): return height
         case .flat: return 0
-        case let .rows(height, _): return height * 0.6
+        case let .rows(height, _): return height
         case let .canopy(height, _, _): return height * 0.85
         }
     }
@@ -92,10 +92,9 @@ enum Massing {
         if let specific = forms[object.typeId] { return specific }
 
         switch object.category {
-        case .foodAnnual:
-            return .rows(height: 0.45, conifer: false)
-        case .foodPerennial:
-            return .rows(height: 1.1, conifer: false)
+        case .foodAnnual, .foodPerennial:
+            let planting = planting(for: object)
+            return .rows(height: planting.bed + planting.height, conifer: false)
         case .access, .path, .fence, .futureExpansion:
             return .flat(height: 0.05)
         case .water:
@@ -149,9 +148,6 @@ enum Massing {
         "goat-paddock": .flat(height: 0.05),
 
         // Planted
-        "raised-beds": .rows(height: 0.55, conifer: false),
-        "vineyard": .rows(height: 1.8, conifer: false),
-        "berry-rows": .rows(height: 1.1, conifer: false),
         "orchard-trees": .canopy(height: 4.4, radius: 1.7, conifer: false),
     ]
 
@@ -178,6 +174,50 @@ enum Massing {
             return height
         }
     }
+
+    /// How a bed is planted, in metres.
+    ///
+    /// The first pass took a single `rows(height:)` number and drew the
+    /// foliage at up to 1.5× it on top of a bed already 0.3× proud of the
+    /// grass — so a berry row came out near 2 m against a 2.4 m wall, as tall
+    /// as the building beside it, and on a thin stem with a tuft it read as a
+    /// sapling rather than a bush. Real sizes per crop, and the foliage wider
+    /// than it is tall, which is what the references show.
+    struct Planting {
+        /// How far the tilled bed stands above the grass.
+        var bed: Double
+        /// Foliage height above the bed.
+        var height: Double
+        /// Foliage width. Clamped to the row spacing at draw time, so a plant
+        /// can never be wider than the gap it grows in.
+        var spread: Double
+        /// Metres between furrows.
+        var rowSpacing: Double
+        /// Metres between plants along a furrow.
+        var plantSpacing: Double
+        /// Tall crops are drawn on a visible stem; low ones are all foliage.
+        var stemmed: Bool
+    }
+
+    static func planting(for object: PlanObject) -> Planting {
+        if let specific = plantings[object.typeId] { return specific }
+        switch object.category {
+        case .foodPerennial:
+            return Planting(bed: 0.15, height: 0.80, spread: 0.65, rowSpacing: 1.2, plantSpacing: 1.1, stemmed: false)
+        default:
+            return Planting(bed: 0.12, height: 0.30, spread: 0.45, rowSpacing: 0.8, plantSpacing: 0.7, stemmed: false)
+        }
+    }
+
+    private static let plantings: [String: Planting] = [
+        "raised-beds": Planting(bed: 0.35, height: 0.26, spread: 0.40, rowSpacing: 0.7, plantSpacing: 0.55, stemmed: false),
+        "vegetable-area": Planting(bed: 0.12, height: 0.30, spread: 0.45, rowSpacing: 0.8, plantSpacing: 0.65, stemmed: false),
+        "potato-area": Planting(bed: 0.18, height: 0.38, spread: 0.50, rowSpacing: 0.85, plantSpacing: 0.7, stemmed: false),
+        "grain-field": Planting(bed: 0.05, height: 0.80, spread: 0.22, rowSpacing: 0.5, plantSpacing: 0.4, stemmed: true),
+        "berry-rows": Planting(bed: 0.15, height: 0.85, spread: 0.70, rowSpacing: 1.3, plantSpacing: 1.0, stemmed: false),
+        "vineyard": Planting(bed: 0.12, height: 1.30, spread: 0.55, rowSpacing: 1.9, plantSpacing: 1.2, stemmed: true),
+        "hydroponic-tower": Planting(bed: 0.25, height: 1.10, spread: 0.45, rowSpacing: 1.2, plantSpacing: 1.0, stemmed: true),
+    ]
 
     /// Where a grove's trees stand. Shared, because the shadow pass needs the
     /// same positions the drawing pass uses: a grove that casts one big
@@ -207,29 +247,14 @@ enum Massing {
     static func foliage(for object: PlanObject) -> UInt32 {
         switch object.typeId {
         case "orchard-trees": return 0x4e8f3a
-        case "berry-rows": return 0x6ba33c
+        case "berry-rows": return 0x5f9c37
         case "vineyard": return 0x6a8f3c
-        case "gazebo": return 0x57a04a
+        case "grain-field": return 0xd9b74a
+        case "potato-area": return 0x59913f
+        case "raised-beds", "vegetable-area": return 0x6cae42
+        case "hydroponic-tower": return 0x63b86a
         default: return 0x4a8c3d
         }
-    }
-
-    /// Wall and roof colour per catalog type, in daylight.
-    ///
-    /// The first pass took walls from the category `fill`, which meant every
-    /// roofed thing on the plot — house, workshop, coop, sauna, shed — was the
-    /// same tan box under a slightly different roof, because they share two or
-    /// three categories between them. The references are the opposite: a red
-    /// barn, a cream house, a white coop, a weathered grey shed, and you know
-    /// which is which before you read a label. Category still drives the *2D*
-    /// plan, where the colour means "this is animal infrastructure"; here it
-    /// has to mean "this is a barn".
-    struct Palette {
-        var wall: UInt32
-        var roof: UInt32
-        /// Trim: window frames, door surrounds, corner boards. White on a red
-        /// barn is the whole look.
-        var trim: UInt32
     }
 
     static func palette(for object: PlanObject) -> Palette {

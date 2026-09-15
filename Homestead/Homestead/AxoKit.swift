@@ -310,11 +310,16 @@ enum AxoKit {
             )
         }
 
+        // The apex sits one roof thickness below the ridge line — which is
+        // where a ceiling actually is, under the roof deck, and which stops a
+        // sliver of wall showing above the roof at the gable whenever the two
+        // meet at exactly the same height.
+        let deckThickness = 0.18
         for (index, end) in gableEnds.enumerated() {
             let apex = index == 0 ? ridgeA : ridgeB
             let normal = AxoLight.wallNormal(from: end.0, to: end.1)
             painter.face(
-                [(end.0, eavesZ), (end.1, eavesZ), (apex, ridgeZ), (apex, ridgeZ)],
+                [(end.0, eavesZ), (end.1, eavesZ), (apex, ridgeZ - deckThickness), (apex, ridgeZ - deckThickness)],
                 fill: wall,
                 shade: AxoLight.shade(normal: normal) * (glazed ? 0.5 : 1),
                 outline: wallOutline,
@@ -512,7 +517,7 @@ enum AxoKit {
                 seed: object.id + "gableLower"
             )
             painter.face(
-                [(kneeA, knuckleZ), (kneeB, knuckleZ), (apex, ridgeZ), (apex, ridgeZ)],
+                [(kneeA, knuckleZ), (kneeB, knuckleZ), (apex, ridgeZ - 0.18), (apex, ridgeZ - 0.18)],
                 fill: wall,
                 shade: shade,
                 outline: wallOutline,
@@ -751,25 +756,25 @@ enum AxoKit {
     }
 
     /// A cultivated bed: tilled soil, furrows running along it, and plants
-    /// set out in a grid on top. The references are unanimous that this is
-    /// what makes a plot read as a farm — a green rectangle with lines on it
-    /// reads as a lawn with a texture bug. The soil colour comes from here
-    /// rather than from the category palette, because earth is earth whatever
-    /// is growing in it, and the crop keeps the category's own green.
+    /// set out on a grid. The references are unanimous that this is what makes
+    /// a plot read as a farm — a green rectangle with lines on it reads as a
+    /// lawn with a texture bug. Every dimension is a real measurement from
+    /// `Massing.planting`, and the foliage is clamped to the spacing it grows
+    /// in, so a plant can never come out taller than the shed next to it.
     static func plantedRows(
         _ painter: AxoPainter,
         object: PlanObject,
         base: Double,
-        height: Double,
         crop: Color,
         outline: Color
     ) {
         let corners = object.transform.corners
         guard corners.count == 4 else { return }
+        let planting = Massing.planting(for: object)
         let width = object.transform.width
         let depthM = object.transform.height
         let alongX = width >= depthM
-        let bedZ = base + height * 0.3
+        let bedZ = base + planting.bed
 
         // The bed stands slightly proud of the grass, with its own cut sides.
         for index in 0..<4 {
@@ -793,54 +798,85 @@ enum AxoKit {
 
         let across = alongX ? depthM : width
         let along = alongX ? width : depthM
-        let rowCount = max(2, min(10, Int(across / 1.3)))
-        guard across / Double(rowCount) * painter.scale > 3 else { return }
+        let rowCount = max(1, min(40, Int(across / planting.rowSpacing)))
+        let rowSpacing = across / Double(rowCount)
+        guard rowSpacing * painter.scale > 3 else { return }
+
+        func furrow(_ index: Int) -> (Point, Point) {
+            let fraction = (Double(index) + 0.5) / Double(rowCount)
+            return alongX
+                ? (lerp(corners[0], corners[3], fraction), lerp(corners[1], corners[2], fraction))
+                : (lerp(corners[0], corners[1], fraction), lerp(corners[3], corners[2], fraction))
+        }
 
         // Furrows: a dark line with a light one just below it, which is what
         // gives tilled ground its corduroy look in the references.
         for index in 0..<rowCount {
-            let fraction = (Double(index) + 0.5) / Double(rowCount)
-            let (a, b): (Point, Point) = alongX
-                ? (lerp(corners[0], corners[3], fraction), lerp(corners[1], corners[2], fraction))
-                : (lerp(corners[0], corners[1], fraction), lerp(corners[3], corners[2], fraction))
+            let (a, b) = furrow(index)
             let rowA = lerp(a, b, 0.03)
             let rowB = lerp(b, a, 0.03)
             painter.line((rowA, bedZ), (rowB, bedZ), color: .black.opacity(0.22), width: 1.4)
             painter.line((rowA, bedZ + 0.02), (rowB, bedZ + 0.02), color: .white.opacity(0.10), width: 0.8)
         }
 
-        // Plants. Below a few points each they turn the bed to mush, so they
-        // drop out and the furrows carry it.
-        guard painter.scale > 2.6 else { return }
-        let perRow = max(2, min(12, Int(along / 1.4)))
+        // Below a few points across, plants turn the bed to grey mush; the
+        // furrows carry it instead, which is exactly what a field does at a
+        // distance in the references.
+        let plantCount = max(1, min(40, Int(along / planting.plantSpacing)))
+        let plantSpacing = along / Double(plantCount)
+        let spread = min(planting.spread, min(rowSpacing, plantSpacing) * 0.9)
+        guard spread * painter.scale > 5 else { return }
+
         let leaf = crop
-        let leafLight = crop.mix(with: .white, by: 0.26)
+        let leafLight = crop.mix(with: .white, by: 0.24)
+        let leafDark = crop.mix(with: .black, by: 0.22)
+        let radius = CGFloat(spread / 2 * painter.scale)
 
-        for index in 0..<rowCount {
-            let fraction = (Double(index) + 0.5) / Double(rowCount)
-            let (a, b): (Point, Point) = alongX
-                ? (lerp(corners[0], corners[3], fraction), lerp(corners[1], corners[2], fraction))
-                : (lerp(corners[0], corners[1], fraction), lerp(corners[3], corners[2], fraction))
-            for plant in 0..<perRow {
-                let t = (Double(plant) + 0.5) / Double(perRow)
-                let at = lerp(lerp(a, b, 0.04), lerp(b, a, 0.04), t)
-                let size = CGFloat((0.34 + AxoNoise.value(object.id, index * 31 + plant, 1) * 0.18) * painter.scale)
-                let top = painter.project(at, bedZ + height * (0.7 + AxoNoise.value(object.id, index * 31 + plant, 2) * 0.5))
-                let root = painter.project(at, bedZ)
+        for row in 0..<rowCount {
+            let (a, b) = furrow(row)
+            for index in 0..<plantCount {
+                let t = (Double(index) + 0.5) / Double(plantCount)
+                let at = lerp(lerp(a, b, 0.03), lerp(b, a, 0.03), t)
+                let key = row * 97 + index
+                let vary = 0.82 + AxoNoise.value(object.id, key, 1) * 0.36
+                let height = planting.height * vary
 
-                // A rosette of three leaves over a short stem.
-                painter.context.stroke(
-                    Path { path in
-                        path.move(to: root)
-                        path.addLine(to: top)
-                    },
-                    with: .color(leaf.mix(with: .black, by: 0.25)),
-                    lineWidth: max(1, size * 0.22)
-                )
+                if planting.stemmed {
+                    // Grain and vines: a visible stem with the foliage at the
+                    // top, because that is what they look like.
+                    let root = painter.project(at, bedZ)
+                    let top = painter.project(at, bedZ + height)
+                    painter.context.stroke(
+                        Path { path in
+                            path.move(to: root)
+                            path.addLine(to: top)
+                        },
+                        with: .color(leafDark),
+                        lineWidth: max(1, radius * 0.3)
+                    )
+                    painter.context.fill(
+                        Path(ellipseIn: CGRect(x: top.x - radius * 0.7, y: top.y - radius * 0.8, width: radius * 1.4, height: radius * 1.5)),
+                        with: .color(leaf)
+                    )
+                    continue
+                }
+
+                // Everything else is a low mound: a few overlapping lobes,
+                // wider than tall, sitting on the soil.
+                let centre = painter.project(at, bedZ + height * 0.45)
                 for lobe in -1...1 {
-                    let centre = CGPoint(x: top.x + CGFloat(lobe) * size * 0.52, y: top.y + (lobe == 0 ? -size * 0.2 : 0))
-                    let rect = CGRect(x: centre.x - size * 0.46, y: centre.y - size * 0.4, width: size * 0.92, height: size * 0.8)
-                    painter.context.fill(Path(ellipseIn: rect), with: .color(lobe == -1 ? leafLight : leaf))
+                    let offset = CGFloat(lobe) * radius * 0.5
+                    let size = radius * (lobe == 0 ? 1.0 : 0.78)
+                    let rect = CGRect(
+                        x: centre.x + offset - size,
+                        y: centre.y - size * 0.72 - (lobe == 0 ? radius * 0.18 : 0),
+                        width: size * 2,
+                        height: size * 1.44
+                    )
+                    painter.context.fill(
+                        Path(ellipseIn: rect),
+                        with: .color(lobe == -1 ? leafLight : (lobe == 1 ? leafDark : leaf))
+                    )
                 }
             }
         }
@@ -958,50 +994,59 @@ enum AxoKit {
         base.mix(with: other, by: amount)
     }
 
-    /// Timber posts with rails between them. The posts are boxes rather than
-    /// lines once there is room for it: a fence is the one thing that runs
-    /// right around the plot, so it does more than anything else to set the
-    /// scene's material, and a hairline reads as a diagram.
-    static func fence(_ painter: AxoPainter, points: [Point], height: Double, color: Color) {
-        guard points.count > 1 else { return }
+    /// One span of fence rail. Split out from the posts so both can be sorted
+    /// into the scene's own depth order: drawing every fence in one pass
+    /// before the buildings meant a fence nearer the camera than a building
+    /// was still painted over by it, and the run appeared to vanish into the
+    /// wall. Painter's algorithm only works if everything sorts together.
+    static func fenceRail(_ painter: AxoPainter, from a: Point, to b: Point, height: Double, color: Color) {
         let dark = color.mix(with: .black, by: 0.3)
         let light = color.mix(with: .white, by: 0.18)
-
-        for index in 0..<(points.count - 1) {
-            let a = points[index], b = points[index + 1]
-            for railFraction in [0.88, 0.5] {
-                painter.line((a, height * railFraction), (b, height * railFraction), color: dark, width: 1)
-                painter.line((a, height * railFraction + 0.06), (b, height * railFraction + 0.06), color: light, width: 1.6)
-            }
+        for railFraction in [0.88, 0.5] {
+            painter.line((a, height * railFraction), (b, height * railFraction), color: dark, width: 1)
+            painter.line((a, height * railFraction + 0.06), (b, height * railFraction + 0.06), color: light, width: 1.6)
         }
+    }
 
-        let spacing = max(1.6, 46 / max(painter.scale, 1))
-        let chunky = painter.scale > 4
+    /// One post. A box once there is room for it: a fence runs right around
+    /// the plot, so it does more than anything else to set the scene's
+    /// material, and a hairline reads as a diagram.
+    static func fencePost(_ painter: AxoPainter, at position: Point, height: Double, color: Color) {
+        guard painter.scale > 4 else {
+            painter.line((position, 0), (position, height), color: color, width: 1.4)
+            return
+        }
+        let light = color.mix(with: .white, by: 0.18)
+        let half = 0.09
+        let quad = [
+            Point(x: position.x - half, y: position.y - half),
+            Point(x: position.x + half, y: position.y - half),
+            Point(x: position.x + half, y: position.y + half),
+            Point(x: position.x - half, y: position.y + half),
+        ]
+        for face in 0..<4 {
+            let p = quad[face], q = quad[(face + 1) % 4]
+            let normal = AxoLight.wallNormal(from: p, to: q)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face([(p, 0), (q, 0), (q, height), (p, height)], fill: color, shade: AxoLight.shade(normal: normal), outline: nil)
+        }
+        painter.face(quad.map { ($0, height) }, fill: light, shade: 0, outline: nil)
+    }
+
+    /// Where the posts of a run stand. Spacing is in metres so posts don't
+    /// crowd or thin out as the view zooms.
+    static func fencePosts(along points: [Point], spacing: Double = 2.2) -> [Point] {
+        guard points.count > 1 else { return [] }
+        var positions: [Point] = []
         for index in 0..<(points.count - 1) {
             let a = points[index], b = points[index + 1]
-            let length = ((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)).squareRoot()
+            let length = distance(a, b)
             let steps = max(1, Int(length / spacing))
-            for step in 0...steps {
-                let at = lerp(a, b, Double(step) / Double(steps))
-                guard chunky else {
-                    painter.line((at, 0), (at, height), color: color, width: 1.4)
-                    continue
-                }
-                let half = 0.09
-                let quad = [
-                    Point(x: at.x - half, y: at.y - half),
-                    Point(x: at.x + half, y: at.y - half),
-                    Point(x: at.x + half, y: at.y + half),
-                    Point(x: at.x - half, y: at.y + half),
-                ]
-                for face in 0..<4 {
-                    let p = quad[face], q = quad[(face + 1) % 4]
-                    let normal = AxoLight.wallNormal(from: p, to: q)
-                    guard normal.x + normal.y > 0 else { continue }
-                    painter.face([(p, 0), (q, 0), (q, height), (p, height)], fill: color, shade: AxoLight.shade(normal: normal), outline: nil)
-                }
-                painter.face(quad.map { ($0, height) }, fill: light, shade: 0, outline: nil)
+            for step in 0..<steps {
+                positions.append(lerp(a, b, Double(step) / Double(steps)))
             }
         }
+        positions.append(points[points.count - 1])
+        return positions
     }
 }
