@@ -35,14 +35,22 @@ struct PlotEditorView: View {
 
     var body: some View {
         Section("Plot") {
-            LabeledContent("Width") {
-                Stepper(value: plotWidth, in: 10...500, step: 5) {
-                    Text("\(Int(plotWidth.wrappedValue)) m")
-                }
-            }
-            LabeledContent("Depth") {
-                Stepper(value: plotDepth, in: 10...500, step: 5) {
-                    Text("\(Int(plotDepth.wrappedValue)) m")
+            // Typed, not just stepped: a 5 m stepper is a slow way to say
+            // "37", and there was no way at all to say "eight hundred square
+            // metres", which is how plots are actually described and sold.
+            LabeledContent("Width") { metreField(plotWidth) }
+            LabeledContent("Depth") { metreField(plotDepth) }
+            LabeledContent("Area") {
+                HStack(spacing: 6) {
+                    TextField("", value: areaBinding, format: .number.precision(.fractionLength(0)))
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .multilineTextAlignment(.trailing)
+                    Text("m²")
+                        .foregroundStyle(.secondary)
+                    Text(hectareNote)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             Picker("Shape", selection: $shape) {
@@ -210,6 +218,51 @@ struct PlotEditorView: View {
         case .sw: return "South-west"
         case .se: return "South-east"
         }
+    }
+
+    /// Metres, typed or nudged. One control rather than a stepper alone.
+    @ViewBuilder
+    private func metreField(_ value: Binding<Double>) -> some View {
+        HStack(spacing: 6) {
+            TextField("", value: value, format: .number.precision(.fractionLength(0)))
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 70)
+                .multilineTextAlignment(.trailing)
+            Text("m").foregroundStyle(.secondary)
+            Stepper("", value: value, in: 5...1000, step: 1).labelsHidden()
+        }
+    }
+
+    /// Setting the area rescales both sides and keeps the proportions, which
+    /// is what someone means by "make it eight hundred square metres" — they
+    /// are describing the plot they have, not asking for a particular shape.
+    private var areaBinding: Binding<Double> {
+        Binding(
+            get: {
+                let bounds = model.document.plot.bounds
+                return (bounds?.width ?? 0) * (bounds?.height ?? 0)
+            },
+            set: { target in
+                guard target > 1, let bounds = model.document.plot.bounds,
+                      bounds.width > 0, bounds.height > 0 else { return }
+                let factor = (target / (bounds.width * bounds.height)).squareRoot()
+                edit("Resize Plot") {
+                    resize(
+                        width: (bounds.width * factor).rounded(),
+                        depth: (bounds.height * factor).rounded()
+                    )
+                }
+            }
+        )
+    }
+
+    /// Hectares and sotkas alongside the metres, because that is how anyone
+    /// buying land talks about it.
+    private var hectareNote: String {
+        let bounds = model.document.plot.bounds
+        let area = (bounds?.width ?? 0) * (bounds?.height ?? 0)
+        guard area > 0 else { return "" }
+        return String(format: "= %.2f ha · %.1f sotka", area / 10_000, area / 100)
     }
 
     private var plotWidth: Binding<Double> {

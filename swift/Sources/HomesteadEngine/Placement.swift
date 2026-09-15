@@ -64,6 +64,20 @@ public enum Placement {
     /// against: the policy covers how a shortfall is *weighed* as well as how
     /// it is measured, because changing only the measurement still moves every
     /// fixture.
+    /// 0 under `.frozen`, which is the flat pull the fixtures are pinned
+    /// against. Chosen by the same method as its separation counterpart — a
+    /// sweep, with the counter-metric being how far the pool ends up from the
+    /// house and how many adjacency warnings survive.
+    private static func adjacencyExcessGain(_ policy: Constraints.SeparationPolicy) -> Double {
+        switch policy {
+        case .frozen: return 0
+        // Swept on eight plans, measuring how far the pool ends up from the
+        // house: 35 m worst case flat, 29 m at this value, and no further
+        // improvement past it.
+        case .corrected: return 6
+        }
+    }
+
     private static func separationShortfallGain(_ policy: Constraints.SeparationPolicy) -> Double {
         switch policy {
         case .frozen: return 0
@@ -306,7 +320,7 @@ public enum Placement {
                     let overlaps = placed.contains { aabb.overlaps($0.transform.aabb, margin: layout.spacingPad) }
                     if overlaps { continue }
 
-                    let hardViolation = Constraints.all(for: region).contains { constraint in
+                    let hardViolation = Constraints.all(for: region, policy: policy).contains { constraint in
                         guard constraint.hard,
                               constraint.kind == .separation || constraint.kind == .safety,
                               let minDistance = constraint.minDistance
@@ -438,7 +452,7 @@ public enum Placement {
             }
         }
 
-        for constraint in Constraints.all(for: region) {
+        for constraint in Constraints.all(for: region, policy: policy) {
             // Checked both ways — see the matching comment in
             // searchBestCandidate's hard-violation check: a directional
             // subjectTypes/relatedTypes match would only ever influence
@@ -477,7 +491,17 @@ public enum Placement {
                     // these; they should just differ in everything else.
                     let adjacencyPull = max(weights.access, 1.3)
                     if d > maxDistance {
-                        score -= (d - maxDistance) * adjacencyPull * 1.8
+                        // Superlinear, for the same reason separations are:
+                        // a pump 2 m past its limit is a preference, a solar
+                        // array at four times the limit is a cable run nobody
+                        // would pay for. Flat, the pull loses every argument
+                        // with a separation and things that belong together
+                        // end up scattered — which is why every plan carried
+                        // "far from the battery room" warnings it could have
+                        // avoided.
+                        let excess = d - maxDistance
+                        let severity = 1 + (excess / maxDistance) * adjacencyExcessGain(policy)
+                        score -= excess * adjacencyPull * 1.8 * severity
                     } else {
                         score += (maxDistance - d) * adjacencyPull * 0.6
                         reasons.append("near:\(other.typeId)")

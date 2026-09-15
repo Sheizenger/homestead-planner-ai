@@ -127,7 +127,7 @@ public enum Warnings {
         // regardless of which side matched "subject" vs "related".
         var reportedPairs = Set<String>()
 
-        for constraint in Constraints.all(for: region) {
+        for constraint in Constraints.all(for: region, policy: policy) {
             for subject in objects {
                 guard let subjectEntry = ObjectLibrary[subject.typeId],
                       Constraints.matches(subjectEntry, constraint.subjectTypes)

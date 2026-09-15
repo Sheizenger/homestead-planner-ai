@@ -32,7 +32,7 @@ public enum Resolve {
         region: RegulatoryRegion = .generic,
         policy: Constraints.SeparationPolicy = .corrected
     ) -> Fix? {
-        guard rule(warning.ruleId, region: region) != nil else { return nil }
+        guard rule(warning.ruleId, region: region, policy: policy) != nil else { return nil }
         guard let bounds = plot.bounds else { return nil }
 
         let involved = warning.objectIds.compactMap { id in objects.first { $0.id == id } }
@@ -107,8 +107,8 @@ public enum Resolve {
         case setback(BoundarySetback)
     }
 
-    private static func rule(_ id: String, region: RegulatoryRegion) -> Rule? {
-        if let constraint = Constraints.all(for: region).first(where: { $0.id == id }) {
+    private static func rule(_ id: String, region: RegulatoryRegion, policy: Constraints.SeparationPolicy) -> Rule? {
+        if let constraint = Constraints.all(for: region, policy: policy).first(where: { $0.id == id }) {
             return .pair(constraint)
         }
         if let setback = Constraints.boundarySetbacks(for: region).first(where: { $0.id == id }) {
@@ -133,7 +133,7 @@ public enum Resolve {
         region: RegulatoryRegion,
         policy: Constraints.SeparationPolicy
     ) -> Bool {
-        switch rule(ruleId, region: region) {
+        switch rule(ruleId, region: region, policy: policy) {
         case let .pair(constraint):
             return pairShortfall(constraint, transform, entry: entry, among: others, policy: policy) == 0
         case let .setback(setback):
@@ -156,7 +156,7 @@ public enum Resolve {
         policy: Constraints.SeparationPolicy
     ) -> Double {
         var total = 0.0
-        for constraint in Constraints.all(for: region) {
+        for constraint in Constraints.all(for: region, policy: policy) {
             total += pairShortfall(constraint, transform, entry: entry, among: others, policy: policy)
         }
         for setback in Constraints.boundarySetbacks(for: region) {

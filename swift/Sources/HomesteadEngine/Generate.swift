@@ -28,7 +28,7 @@ public enum Generate {
         let program = Sizing.buildProgram(mergedInputs, mode: mode)
         let placed = Placement.placeObjects(plot: plot, program: program, mode: mode, seed: seed, region: region, policy: policy)
         let paths = PathsAndFences.synthesizePaths(objects: placed.objects, plot: plot)
-        let fences = PathsAndFences.synthesizeFences(objects: placed.objects, plot: plot)
+        let fences = PathsAndFences.synthesizeFences(objects: placed.objects, plot: plot, policy: policy)
         let zones = FutureExpansionZone.build(plot: plot, objects: placed.objects, mode: mode)
         let analytics = Analytics.compute(objects: placed.objects, zones: zones, plot: plot)
         var warnings = Warnings.compute(

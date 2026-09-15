@@ -14,7 +14,14 @@ import Testing
         let paths = PathsAndFences.synthesizePaths(objects: fixture.output.objects, plot: fixture.input.plot)
         #expect(paths == fixture.output.paths, comment)
 
-        let fences = PathsAndFences.synthesizeFences(objects: fixture.output.objects, plot: fixture.input.plot)
+        // `.frozen`: the fixtures record the boundary polygon fenced the whole
+        // way round, water included. The corrected rulebook opens the shore —
+        // `thePerimeterStopsAtTheWater` pins that half.
+        let fences = PathsAndFences.synthesizeFences(
+            objects: fixture.output.objects,
+            plot: fixture.input.plot,
+            policy: .frozen
+        )
         #expect(fences == fixture.output.fences, comment)
     }
 }

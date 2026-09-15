@@ -404,7 +404,56 @@ public enum Constraints {
     /// it names more specifically (by id) and adding the rest. `.generic`
     /// overrides and adds nothing, so it reproduces `all` exactly — the
     /// golden fixtures depend on that.
-    public static func all(for region: RegulatoryRegion) -> [Constraint] {
+    /// Rules the frozen web app does not have, and should.
+    ///
+    /// `SeparationPolicy` already selects between the frozen app's reading of
+    /// the rules and the corrected one; these are part of the corrected
+    /// rulebook rather than of the measurement, but they belong to the same
+    /// choice — `.frozen` is "the planner as shipped", which the golden
+    /// fixtures pin, and `.corrected` is "the planner as it should be".
+    ///
+    /// The pool is the case that forced this. Measured over eight plans on an
+    /// 80 x 60 plot, it landed 20-37 m from the house and 6-12 m from the
+    /// nearest animal pen or vegetable bed, because the only rule touching it
+    /// was a soft 12 m animal-to-leisure separation and nothing at all pulled
+    /// it toward the house. Nobody builds a pool at the bottom of the garden
+    /// next to the goats.
+    ///
+    /// A second, stronger pool-to-animal separation was tried first and made
+    /// it worse — 31-43 m from the house — because it simply outbid the pull
+    /// toward the house and the pool fled to an empty corner. The existing
+    /// 12 m animal-to-leisure rule already covers that side; what was missing
+    /// was the pull, so that is all this adds.
+    private static let correctedAdditions: [Constraint] = [
+        Constraint(
+            id: "pool-house-adjacency",
+            kind: .adjacency,
+            subjectTypes: ["pool"],
+            relatedTypes: ["house", "house-l"],
+            minDistance: nil,
+            maxDistance: 16,
+            hard: false,
+            severity: .caution,
+            message: "Swimming pool is a long way from the house — a wet walk, and nobody can keep an eye on it."
+        ),
+        Constraint(
+            id: "pool-cultivation-separation",
+            kind: .separation,
+            subjectTypes: ["pool"],
+            relatedTypes: ["foodAnnual", "compost"],
+            minDistance: 8,
+            maxDistance: nil,
+            hard: false,
+            severity: .caution,
+            message: "Swimming pool sits in among the beds — splash-out carries pool chemicals into cultivated soil."
+        ),
+    ]
+
+    public static func all(for region: RegulatoryRegion, policy: SeparationPolicy = .corrected) -> [Constraint] {
+        all(for: region) + (policy == .corrected ? correctedAdditions : [])
+    }
+
+    private static func all(for region: RegulatoryRegion) -> [Constraint] {
         let extra = regionalOverrides(region)
         return all.filter { !extra.overriddenConstraintIds.contains($0.id) } + extra.constraints
     }

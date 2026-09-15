@@ -131,10 +131,61 @@ public enum PathsAndFences {
         return paths
     }
 
-    public static func synthesizeFences(objects: [PlanObject], plot: Plot) -> [Fence] {
-        var fences: [Fence] = [
-            Fence(id: "fence-perimeter", points: plot.boundary, fenceType: .perimeter, gated: true),
-        ]
+    /// The boundary fence, minus any run along the water.
+    ///
+    /// The perimeter used to be the boundary polygon verbatim, so on a
+    /// riverside plot it marched straight out across the water — two of its
+    /// four corners sat inside the waterfront strip. You do not fence a river;
+    /// the water is the boundary. Under `.frozen` it stays the whole polygon,
+    /// which is what the golden fixtures record.
+    static func perimeter(of plot: Plot, policy: Constraints.SeparationPolicy) -> [Fence] {
+        let whole = [Fence(id: "fence-perimeter", points: plot.boundary, fenceType: .perimeter, gated: true)]
+        guard policy == .corrected,
+              let water = WaterfrontModel.bounds(of: plot),
+              plot.boundary.count > 2
+        else { return whole }
+
+        func inWater(_ point: Point) -> Bool {
+            let eps = 1e-6
+            return point.x >= water.minX - eps && point.x <= water.maxX + eps
+                && point.y >= water.minY - eps && point.y <= water.maxY + eps
+        }
+
+        // Walk the closed boundary and keep the runs that stay out of the
+        // water, so a plot with water on one side gets a fence along the other
+        // three and an open shore.
+        var runs: [[Point]] = []
+        var current: [Point] = []
+        let count = plot.boundary.count
+        for step in 0...count {
+            let point = plot.boundary[step % count]
+            if inWater(point) {
+                if current.count > 1 { runs.append(current) }
+                current = []
+            } else {
+                current.append(point)
+            }
+        }
+        if current.count > 1 { runs.append(current) }
+        guard !runs.isEmpty else { return [] }
+
+        return runs.enumerated().map { index, points in
+            Fence(
+                id: runs.count == 1 ? "fence-perimeter" : "fence-perimeter-\(index)",
+                points: points,
+                fenceType: .perimeter,
+                // The gate is on one run; the others are plain fence.
+                gated: index == 0
+            )
+        }
+    }
+
+    public static func synthesizeFences(
+        objects: [PlanObject],
+        plot: Plot,
+        policy: Constraints.SeparationPolicy = .corrected
+    ) -> [Fence] {
+        var fences: [Fence] = perimeter(of: plot, policy: policy)
         for object in objects {
             guard let entry = ObjectLibrary[object.typeId], entry.requiresFence else { continue }
             let aabb = object.transform.aabb

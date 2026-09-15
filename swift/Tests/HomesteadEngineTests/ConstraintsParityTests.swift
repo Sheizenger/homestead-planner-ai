@@ -72,7 +72,10 @@ private struct ReferenceData: Decodable {
 /// regression guard for the region-aware accessors introduced alongside
 /// per-region placement/warnings.
 @Test func genericRegionReproducesTheBaselineExactly() {
-    #expect(Constraints.all(for: .generic) == Constraints.all)
+    // `.frozen`, because this is the *port parity* claim: the baseline is
+    // what the TypeScript has, and the corrected rulebook deliberately adds
+    // to it (`Constraints.correctedAdditions`).
+    #expect(Constraints.all(for: .generic, policy: .frozen) == Constraints.all)
     #expect(Constraints.boundarySetbacks(for: .generic) == Constraints.boundarySetbacks)
 }
 
@@ -81,7 +84,7 @@ private struct ReferenceData: Decodable {
 /// redundant warning alongside it — proving the override half of the
 /// contract, not just the additive half `.generic` exercises above.
 @Test func sanPiNOverridesTheGenericFireSeparationRule() {
-    let sanPiN = Constraints.all(for: .ruSanPiN)
+    let sanPiN = Constraints.all(for: .ruSanPiN, policy: .frozen)
     #expect(!sanPiN.contains { $0.id == "fire-house-outbuilding-separation" })
     let override = sanPiN.first { $0.id == "ru-sanpin-fire-house-outbuilding-separation" }
     #expect(override?.minDistance == 15)
