@@ -33,6 +33,8 @@ enum Massing {
         case rows(height: Double, conifer: Bool)
         /// Canopies on trunks.
         case canopy(height: Double, radius: Double, conifer: Bool)
+        /// Rows of tilted photovoltaic panels on legs.
+        case panels(height: Double)
     }
 
     /// What a building is made of. Two gabled boxes of the same size read as
@@ -42,6 +44,12 @@ enum Massing {
     struct Surfaces {
         var roof: AxoMaterial
         var wall: AxoMaterial
+    }
+
+    /// Open-sided: posts hold the roof up and there are no walls to put a
+    /// door in. A gazebo drawn as a closed box is a shed.
+    static func isOpenSided(_ object: PlanObject) -> Bool {
+        object.typeId == "gazebo"
     }
 
     static func surfaces(for object: PlanObject) -> Surfaces {
@@ -84,6 +92,7 @@ enum Massing {
         case .flat: return 0
         case let .rows(height, _): return height
         case let .canopy(height, _, _): return height * 0.85
+        case let .panels(height): return height
         }
     }
 
@@ -93,8 +102,11 @@ enum Massing {
 
         switch object.category {
         case .foodAnnual, .foodPerennial:
-            let planting = planting(for: object)
-            return .rows(height: planting.bed + planting.height, conifer: false)
+            // `Self.` matters: a local named `planting` would shadow the
+            // function of the same name and turn the call into an attempt to
+            // call a `Planting` value.
+            let bed = Self.planting(for: object)
+            return .rows(height: bed.bed + bed.height, conifer: false)
         case .access, .path, .fence, .futureExpansion:
             return .flat(height: 0.05)
         case .water:
@@ -140,7 +152,9 @@ enum Massing {
         "pump": .block(height: 1.3),
 
         // Ground
-        "solar-array": .flat(height: 0.3),
+        // On the ground it is a panel array; on a roof the same type is
+        // painted flat on the slope, which `form` checks for first.
+        "solar-array": .panels(height: 1.6),
         "septic": .flat(height: 0.2),
         "patio": .flat(height: 0.1),
         "pool": .flat(height: 0.1),
@@ -168,7 +182,7 @@ enum Massing {
             return eaves + (ridge - eaves) * 0.35
         case .gambrel(let eaves, _, let ridge):
             return eaves + (ridge - eaves) * 0.35
-        case .block(let height), .cylinder(let height, _), .flat(let height), .rows(let height, _):
+        case .block(let height), .cylinder(let height, _), .flat(let height), .rows(let height, _), .panels(let height):
             return height
         case .canopy(let height, _, _):
             return height

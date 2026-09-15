@@ -517,22 +517,31 @@ struct AxonometricPlanView: View {
     private static let railPieceM = 2.0
 
     private func drawables() -> [Drawable] {
-        var items = variant.objects.map(Drawable.object)
+        var items: [Drawable] = []
+        for object in variant.objects {
+            items.append(.object(object))
+        }
         for fence in variant.fences {
             guard fence.points.count > 1 else { continue }
             for index in 0..<(fence.points.count - 1) {
-                let a = fence.points[index], b = fence.points[index + 1]
-                let pieces = max(1, Int((distance(a, b) / Self.railPieceM).rounded(.up)))
+                let a = fence.points[index]
+                let b = fence.points[index + 1]
+                let spanX: Double = b.x - a.x
+                let spanY: Double = b.y - a.y
+                let length: Double = distance(a, b)
+                let steps: Double = (length / Self.railPieceM).rounded(.up)
+                let pieces: Int = max(1, Int(steps))
                 for piece in 0..<pieces {
-                    let t0 = Double(piece) / Double(pieces)
-                    let t1 = Double(piece + 1) / Double(pieces)
-                    items.append(.rail(
-                        Point(x: a.x + (b.x - a.x) * t0, y: a.y + (b.y - a.y) * t0),
-                        Point(x: a.x + (b.x - a.x) * t1, y: a.y + (b.y - a.y) * t1)
-                    ))
+                    let t0: Double = Double(piece) / Double(pieces)
+                    let t1: Double = Double(piece + 1) / Double(pieces)
+                    let from = Point(x: a.x + spanX * t0, y: a.y + spanY * t0)
+                    let to = Point(x: a.x + spanX * t1, y: a.y + spanY * t1)
+                    items.append(.rail(from, to))
                 }
             }
-            items.append(contentsOf: AxoKit.fencePosts(along: fence.points).map(Drawable.post))
+            for post in AxoKit.fencePosts(along: fence.points) {
+                items.append(.post(post))
+            }
         }
         return items.sorted { a, b in
             if a.depth == b.depth { return a.tiebreak < b.tiebreak }
@@ -546,141 +555,155 @@ struct AxonometricPlanView: View {
         let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
 
         for item in drawables() {
-            let object: PlanObject
             switch item {
             case let .rail(a, b):
                 AxoKit.fenceRail(painter, from: a, to: b, height: Self.fenceHeight, color: Self.timber)
-                continue
             case let .post(at):
                 AxoKit.fencePost(painter, at: at, height: Self.fenceHeight, color: Self.timber)
-                continue
-            case let .object(value):
-                object = value
+            case let .object(object):
+                draw(object, in: context, painter: painter)
             }
-
-            let style = CategoryStyle.of(object.category, daylight)
-            let base = Massing.baseElevation(for: object, among: variant.objects)
-            let corners = object.transform.corners
-            let selected = object.id == selectedObjectID
-            // Walls and roof come from the per-type palette, not the
-            // category: on this view "a barn" has to be distinguishable from
-            // "a coop", which sharing an `animal` fill made impossible.
-            let palette = Massing.palette(for: object)
-            let roof = Color(hex: palette.roof)
-            let wallColor = Color(hex: palette.wall)
-            let wallOutline = Color(hex: palette.wall).mix(with: .black, by: 0.32)
-
-            // Under the massing rather than over it: a halo on the ground
-            // reads as "this patch of the plot", and doesn't paint over the
-            // building it is pointing at.
-            if highlightedObjectIDs.contains(object.id) {
-                var halo = Path()
-                halo.addLines(corners.map { self.screen($0, z: base) })
-                halo.closeSubpath()
-                context.stroke(halo, with: .color(.orange.opacity(0.45)), lineWidth: 9)
-                context.stroke(halo, with: .color(.orange), lineWidth: 2)
-            }
-
-            switch Massing.form(for: object) {
-            case .flat(let height):
-                // A slab with visible sides, not a sticker. A patio or a pool
-                // painted flat on the grass is the one thing in the scene with
-                // no thickness at all, and it reads as a decal among solids.
-                if height > 0.04 {
-                    drawWalls(context, corners: corners, from: base, to: base + height, fill: style.fill, outline: style.stroke)
-                }
-                drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0)
-
-            case .block(let height):
-                // Painted metal from the palette, not the category fill: the
-                // fill is a pale plan tint and left equipment as white cubes.
-                drawWalls(context, corners: corners, from: base, to: base + height, fill: wallColor, outline: wallOutline)
-                drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0.10, fill: roof)
-
-            case .gabled(let eaves, let ridge):
-                AxoKit.gabledBuilding(
-                    painter,
-                    object: object,
-                    base: base,
-                    eaves: eaves,
-                    ridge: ridge,
-                    wall: wallColor,
-                    wallOutline: wallOutline,
-                    roof: roof,
-                    trim: Color(hex: palette.trim),
-                    glazed: false,
-                    surfaces: Massing.surfaces(for: object)
-                )
-                if ["house", "house-l", "banya", "smokehouse"].contains(object.typeId) {
-                    AxoKit.chimney(painter, object: object, base: base, ridgeZ: base + ridge, wall: Color(hex: palette.trim), outline: wallOutline)
-                }
-                if selected { outlineFootprint(context, corners: corners, z: base) }
-
-            case .gambrel(let eaves, let knuckle, let ridge):
-                AxoKit.gambrelBuilding(
-                    painter,
-                    object: object,
-                    base: base,
-                    eaves: eaves,
-                    knuckle: knuckle,
-                    ridge: ridge,
-                    wall: wallColor,
-                    wallOutline: wallOutline,
-                    roof: roof,
-                    trim: Color(hex: palette.trim),
-                    surfaces: Massing.surfaces(for: object)
-                )
-                if selected { outlineFootprint(context, corners: corners, z: base) }
-
-            case .glass(let eaves, let ridge):
-                AxoKit.gabledBuilding(
-                    painter,
-                    object: object,
-                    base: base,
-                    eaves: eaves,
-                    ridge: ridge,
-                    // Thin enough to see the rows through, which is the point
-                    // of drawing them.
-                    wall: wallColor.opacity(0.35),
-                    wallOutline: Color(hex: palette.trim),
-                    roof: Color(hex: 0xbfe3e8).opacity(0.55),
-                    trim: Color(hex: palette.trim),
-                    glazed: true,
-                    surfaces: Massing.surfaces(for: object)
-                )
-                if selected { outlineFootprint(context, corners: corners, z: base) }
-
-            case .cylinder(let height, let radiusScale):
-                let radius = min(object.transform.width, object.transform.height) * radiusScale
-                painter.cylinder(
-                    center: object.transform.center,
-                    radius: radius,
-                    from: base,
-                    to: base + height,
-                    fill: wallColor,
-                    outline: wallOutline,
-                    shade: 0.22,
-                    cap: Self.cylinderCap(for: object)
-                )
-                if selected { outlineFootprint(context, corners: corners, z: base) }
-
-            case .rows:
-                AxoKit.plantedRows(
-                    painter,
-                    object: object,
-                    base: base,
-                    crop: Color(hex: Massing.foliage(for: object)),
-                    outline: style.stroke
-                )
-                if selected { outlineFootprint(context, corners: corners, z: base) }
-
-            case .canopy(let height, let radius, let conifer):
-                drawOrchard(painter, object: object, height: height, radius: radius, conifer: conifer, style: style)
-                if selected { outlineFootprint(context, corners: corners, z: base) }
-            }
-
-            if showsDimensions { drawDimensions(context, for: object, z: base) }
         }
+    }
+
+    /// One object, at its own elevation. Split out of the loop above: the
+    /// combined body had grown past a hundred lines of switch and closures,
+    /// which is a lot to ask of the type checker for no benefit.
+    private func draw(_ object: PlanObject, in context: GraphicsContext, painter: AxoPainter) {
+        let style = CategoryStyle.of(object.category, daylight)
+        let base = Massing.baseElevation(for: object, among: variant.objects)
+        let corners = object.transform.corners
+        let selected = object.id == selectedObjectID
+        // Walls and roof come from the per-type palette, not the
+        // category: on this view "a barn" has to be distinguishable from
+        // "a coop", which sharing an `animal` fill made impossible.
+        let palette = Massing.palette(for: object)
+        let roof = Color(hex: palette.roof)
+        let wallColor = Color(hex: palette.wall)
+        let wallOutline = Color(hex: palette.wall).mix(with: .black, by: 0.32)
+
+        // Under the massing rather than over it: a halo on the ground
+        // reads as "this patch of the plot", and doesn't paint over the
+        // building it is pointing at.
+        if highlightedObjectIDs.contains(object.id) {
+            var halo = Path()
+            halo.addLines(corners.map { self.screen($0, z: base) })
+            halo.closeSubpath()
+            context.stroke(halo, with: .color(.orange.opacity(0.45)), lineWidth: 9)
+            context.stroke(halo, with: .color(.orange), lineWidth: 2)
+        }
+
+        switch Massing.form(for: object) {
+        case .flat(let height):
+            // A slab with visible sides, not a sticker. A patio or a pool
+            // painted flat on the grass is the one thing in the scene with
+            // no thickness at all, and it reads as a decal among solids.
+            if height > 0.04 {
+                drawWalls(context, corners: corners, from: base, to: base + height, fill: style.fill, outline: style.stroke)
+            }
+            drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0)
+
+        case .block(let height):
+            // Painted metal from the palette, not the category fill: the
+            // fill is a pale plan tint and left equipment as white cubes.
+            drawWalls(context, corners: corners, from: base, to: base + height, fill: wallColor, outline: wallOutline)
+            drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0.10, fill: roof)
+
+        case .gabled(let eaves, let ridge):
+            AxoKit.gabledBuilding(
+                painter,
+                object: object,
+                base: base,
+                eaves: eaves,
+                ridge: ridge,
+                wall: wallColor,
+                wallOutline: wallOutline,
+                roof: roof,
+                trim: Color(hex: palette.trim),
+                glazed: false,
+                walled: !Massing.isOpenSided(object),
+                surfaces: Massing.surfaces(for: object)
+            )
+            if ["house", "house-l", "banya", "smokehouse"].contains(object.typeId) {
+                AxoKit.chimney(painter, object: object, base: base, ridgeZ: base + ridge, wall: Color(hex: palette.trim), outline: wallOutline)
+            }
+            if selected { outlineFootprint(context, corners: corners, z: base) }
+
+        case .gambrel(let eaves, let knuckle, let ridge):
+            AxoKit.gambrelBuilding(
+                painter,
+                object: object,
+                base: base,
+                eaves: eaves,
+                knuckle: knuckle,
+                ridge: ridge,
+                wall: wallColor,
+                wallOutline: wallOutline,
+                roof: roof,
+                trim: Color(hex: palette.trim),
+                surfaces: Massing.surfaces(for: object)
+            )
+            if selected { outlineFootprint(context, corners: corners, z: base) }
+
+        case .glass(let eaves, let ridge):
+            AxoKit.gabledBuilding(
+                painter,
+                object: object,
+                base: base,
+                eaves: eaves,
+                ridge: ridge,
+                // Thin enough to see the rows through, which is the point
+                // of drawing them.
+                wall: wallColor.opacity(0.35),
+                wallOutline: Color(hex: palette.trim),
+                roof: Color(hex: 0xbfe3e8).opacity(0.55),
+                trim: Color(hex: palette.trim),
+                glazed: true,
+                surfaces: Massing.surfaces(for: object)
+            )
+            if selected { outlineFootprint(context, corners: corners, z: base) }
+
+        case .cylinder(let height, let radiusScale):
+            let radius = min(object.transform.width, object.transform.height) * radiusScale
+            painter.cylinder(
+                center: object.transform.center,
+                radius: radius,
+                from: base,
+                to: base + height,
+                fill: wallColor,
+                outline: wallOutline,
+                shade: 0.22,
+                cap: Self.cylinderCap(for: object)
+            )
+            if selected { outlineFootprint(context, corners: corners, z: base) }
+
+        case .rows:
+            AxoKit.plantedRows(
+                painter,
+                object: object,
+                base: base,
+                crop: Color(hex: Massing.foliage(for: object)),
+                outline: style.stroke
+            )
+            if selected { outlineFootprint(context, corners: corners, z: base) }
+
+        case .canopy(let height, let radius, let conifer):
+            drawOrchard(painter, object: object, height: height, radius: radius, conifer: conifer, style: style)
+            if selected { outlineFootprint(context, corners: corners, z: base) }
+
+        case .panels(let height):
+            AxoKit.solarPanels(
+                painter,
+                object: object,
+                base: base,
+                height: height,
+                panel: Color(hex: 0x2c3f66),
+                frame: Color(hex: 0xb9c3cc)
+            )
+            if selected { outlineFootprint(context, corners: corners, z: base) }
+        }
+
+        if showsDimensions { drawDimensions(context, for: object, z: base) }
     }
 
     /// A drum, a silo or a wellhead. Same cylinder, three silhouettes, and

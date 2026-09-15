@@ -994,6 +994,57 @@ enum AxoKit {
         base.mix(with: other, by: amount)
     }
 
+    /// Rows of tilted panels on legs, facing south. A ground array painted
+    /// flat on the grass with a plan glyph on it was the one thing left in
+    /// the scene with no form at all; the references draw it as panels, and
+    /// the tilt is the whole reason it is recognisable.
+    static func solarPanels(
+        _ painter: AxoPainter,
+        object: PlanObject,
+        base: Double,
+        height: Double,
+        panel: Color,
+        frame: Color
+    ) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+        let low = base + height * 0.3
+        let high = base + height
+
+        // Rows run east-west and step southward, so each faces the sun.
+        let rowCount = max(1, min(6, Int(object.transform.height / 2.4)))
+        for row in 0..<rowCount {
+            let t0 = Double(row) / Double(rowCount)
+            let t1 = (Double(row) + 0.72) / Double(rowCount)
+            let northA = lerp(corners[0], corners[3], t0)
+            let northB = lerp(corners[1], corners[2], t0)
+            let southA = lerp(corners[0], corners[3], t1)
+            let southB = lerp(corners[1], corners[2], t1)
+
+            // Legs first, so the panel sits on top of them.
+            painter.line((southA, base), (southA, low), color: frame, width: 1.6)
+            painter.line((southB, base), (southB, low), color: frame, width: 1.6)
+            painter.face(
+                [(northA, high), (northB, high), (southB, low), (southA, low)],
+                fill: panel,
+                shade: AxoLight.shade(normal: (x: 0, y: 0.42, z: 0.91)),
+                outline: frame,
+                lineWidth: 0.8
+            )
+            // Cell grid, which is what names the thing.
+            let cells = max(2, min(10, Int(object.transform.width / 1.2)))
+            for cell in 1..<cells {
+                let f = Double(cell) / Double(cells)
+                painter.line(
+                    (lerp(northA, northB, f), high),
+                    (lerp(southA, southB, f), low),
+                    color: frame.opacity(0.7),
+                    width: 0.6
+                )
+            }
+        }
+    }
+
     /// One span of fence rail. Split out from the posts so both can be sorted
     /// into the scene's own depth order: drawing every fence in one pass
     /// before the buildings meant a fence nearer the camera than a building
