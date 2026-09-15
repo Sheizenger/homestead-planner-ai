@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Static checks for the app layer, which cannot be built or tested on Linux.
 
-Two things, both of which have reached the user's Xcode as a build failure
+Three things, all of which have reached the user's Xcode as a build failure
 rather than being caught here:
 
 1. Every catalog type id named in the app layer must actually exist.
 2. Every engine type the app names must be spelled the way it is declared —
    a type nested inside another (`Sizing.VocabularyTerm`) does not resolve
    from a bare `VocabularyTerm`.
+3. Every function the app calls must be declared somewhere. Three times a
+   scripted edit slicing between two anchors has swallowed a helper that
+   happened to sit between them, leaving the call behind.
 
 On (1): the view layer keys several tables by type id — massing, materials, palettes,
 cylinder caps, foliage. A typo or a renamed catalog entry makes the row
@@ -78,6 +81,61 @@ def check_nested_types() -> list[str]:
     return failures
 
 
+# Names that are Swift, SwiftUI, Foundation or a local closure rather than
+# something this repo declares. Deliberately short: anything else that shows up
+# is either a real miss or a name worth adding here on purpose.
+BUILTIN_CALLS = {
+    "abs", "min", "max", "sqrt", "cos", "sin", "atan2", "floor", "ceil", "round",
+    "print", "zip", "stride", "repeatElement", "swap", "type", "withAnimation",
+    "assert", "precondition", "fatalError", "dump", "unsafeBitCast",
+}
+
+# `return (`, `for (`, `if let (` and friends all look like calls to a regex.
+SWIFT_KEYWORDS = {
+    "return", "let", "var", "for", "if", "guard", "while", "switch", "case",
+    "in", "where", "throw", "try", "await", "is", "as", "init", "self", "super",
+    "escaping", "inout", "some", "any", "func", "else", "do", "catch", "defer",
+    "repeat", "subscript", "willSet", "didSet", "get", "set", "throws", "rethrows",
+    "private", "public", "internal", "fileprivate", "open", "static", "class",
+}
+
+
+def declared_functions() -> set[str]:
+    names: set[str] = set()
+    for pattern in ("swift/Sources/Homestead*/*.swift", "Homestead/Homestead/*.swift"):
+        for path in ROOT.glob(pattern):
+            source = path.read_text()
+            names |= set(re.findall(r"\bfunc (\w+)", source))
+            # Enum cases with payloads are constructors.
+            names |= set(re.findall(r"\bcase (\w+)\(", source))
+            # Local closures and bindings are callable too.
+            names |= set(re.findall(r"\blet (\w+): *\([^)]*\) *->", source))
+    return names
+
+
+def check_missing_calls() -> list[str]:
+    """Calls to a lowercase name this repo neither declares nor inherits.
+
+    Three times now a scripted edit that sliced between two anchors has
+    swallowed a helper that happened to sit between them — `Palette`,
+    `greenhouseInterior`, and a whole batch in `AxoKit` — leaving a call with
+    no declaration. The file still parses; only Xcode notices, hours later.
+    """
+    known = declared_functions()
+    failures = []
+    for path in sorted(APP.glob("*.swift")):
+        source = path.read_text()
+        for line_number, line in enumerate(source.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("//") or stripped.startswith("///"):
+                continue
+            for name in re.findall(r"(?<![\w.$])([a-z][A-Za-z0-9]*)\s*\(", line):
+                if name in known or name in BUILTIN_CALLS or name in SWIFT_KEYWORDS:
+                    continue
+                failures.append(f"{path.relative_to(ROOT)}:{line_number}: calls \"{name}\" but nothing declares it")
+    return failures
+
+
 def main() -> int:
     known = set(re.findall(r'id: "([a-z0-9\-]+)"', LIBRARY.read_text()))
     if not known:
@@ -93,6 +151,7 @@ def main() -> int:
             failures.append(f"{path.relative_to(ROOT)}: \"{name}\" is not a catalog type id")
 
     failures += check_nested_types()
+    failures += check_missing_calls()
 
     for failure in failures:
         print(f"error: {failure}", file=sys.stderr)

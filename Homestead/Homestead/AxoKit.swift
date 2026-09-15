@@ -713,7 +713,6 @@ enum AxoKit {
         doorway: Doorway
     ) {
         guard corners.count == 4 else { return }
-        let centre = object.transform.center
         let wallHeight = eavesZ - base
         guard wallHeight > 1.6 else { return }
 
@@ -798,6 +797,45 @@ enum AxoKit {
                     (lerp(front.0, front.1, fraction + 0.08), midZ),
                     color: trim.opacity(0.85),
                     width: 0.9
+                )
+            }
+        }
+    }
+
+    /// Two beds of seedlings running the length of the house, with a walkway
+    /// between them — the arrangement every reference greenhouse has, and
+    /// what stops a glass box reading as a bus shelter.
+    private static func greenhouseInterior(_ painter: AxoPainter, object: PlanObject, base: Double, alongX: Bool) {
+        let corners = object.transform.corners
+        guard corners.count == 4, painter.scale > 2 else { return }
+        let soil = Color(hex: 0x6f4a30)
+        let leaf = Color(hex: 0x5fa341)
+
+        for fraction in [0.26, 0.74] {
+            let (a, b): (Point, Point) = alongX
+                ? (lerp(corners[0], corners[3], fraction), lerp(corners[1], corners[2], fraction))
+                : (lerp(corners[0], corners[1], fraction), lerp(corners[3], corners[2], fraction))
+            let bed: [(Point, Double)] = [
+                (lerp(a, b, 0.08), base + 0.3),
+                (lerp(b, a, 0.08), base + 0.3),
+                (lerp(b, a, 0.08), base),
+                (lerp(a, b, 0.08), base),
+            ]
+            painter.face(bed, fill: soil, shade: 0.1, outline: nil)
+
+            let count = max(3, min(14, Int(distance(a, b) / 0.8)))
+            for index in 0...count {
+                let t = Double(index) / Double(count)
+                let at = lerp(lerp(a, b, 0.08), lerp(b, a, 0.08), t)
+                let top = painter.project(at, base + 0.72)
+                let root = painter.project(at, base + 0.3)
+                painter.context.stroke(
+                    Path { path in
+                        path.move(to: root)
+                        path.addLine(to: top)
+                    },
+                    with: .color(leaf),
+                    lineWidth: max(1, CGFloat(0.16 * painter.scale))
                 )
             }
         }

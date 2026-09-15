@@ -163,12 +163,19 @@ failures parsed cleanly. The app target cannot be built or type-checked on
 Linux at all, so a missing symbol reaches the user's Xcode or nothing
 catches it.
 
-`scripts/check_type_ids.py` (run by `--self-check`) covers the two classes
-of app-layer mistake that *are* checkable as text: a view table keyed by a
-catalog type id that doesn't exist, and an engine type named without the
-type it is nested in (`VocabularyTerm` for `Sizing.VocabularyTerm`). Both
-have reached Xcode as build failures. Anything else in that layer is only
-caught by building on a Mac.
+`scripts/check_type_ids.py` (run by `--self-check`, and worth running after
+every edit to this layer) covers the three classes of app-layer mistake that
+*are* checkable as text: a view table keyed by a catalog type id that
+doesn't exist, an engine type named without the type it is nested in
+(`VocabularyTerm` for `Sizing.VocabularyTerm`), and a call to a function
+nothing declares. All three have reached Xcode as build failures; the third
+caught `greenhouseInterior` at the same line Xcode did. Anything else in
+that layer is only caught by building on a Mac.
+
+Slicing between two anchors deserves its own warning, since it is what
+caused the third: `s[index(a):index(b)]` takes everything in between,
+including whatever helper happens to live there. Prefer a replacement
+anchored on the exact text being changed.
 
 ## Working agreement
 
