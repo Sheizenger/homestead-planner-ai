@@ -61,13 +61,17 @@ struct BriefEditorView: View {
                 }
             }
 
-            Section("Crops") {
+            Section {
                 ForEach(Sizing.cropVocabulary) { term in
                     Toggle(term.label, isOn: membership(term.key, in: \.crops))
                 }
+            } header: {
+                sectionHeader("Crops", isFull: isEverythingOn(Sizing.cropVocabulary, in: \.crops)) {
+                    setAll(Sizing.cropVocabulary, in: \.crops, on: !isEverythingOn(Sizing.cropVocabulary, in: \.crops))
+                }
             }
 
-            Section("Animals") {
+            Section {
                 ForEach(Sizing.animalVocabulary) { term in
                     LabeledContent(term.label) {
                         Stepper(value: animalCount(term.key), in: 0...200, step: 2) {
@@ -75,9 +79,13 @@ struct BriefEditorView: View {
                         }
                     }
                 }
+            } header: {
+                sectionHeader("Animals", isFull: isEveryAnimalKept()) {
+                    setAllAnimals(kept: !isEveryAnimalKept())
+                }
             }
 
-            Section("Infrastructure") {
+            Section {
                 ForEach(Sizing.infrastructureVocabulary) { term in
                     Toggle(term.label, isOn: membership(term.key, in: \.infrastructure))
                 }
@@ -93,9 +101,88 @@ struct BriefEditorView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
                 }
+            } header: {
+                sectionHeader("Infrastructure", isFull: isEverythingOn(Sizing.infrastructureVocabulary, in: \.infrastructure)) {
+                    setAll(
+                        Sizing.infrastructureVocabulary,
+                        in: \.infrastructure,
+                        on: !isEverythingOn(Sizing.infrastructureVocabulary, in: \.infrastructure)
+                    )
+                }
             }
         }
         .formStyle(.grouped)
+    }
+
+    // MARK: - Select all
+
+    /// A section title with one control that flips the whole list. One button
+    /// rather than an All/None pair: which of the two it offers is already
+    /// decided by whether the list is full, so a second button would always
+    /// be the no-op one.
+    private func sectionHeader(_ title: String, isFull: Bool, action: @escaping () -> Void) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Button(isFull ? "Clear all" : "Select all", action: action)
+                .buttonStyle(.link)
+                .font(.caption)
+                .textCase(nil)
+        }
+    }
+
+    private func isEverythingOn(_ terms: [Sizing.VocabularyTerm], in keyPath: WritableKeyPath<StructuredInputs, [String]>) -> Bool {
+        let selected = Set(model.document.brief.structuredInputs[keyPath: keyPath])
+        return !terms.isEmpty && terms.allSatisfy { selected.contains($0.key) }
+    }
+
+    /// One undo step for the whole list, not one per term — the point of the
+    /// button is that it is a single decision.
+    private func setAll(_ terms: [Sizing.VocabularyTerm], in keyPath: WritableKeyPath<StructuredInputs, [String]>, on: Bool) {
+        edit(on ? "Select All" : "Clear All") {
+            model.updateStructuredInputs { inputs in
+                if on {
+                    // Keep anything already there that this list doesn't know
+                    // about, so a term typed into the free-text brief isn't
+                    // quietly dropped by a button labelled "select all".
+                    let known = Set(terms.map(\.key))
+                    let unknown = inputs[keyPath: keyPath].filter { !known.contains($0) }
+                    inputs[keyPath: keyPath] = unknown + terms.map(\.key)
+                } else {
+                    let known = Set(terms.map(\.key))
+                    inputs[keyPath: keyPath].removeAll { known.contains($0) }
+                }
+            }
+        }
+    }
+
+    private func isEveryAnimalKept() -> Bool {
+        let animals = model.document.brief.structuredInputs.animals
+        return Sizing.animalVocabulary.allSatisfy { term in
+            animals.contains { $0.type == term.key && $0.count > 0 }
+        }
+    }
+
+    /// Animals are counts, not switches, so "select all" has to pick a number.
+    /// A small starter flock: enough for the engine to size a shelter and a
+    /// paddock, low enough that nobody gets a plan for a commercial herd they
+    /// never asked for.
+    private static let starterFlock = 6
+
+    private func setAllAnimals(kept: Bool) {
+        edit(kept ? "Select All" : "Clear All") {
+            model.updateStructuredInputs { inputs in
+                guard kept else {
+                    let known = Set(Sizing.animalVocabulary.map(\.key))
+                    inputs.animals.removeAll { known.contains($0.type) }
+                    return
+                }
+                for term in Sizing.animalVocabulary where !inputs.animals.contains(where: { $0.type == term.key && $0.count > 0 }) {
+                    inputs.animals.removeAll { $0.type == term.key }
+                    inputs.animals.append(AnimalRequest(type: term.key, count: Self.starterFlock))
+                }
+            }
+        }
     }
 
     /// Placement drops a dock or a turbine outright when the plot has no water

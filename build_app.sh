@@ -51,10 +51,11 @@ if [ "$DO_SELF_CHECK" = 1 ]; then
     step "Engine + core test suite (swift test)"
     swift test --package-path "$ROOT/swift"
 
-    # The app target can't be tested on Linux, so the one class of app-layer
-    # bug that is checkable as text gets checked here: view tables keyed by a
-    # catalog type id that doesn't exist, which fail silently.
-    step "App-layer type ids"
+    # The app target can't be tested on Linux, so the app-layer bugs that are
+    # checkable as text get checked here: tables keyed by a catalog type id
+    # that doesn't exist, and engine types named without the type they are
+    # nested in. Both have reached Xcode as build failures.
+    step "App-layer static checks"
     python3 "$ROOT/scripts/check_type_ids.py"
 fi
 

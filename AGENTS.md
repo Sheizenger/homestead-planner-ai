@@ -163,6 +163,13 @@ failures parsed cleanly. The app target cannot be built or type-checked on
 Linux at all, so a missing symbol reaches the user's Xcode or nothing
 catches it.
 
+`scripts/check_type_ids.py` (run by `--self-check`) covers the two classes
+of app-layer mistake that *are* checkable as text: a view table keyed by a
+catalog type id that doesn't exist, and an engine type named without the
+type it is nested in (`VocabularyTerm` for `Sizing.VocabularyTerm`). Both
+have reached Xcode as build failures. Anything else in that layer is only
+caught by building on a Mac.
+
 ## Working agreement
 
 The user sets direction. Implementation, debugging, and verification belong
