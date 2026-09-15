@@ -138,6 +138,41 @@ public enum Polygon {
         return footprint.compactMap { distanceToBoundary($0, polygon: polygon) }.min()
     }
 
+    /// Convex hull, counter-clockwise, by Andrew's monotone chain.
+    ///
+    /// The axonometric view needs it for an object's silhouette: every massing
+    /// it draws is convex, so the hull of the projected vertices *is* the
+    /// outline — which is both what a click should hit and what a selection
+    /// ring should follow. Collinear points are dropped, so the result is the
+    /// smallest polygon with the same shape.
+    public static func convexHull(_ points: [Point]) -> [Point] {
+        guard points.count > 2 else { return points }
+        let sorted = points.sorted { $0.x == $1.x ? $0.y < $1.y : $0.x < $1.x }
+
+        func turnsRight(_ o: Point, _ a: Point, _ b: Point) -> Bool {
+            (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x) <= 0
+        }
+
+        var lower: [Point] = []
+        for point in sorted {
+            while lower.count >= 2, turnsRight(lower[lower.count - 2], lower[lower.count - 1], point) {
+                lower.removeLast()
+            }
+            lower.append(point)
+        }
+        var upper: [Point] = []
+        for point in sorted.reversed() {
+            while upper.count >= 2, turnsRight(upper[upper.count - 2], upper[upper.count - 1], point) {
+                upper.removeLast()
+            }
+            upper.append(point)
+        }
+        guard lower.count > 1, upper.count > 1 else { return sorted }
+        lower.removeLast()
+        upper.removeLast()
+        return lower + upper
+    }
+
     /// Sutherland–Hodgman clip of any polygon against an axis-aligned box.
     /// Keeps a bounds-derived shape — the waterfront strip, say — from
     /// spilling outside a plot whose boundary is not a plain rectangle.

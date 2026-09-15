@@ -90,8 +90,7 @@ struct AxonometricPlanView: View {
                         dragAnchor = .zero
                         let moved = abs(value.translation.width) + abs(value.translation.height)
                         guard moved < 4 else { return }
-                        let axo = viewport.toWorld(Point(x: Double(value.location.x), y: Double(value.location.y)))
-                        selectedObjectID = HitTesting.hitTest(Axonometry.groundPoint(axo), in: variant.objects)
+                        selectedObjectID = objectID(at: value.location)
                     }
             )
             .gesture(
@@ -643,11 +642,14 @@ struct AxonometricPlanView: View {
         // reads as "this patch of the plot", and doesn't paint over the
         // building it is pointing at.
         if highlightedObjectIDs.contains(object.id) {
-            var halo = Path()
-            halo.addLines(corners.map { self.screen($0, z: base) })
-            halo.closeSubpath()
-            context.stroke(halo, with: .color(.orange.opacity(0.45)), lineWidth: 9)
-            context.stroke(halo, with: .color(.orange), lineWidth: 2)
+            let hull = silhouette(of: object, base: base)
+            if hull.count > 2 {
+                var halo = Path()
+                halo.addLines(hull)
+                halo.closeSubpath()
+                context.stroke(halo, with: .color(.orange.opacity(0.45)), lineWidth: 9)
+                context.stroke(halo, with: .color(.orange), lineWidth: 2)
+            }
         }
 
         switch Massing.form(for: object) {
@@ -684,7 +686,6 @@ struct AxonometricPlanView: View {
             if ["house", "house-l", "banya", "smokehouse"].contains(object.typeId) {
                 AxoKit.chimney(painter, object: object, base: base, ridgeZ: base + ridge, wall: Color(hex: palette.trim), outline: wallOutline)
             }
-            if selected { outlineFootprint(context, corners: corners, z: base) }
 
         case .gambrel(let eaves, let knuckle, let ridge):
             AxoKit.gambrelBuilding(
@@ -700,7 +701,6 @@ struct AxonometricPlanView: View {
                 trim: Color(hex: palette.trim),
                 surfaces: Massing.surfaces(for: object)
             )
-            if selected { outlineFootprint(context, corners: corners, z: base) }
 
         case .glass(let eaves, let ridge):
             AxoKit.gabledBuilding(
@@ -718,7 +718,6 @@ struct AxonometricPlanView: View {
                 glazed: true,
                 surfaces: Massing.surfaces(for: object)
             )
-            if selected { outlineFootprint(context, corners: corners, z: base) }
 
         case .cylinder(let height, let radiusScale):
             let radius = min(object.transform.width, object.transform.height) * radiusScale
@@ -732,7 +731,6 @@ struct AxonometricPlanView: View {
                 shade: 0.22,
                 cap: Self.cylinderCap(for: object)
             )
-            if selected { outlineFootprint(context, corners: corners, z: base) }
 
         case .rows:
             AxoKit.plantedRows(
@@ -742,11 +740,9 @@ struct AxonometricPlanView: View {
                 crop: Color(hex: Massing.foliage(for: object)),
                 outline: style.stroke
             )
-            if selected { outlineFootprint(context, corners: corners, z: base) }
 
         case .canopy(let height, let radius, let conifer):
             drawOrchard(painter, object: object, height: height, radius: radius, conifer: conifer, style: style)
-            if selected { outlineFootprint(context, corners: corners, z: base) }
 
         case .panels(let height):
             AxoKit.solarPanels(
@@ -757,9 +753,9 @@ struct AxonometricPlanView: View {
                 panel: Color(hex: 0x2c3f66),
                 frame: Color(hex: 0xb9c3cc)
             )
-            if selected { outlineFootprint(context, corners: corners, z: base) }
         }
 
+        if selected { outlineSilhouette(context, object: object, base: base) }
         if showsDimensions { drawDimensions(context, for: object, z: base) }
     }
 
@@ -773,11 +769,37 @@ struct AxonometricPlanView: View {
         }
     }
 
-    private func outlineFootprint(_ context: GraphicsContext, corners: [Point], z: Double) {
+    /// The object's outline as drawn, in screen space.
+    private func silhouette(of object: PlanObject, base: Double) -> [CGPoint] {
+        Silhouette.path(for: object, base: base) { point, z in self.screen(point, z: z) }
+    }
+
+    /// The same outline the click is tested against, so what you can select
+    /// and what gets ringed are one shape.
+    private func outlineSilhouette(_ context: GraphicsContext, object: PlanObject, base: Double) {
+        let hull = silhouette(of: object, base: base)
+        guard hull.count > 2 else { return }
         var path = Path()
-        path.addLines(corners.map { screen($0, z: z) })
+        path.addLines(hull)
         path.closeSubpath()
-        context.stroke(path, with: .color(.accentColor), lineWidth: 2.5)
+        context.stroke(path, with: .color(.accentColor.opacity(0.35)), lineWidth: 6)
+        context.stroke(path, with: .color(.accentColor), lineWidth: 2)
+    }
+
+    /// What the click landed on, tested against each object's drawn silhouette
+    /// rather than its footprint. Inverting the projection at ground level,
+    /// which is what this used to do, made only the flat diamond under a
+    /// building clickable — the walls and roof, which are the whole of what
+    /// you can see, missed.
+    ///
+    /// Front to back, so the object painted on top is the one you get.
+    private func objectID(at location: CGPoint) -> String? {
+        for item in drawables().reversed() {
+            guard case let .object(object) = item else { continue }
+            let base = Massing.baseElevation(for: object, among: variant.objects)
+            if Silhouette.contains(location, in: silhouette(of: object, base: base)) { return object.id }
+        }
+        return nil
     }
 
     private func drawOrchard(_ painter: AxoPainter, object: PlanObject, height: Double, radius: Double, conifer: Bool, style: CategoryStyle) {
