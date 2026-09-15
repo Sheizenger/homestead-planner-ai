@@ -260,6 +260,7 @@ enum AxoKit {
         wall: Color,
         wallOutline: Color,
         roof: Color,
+        trim: Color,
         glazed: Bool,
         surfaces: Massing.Surfaces
     ) {
@@ -269,6 +270,11 @@ enum AxoKit {
         let eavesZ = base + eaves
         let ridgeZ = base + ridge
         let alongX = object.transform.width >= object.transform.height
+
+        // Under the glass, before the shell goes over it. A greenhouse that
+        // is an empty glass box is a bus shelter; in every reference you can
+        // see the rows through the glazing, and that is what names it.
+        if glazed { greenhouseInterior(painter, object: object, base: base, alongX: alongX) }
 
         // Ridge runs down the middle of the longer axis; the two short ends
         // carry the gables.
@@ -390,8 +396,20 @@ enum AxoKit {
 
         if glazed {
             glazingBars(painter, longEdges: longEdges, ridgeA: ridgeA, ridgeB: ridgeB, eavesZ: eavesZ, ridgeZ: ridgeZ, color: wallOutline)
+            // The frame last, over everything: corner posts, a cill rail and
+            // a ridge beam. Glass is mostly invisible, so a glasshouse is
+            // read almost entirely from its frame.
+            for corner in corners {
+                painter.line((corner, base), (corner, eavesZ), color: trim, width: 1.8)
+            }
+            for index in 0..<4 {
+                let a = corners[index], b = corners[(index + 1) % 4]
+                painter.line((a, eavesZ), (b, eavesZ), color: trim, width: 1.6)
+                painter.line((a, base + 0.05), (b, base + 0.05), color: trim, width: 1.6)
+            }
+            painter.line((ridgeA, ridgeZ), (ridgeB, ridgeZ), color: trim, width: 1.8)
         } else {
-            openings(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, outline: wallOutline)
+            openings(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, outline: wallOutline, trim: trim)
         }
     }
 
@@ -451,9 +469,18 @@ enum AxoKit {
         // whole silhouette.
         let run = min(object.transform.width, object.transform.height) / 2
         let knuckleInset = run * 0.45
+        let overhang = min(0.45, run * 0.22)
 
-        /// `point` moved straight in from its own long edge, which is the
-        /// direction the roof climbs.
+        let ridgeSpan = (ridgeB.x - ridgeA.x, ridgeB.y - ridgeA.y)
+        let ridgeLength = (ridgeSpan.0 * ridgeSpan.0 + ridgeSpan.1 * ridgeSpan.1).squareRoot()
+        let along = ridgeLength > 0
+            ? Point(x: ridgeSpan.0 / ridgeLength * overhang, y: ridgeSpan.1 / ridgeLength * overhang)
+            : Point(x: 0, y: 0)
+        let ridgeStart = Point(x: ridgeA.x - along.x, y: ridgeA.y - along.y)
+        let ridgeEnd = Point(x: ridgeB.x + along.x, y: ridgeB.y + along.y)
+
+        /// `point` moved straight in from (or, negative, out from) its own
+        /// long edge — the direction the roof climbs.
         func inward(_ point: Point, from edge: (Point, Point), by amount: Double) -> Point {
             let normal = AxoLight.wallNormal(from: edge.0, to: edge.1)
             let length = (normal.x * normal.x + normal.y * normal.y).squareRoot()
@@ -461,37 +488,12 @@ enum AxoKit {
             return Point(x: point.x - normal.x / length * amount, y: point.y - normal.y / length * amount)
         }
 
-        for edge in longEdges.sorted(by: { depth($0) < depth($1) }) {
-            let kneeA = inward(edge.0, from: edge, by: knuckleInset)
-            let kneeB = inward(edge.1, from: edge, by: knuckleInset)
-
-            let lowerNormal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: knuckleInset, rise: knuckle - eaves)
-            painter.face(
-                [(edge.0, eavesZ), (edge.1, eavesZ), (kneeB, knuckleZ), (kneeA, knuckleZ)],
-                fill: roof,
-                shade: AxoLight.shade(normal: lowerNormal),
-                outline: Color.black.opacity(0.2),
-                lineWidth: 0.7,
-                material: surfaces.roof,
-                seed: object.id + "lower"
-            )
-
-            let upperNormal = AxoLight.roofNormal(from: kneeA, to: kneeB, run: max(0.1, run - knuckleInset), rise: ridge - knuckle)
-            painter.face(
-                [(kneeA, knuckleZ), (kneeB, knuckleZ), (ridgeB, ridgeZ), (ridgeA, ridgeZ)],
-                fill: roof,
-                shade: AxoLight.shade(normal: upperNormal),
-                outline: Color.black.opacity(0.2),
-                lineWidth: 0.7,
-                material: surfaces.roof,
-                seed: object.id + "upper"
-            )
-        }
-
-        // Gable ends: the five-sided profile, drawn as a trapezoid under a
-        // triangle so each piece is a quad the texture can follow without a
-        // clip. Moving a gable corner "in from its long edge" is the same as
-        // moving it along the gable end, so the insets come from lerping.
+        // Gable ends BEFORE the roof, so the roof covers them. Drawing them
+        // after is what put a red wall across the white roof of the barn.
+        // The five-sided profile goes down as a trapezoid under a triangle,
+        // so each piece is a quad the texture can follow without a clip; and
+        // moving a gable corner "in from its long edge" is the same as moving
+        // it along the gable end, so the insets come from lerping.
         for (index, end) in gableEnds.enumerated() {
             let apex = index == 0 ? ridgeA : ridgeB
             let span = distance(end.0, end.1)
@@ -519,7 +521,50 @@ enum AxoKit {
             )
         }
 
-        painter.line((ridgeA, ridgeZ), (ridgeB, ridgeZ), color: .black.opacity(0.28), width: 1.6)
+        for edge in longEdges.sorted(by: { depth($0) < depth($1) }) {
+            // Both slopes oversail the gable by the same verge as the gabled
+            // roof does, so the barn is detailed like everything else.
+            let eavesA = Point(x: inward(edge.0, from: edge, by: -overhang).x - along.x,
+                               y: inward(edge.0, from: edge, by: -overhang).y - along.y)
+            let eavesB = Point(x: inward(edge.1, from: edge, by: -overhang).x + along.x,
+                               y: inward(edge.1, from: edge, by: -overhang).y + along.y)
+            let kneeA = Point(x: inward(edge.0, from: edge, by: knuckleInset).x - along.x,
+                              y: inward(edge.0, from: edge, by: knuckleInset).y - along.y)
+            let kneeB = Point(x: inward(edge.1, from: edge, by: knuckleInset).x + along.x,
+                              y: inward(edge.1, from: edge, by: knuckleInset).y + along.y)
+
+            let lowerRise = knuckle - eaves
+            let eavesDrop = eavesZ - overhang * (lowerRise / max(knuckleInset, 0.1)) - 0.05
+            let lowerNormal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: knuckleInset, rise: lowerRise)
+            painter.face(
+                [(eavesA, eavesDrop), (eavesB, eavesDrop), (kneeB, knuckleZ), (kneeA, knuckleZ)],
+                fill: roof,
+                shade: AxoLight.shade(normal: lowerNormal),
+                outline: Color.black.opacity(0.2),
+                lineWidth: 0.7,
+                material: surfaces.roof,
+                seed: object.id + "lower"
+            )
+            painter.face(
+                [(eavesA, eavesDrop), (eavesB, eavesDrop), (eavesB, eavesDrop - 0.18), (eavesA, eavesDrop - 0.18)],
+                fill: roof,
+                shade: 0.34,
+                outline: nil
+            )
+
+            let upperNormal = AxoLight.roofNormal(from: kneeA, to: kneeB, run: max(0.1, run - knuckleInset), rise: ridge - knuckle)
+            painter.face(
+                [(kneeA, knuckleZ), (kneeB, knuckleZ), (ridgeEnd, ridgeZ), (ridgeStart, ridgeZ)],
+                fill: roof,
+                shade: AxoLight.shade(normal: upperNormal),
+                outline: Color.black.opacity(0.2),
+                lineWidth: 0.7,
+                material: surfaces.roof,
+                seed: object.id + "upper"
+            )
+        }
+
+        painter.line((ridgeStart, ridgeZ), (ridgeEnd, ridgeZ), color: .black.opacity(0.28), width: 1.6)
         barnDoors(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, trim: trim)
     }
 
@@ -560,45 +605,111 @@ enum AxoKit {
     }
 
     /// A door on the south wall and windows either side of it — the south
-    /// edge is the engine's own "front", the road side by convention.
+    /// edge is the engine's own "front", the road side by convention — each
+    /// in a trim frame. The frames are not decoration: white trim on a red
+    /// barn and on a cream house is a large part of why the references read
+    /// at a glance, and a window without one is a blue smudge.
     private static func openings(
         _ painter: AxoPainter,
         object: PlanObject,
         corners: [Point],
         base: Double,
         eavesZ: Double,
-        outline: Color
+        outline: Color,
+        trim: Color
     ) {
         let front = (corners[3], corners[2])
         let width = object.transform.width
         guard width * painter.scale > 34, eavesZ - base > 1.6 else { return }
 
-        let doorHeight = min(2.1, (eavesZ - base) * 0.8)
-        let doorHalf = min(0.45, width * 0.06)
-        let centreFraction = 0.5
-        let doorA = lerp(front.0, front.1, centreFraction - doorHalf / width)
-        let doorB = lerp(front.0, front.1, centreFraction + doorHalf / width)
-        painter.face(
-            [(doorA, base), (doorB, base), (doorB, base + doorHeight), (doorA, base + doorHeight)],
-            fill: .black.opacity(0.45),
-            shade: 0,
-            outline: outline.opacity(0.7),
-            lineWidth: 0.6
+        /// A framed panel on the front wall: trim behind, opening in front.
+        func panel(from: Double, to: Double, bottom: Double, top: Double, fill: Color, frame: Double) {
+            let outerA = lerp(front.0, front.1, max(0, from - frame / width))
+            let outerB = lerp(front.0, front.1, min(1, to + frame / width))
+            painter.face(
+                [(outerA, bottom - frame), (outerB, bottom - frame), (outerB, top + frame), (outerA, top + frame)],
+                fill: trim,
+                shade: -0.04,
+                outline: outline.opacity(0.55),
+                lineWidth: 0.5
+            )
+            let innerA = lerp(front.0, front.1, from)
+            let innerB = lerp(front.0, front.1, to)
+            painter.face(
+                [(innerA, bottom), (innerB, bottom), (innerB, top), (innerA, top)],
+                fill: fill,
+                shade: 0,
+                outline: nil
+            )
+        }
+
+        let wallHeight = eavesZ - base
+        let doorHeight = min(2.1, wallHeight * 0.8)
+        let doorHalf = min(0.45, width * 0.06) / width
+        panel(
+            from: 0.5 - doorHalf, to: 0.5 + doorHalf,
+            bottom: base, top: base + doorHeight,
+            fill: Color(hex: 0x5a3f2c), frame: 0.12
         )
+        // A doorstep, which is what stops a door looking painted on.
+        let stepA = lerp(front.0, front.1, 0.5 - doorHalf * 1.4)
+        let stepB = lerp(front.0, front.1, 0.5 + doorHalf * 1.4)
+        painter.line((stepA, base + 0.06), (stepB, base + 0.06), color: trim, width: max(1.4, CGFloat(0.22 * painter.scale)))
 
         guard width * painter.scale > 60 else { return }
-        let sillZ = base + (eavesZ - base) * 0.42
-        let headZ = base + (eavesZ - base) * 0.78
+        let sillZ = base + wallHeight * 0.4
+        let headZ = base + wallHeight * 0.76
         for fraction in [0.22, 0.78] {
-            let a = lerp(front.0, front.1, fraction - 0.07)
-            let b = lerp(front.0, front.1, fraction + 0.07)
-            painter.face(
-                [(a, sillZ), (b, sillZ), (b, headZ), (a, headZ)],
-                fill: Color(hex: 0x8fb8cc).opacity(0.85),
-                shade: 0,
-                outline: outline.opacity(0.7),
-                lineWidth: 0.6
+            panel(
+                from: fraction - 0.08, to: fraction + 0.08,
+                bottom: sillZ, top: headZ,
+                fill: Color(hex: 0x86b4cf), frame: 0.1
             )
+            // One glazing bar and a highlight streak: a pane, not a blue hole.
+            let centre = lerp(front.0, front.1, fraction)
+            painter.line((centre, sillZ), (centre, headZ), color: trim.opacity(0.85), width: 0.9)
+            let midZ = (sillZ + headZ) / 2
+            let a = lerp(front.0, front.1, fraction - 0.08)
+            let b = lerp(front.0, front.1, fraction + 0.08)
+            painter.line((a, midZ), (b, midZ), color: trim.opacity(0.85), width: 0.9)
+        }
+    }
+
+    /// Two beds of seedlings running the length of the house, with a walkway
+    /// between them — the arrangement every reference greenhouse has.
+    private static func greenhouseInterior(_ painter: AxoPainter, object: PlanObject, base: Double, alongX: Bool) {
+        let corners = object.transform.corners
+        guard corners.count == 4, painter.scale > 2 else { return }
+        let soil = Color(hex: 0x6f4a30)
+        let leaf = Color(hex: 0x5fa341)
+
+        for fraction in [0.26, 0.74] {
+            let (a, b): (Point, Point) = alongX
+                ? (lerp(corners[0], corners[3], fraction), lerp(corners[1], corners[2], fraction))
+                : (lerp(corners[0], corners[1], fraction), lerp(corners[3], corners[2], fraction))
+            let inner: [(Point, Double)] = [
+                (lerp(a, b, 0.08), base + 0.3),
+                (lerp(b, a, 0.08), base + 0.3),
+                (lerp(b, a, 0.08), base),
+                (lerp(a, b, 0.08), base),
+            ]
+            painter.face(inner, fill: soil, shade: 0.1, outline: nil)
+
+            let count = max(3, min(14, Int(distance(a, b) / 0.8)))
+            for index in 0...count {
+                let t = Double(index) / Double(count)
+                let at = lerp(lerp(a, b, 0.08), lerp(b, a, 0.08), t)
+                let top = painter.project(at, base + 0.72)
+                let root = painter.project(at, base + 0.3)
+                painter.context.stroke(
+                    Path { path in
+                        path.move(to: root)
+                        path.addLine(to: top)
+                    },
+                    with: .color(leaf),
+                    lineWidth: max(1, CGFloat(0.16 * painter.scale))
+                )
+            }
         }
     }
 

@@ -66,11 +66,9 @@ enum Massing {
         "poultry-coop": Surfaces(roof: .shingle, wall: .plank),
         "banya": Surfaces(roof: .shingle, wall: .plank),
         "smokehouse": Surfaces(roof: .shingle, wall: .brick),
-        "root-cellar": Surfaces(roof: .thatch, wall: .brick),
+        "cellar": Surfaces(roof: .thatch, wall: .brick),
         "greenhouse": Surfaces(roof: .glass, wall: .glass),
-        "summer-kitchen": Surfaces(roof: .shingle, wall: .plaster),
-        "guest-house": Surfaces(roof: .shingle, wall: .plaster),
-    ]
+            ]
 
     /// How tall a thing is for the purpose of casting a shadow — the ridge
     /// for a roof, the canopy top for a tree, near nothing for a path. Flat
@@ -209,9 +207,9 @@ enum Massing {
     static func foliage(for object: PlanObject) -> UInt32 {
         switch object.typeId {
         case "orchard-trees": return 0x4e8f3a
-        case "berry-rows", "vineyard": return 0x6ba33c
-        case "windbreak", "hedge": return 0x2f6b46
-        case "ornamental-tree": return 0x57a04a
+        case "berry-rows": return 0x6ba33c
+        case "vineyard": return 0x6a8f3c
+        case "gazebo": return 0x57a04a
         default: return 0x4a8c3d
         }
     }
@@ -248,20 +246,30 @@ enum Massing {
     private static let palettes: [String: Palette] = [
         "house": Palette(wall: 0xf5e7c8, roof: 0xc4553f, trim: 0xffffff),
         "house-l": Palette(wall: 0xf5e7c8, roof: 0xc4553f, trim: 0xffffff),
-        "guest-house": Palette(wall: 0xe6eef2, roof: 0x8c6a4e, trim: 0xffffff),
-        "summer-kitchen": Palette(wall: 0xf7eed6, roof: 0xb9705a, trim: 0xffffff),
-        "barn": Palette(wall: 0xb5442f, roof: 0xe9e4da, trim: 0xffffff),
+                "barn": Palette(wall: 0xb5442f, roof: 0xe9e4da, trim: 0xffffff),
         "workshop": Palette(wall: 0x9fb0bd, roof: 0x44515e, trim: 0xf2f4f6),
         "garage": Palette(wall: 0xc8cdd2, roof: 0x4a5b6b, trim: 0xffffff),
         "shed": Palette(wall: 0xa8865c, roof: 0x5c6a76, trim: 0xe4d9c4),
         "woodshed": Palette(wall: 0x9a7a52, roof: 0xa08a5e, trim: 0xd8c9a8),
-        "root-cellar": Palette(wall: 0x9d968a, roof: 0x6f7a5e, trim: 0xd6d2c8),
+        "cellar": Palette(wall: 0xada597, roof: 0x84906e, trim: 0xdedace),
         "goat-shelter": Palette(wall: 0xe8d9a8, roof: 0x8a5b3a, trim: 0xfaf4e4),
         "poultry-coop": Palette(wall: 0xfaf4e8, roof: 0xc4553f, trim: 0xd8c9a8),
-        "apiary": Palette(wall: 0xf0c765, roof: 0x8a6a3a, trim: 0xfff6d8),
-        "banya": Palette(wall: 0x7d5a3c, roof: 0x5c483a, trim: 0xc9ab84),
-        "smokehouse": Palette(wall: 0x8d8377, roof: 0x5c483a, trim: 0xcfc7ba),
+        "banya": Palette(wall: 0xa0774c, roof: 0x6e5647, trim: 0xe0c49a),
+        "smokehouse": Palette(wall: 0xa39889, roof: 0x70594a, trim: 0xd8d1c6),
         "gazebo": Palette(wall: 0xf2ece0, roof: 0x6b5b8a, trim: 0xffffff),
-        "greenhouse": Palette(wall: 0xdff0f2, roof: 0xbfe3e8, trim: 0xa8c4cc),
+        "greenhouse": Palette(wall: 0xdff0f2, roof: 0xbfe3e8, trim: 0x8fb0ba),
+        // Equipment. Painted metal rather than the pale category fill, which
+        // left a micro-hydro turbine on the plot as a plain white cube.
+        "generator": Palette(wall: 0x6f7a80, roof: 0x4d565b, trim: 0xd9dde0),
+        "battery-room": Palette(wall: 0x4f5f6e, roof: 0x3a4854, trim: 0xc8d2da),
+        "inverter-room": Palette(wall: 0x5d6d7a, roof: 0x44525d, trim: 0xccd6dd),
+        "micro-hydro": Palette(wall: 0x3f7a86, roof: 0x2e5b64, trim: 0xd0e6ea),
+        "pump": Palette(wall: 0x7a8288, roof: 0x565d62, trim: 0xdadee1),
+        "hydroponic-tower": Palette(wall: 0xd6e8e2, roof: 0x9fc4b8, trim: 0xf0f7f4),
+        "dock": Palette(wall: 0xb08a5c, roof: 0x8a6a44, trim: 0xd8c2a0),
+        "apiary": Palette(wall: 0xf0c765, roof: 0x8a6a3a, trim: 0xfff6d8),
+        "water-tank": Palette(wall: 0xd8d2c4, roof: 0xb0a794, trim: 0xf2eee4),
+        "rainwater-cistern": Palette(wall: 0xc6d6d8, roof: 0x9db2b5, trim: 0xe8f0f1),
+        "well": Palette(wall: 0xa9a196, roof: 0x7d4f3a, trim: 0xe0dad0),
     ]
 }

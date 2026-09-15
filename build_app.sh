@@ -50,6 +50,12 @@ fi
 if [ "$DO_SELF_CHECK" = 1 ]; then
     step "Engine + core test suite (swift test)"
     swift test --package-path "$ROOT/swift"
+
+    # The app target can't be tested on Linux, so the one class of app-layer
+    # bug that is checkable as text gets checked here: view tables keyed by a
+    # catalog type id that doesn't exist, which fail silently.
+    step "App-layer type ids"
+    python3 "$ROOT/scripts/check_type_ids.py"
 fi
 
 command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild not found — this part needs macOS with Xcode"

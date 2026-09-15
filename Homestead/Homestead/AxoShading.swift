@@ -19,20 +19,26 @@ import SwiftUI
 import HomesteadEngine
 
 enum AxoLight {
-    /// Direction *to* the sun: north-west and fairly high, which is the
-    /// convention isometric illustration uses — it lights the two faces the
-    /// viewer can see most of and leaves the near-south wall in shade, so
-    /// depth reads without any outline doing the work.
-    static let toSun = (x: -0.45, y: -0.55, z: 0.70)
+    /// Direction *to* the sun: north-east, fairly high.
+    ///
+    /// The east component has to be positive. This projection shows the +x
+    /// and +y faces of everything, so a sun to the north-*west* is behind
+    /// every building from the camera and both visible walls come out at
+    /// ambient — the same flat tone, which is what made the first pass read
+    /// as cardboard however carefully the rest was shaded. From the
+    /// north-east the east wall is lit and the south wall is in shade, which
+    /// is the contrast the whole illusion rests on, and shadows fall down and
+    /// to the left the way they do in the references.
+    static let toSun = (x: 0.45, y: -0.55, z: 0.70)
 
     /// How much of a face's colour survives with no direct light on it.
     /// High, because this is outdoor daylight with sky fill, not a spotlight.
-    private static let ambient = 0.55
+    private static let ambient = 0.58
 
     /// The brightness a face is painted at when it gets its base colour
     /// untouched. Faces above it are washed toward white, below toward black,
-    /// so the palette stays the one `CategoryStyle` chose.
-    private static let neutral = 0.78
+    /// so the palette stays the one the type chose.
+    private static let neutral = 0.80
 
     /// Lambert term for a face with this outward normal, in [0, 1].
     static func brightness(normal: (x: Double, y: Double, z: Double)) -> Double {
@@ -46,7 +52,7 @@ enum AxoLight {
     /// lightens. Derived from the light rather than chosen by eye, so every
     /// object in the scene agrees about where the sun is.
     static func shade(normal: (x: Double, y: Double, z: Double)) -> Double {
-        (neutral - brightness(normal: normal)) * 1.35
+        (neutral - brightness(normal: normal)) * 1.2
     }
 
     /// Outward normal of a vertical wall whose base runs from `a` to `b`,

@@ -524,8 +524,10 @@ struct AxonometricPlanView: View {
                 drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0)
 
             case .block(let height):
-                drawWalls(context, corners: corners, from: base, to: base + height, style: style)
-                drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0.10)
+                // Painted metal from the palette, not the category fill: the
+                // fill is a pale plan tint and left equipment as white cubes.
+                drawWalls(context, corners: corners, from: base, to: base + height, fill: wallColor, outline: wallOutline)
+                drawTopFace(context, corners: corners, z: base + height, style: style, object: object, selected: selected, lit: 0.10, fill: roof)
 
             case .gabled(let eaves, let ridge):
                 AxoKit.gabledBuilding(
@@ -537,6 +539,7 @@ struct AxonometricPlanView: View {
                     wall: wallColor,
                     wallOutline: wallOutline,
                     roof: roof,
+                    trim: Color(hex: palette.trim),
                     glazed: false,
                     surfaces: Massing.surfaces(for: object)
                 )
@@ -568,9 +571,12 @@ struct AxonometricPlanView: View {
                     base: base,
                     eaves: eaves,
                     ridge: ridge,
-                    wall: wallColor.opacity(0.55),
+                    // Thin enough to see the rows through, which is the point
+                    // of drawing them.
+                    wall: wallColor.opacity(0.35),
                     wallOutline: Color(hex: palette.trim),
-                    roof: Color(hex: 0xbfe3e8).opacity(0.75),
+                    roof: Color(hex: 0xbfe3e8).opacity(0.55),
+                    trim: Color(hex: palette.trim),
                     glazed: true,
                     surfaces: Massing.surfaces(for: object)
                 )
@@ -614,7 +620,7 @@ struct AxonometricPlanView: View {
     /// that is enough to tell them apart across the plot without a label.
     private static func cylinderCap(for object: PlanObject) -> AxoPainter.Cap {
         switch object.typeId {
-        case "water-tank", "rainwater-cistern", "silo", "grain-silo": return .dome
+        case "water-tank", "rainwater-cistern": return .dome
         case "well": return .cone
         default: return .flat
         }
@@ -658,7 +664,7 @@ struct AxonometricPlanView: View {
         }
     }
 
-    private func drawWalls(_ context: GraphicsContext, corners: [Point], from base: Double, to top: Double, style: CategoryStyle) {
+    private func drawWalls(_ context: GraphicsContext, corners: [Point], from base: Double, to top: Double, fill: Color, outline: Color) {
         for i in corners.indices {
             let a = corners[i]
             let b = corners[(i + 1) % corners.count]
@@ -669,10 +675,10 @@ struct AxonometricPlanView: View {
             // Tone from the scene's own sun, so a block agrees with the
             // gabled buildings around it about which side is lit.
             let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: a, to: b))
-            context.fill(face, with: .color(style.fill))
+            context.fill(face, with: .color(fill))
             if shade > 0 { context.fill(face, with: .color(.black.opacity(shade))) }
             if shade < 0 { context.fill(face, with: .color(.white.opacity(-shade))) }
-            context.stroke(face, with: .color(style.stroke.opacity(0.8)), lineWidth: 0.8)
+            context.stroke(face, with: .color(outline.opacity(0.8)), lineWidth: 0.8)
         }
     }
 
@@ -683,12 +689,13 @@ struct AxonometricPlanView: View {
         style: CategoryStyle,
         object: PlanObject,
         selected: Bool,
-        lit: Double
+        lit: Double,
+        fill: Color? = nil
     ) {
         var face = Path()
         face.addLines(corners.map { screen($0, z: z) })
         face.closeSubpath()
-        context.fill(face, with: .color(style.fill))
+        context.fill(face, with: .color(fill ?? style.fill))
         // A top face is the brightest thing on any object: it is the one
         // pointing at the sky.
         let shade = AxoLight.shade(normal: AxoLight.up) - lit
