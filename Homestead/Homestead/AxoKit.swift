@@ -267,6 +267,10 @@ enum AxoKit {
         // than duplicating it — the roof is the only part a gazebo shares
         // with a shed.
         walled: Bool = true,
+        /// What serves this building — the nearest point of the path network.
+        /// The door goes on the wall that looks at it.
+        facing: Point? = nil,
+        doorway: Doorway = .pedestrian,
         surfaces: Massing.Surfaces
     ) {
         let corners = object.transform.corners
@@ -454,7 +458,10 @@ enum AxoKit {
             }
             painter.line((ridgeA, ridgeZ), (ridgeB, ridgeZ), color: trim, width: 1.8)
         } else {
-            openings(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, outline: wallOutline, trim: trim)
+            openings(
+                painter, object: object, corners: corners, base: base, eavesZ: eavesZ,
+                outline: wallOutline, trim: trim, facing: facing, doorway: doorway
+            )
         }
     }
 
@@ -473,6 +480,7 @@ enum AxoKit {
         wallOutline: Color,
         roof: Color,
         trim: Color,
+        facing: Point? = nil,
         surfaces: Massing.Surfaces
     ) {
         let corners = object.transform.corners
@@ -610,7 +618,7 @@ enum AxoKit {
         }
 
         painter.line((ridgeStart, ridgeZ), (ridgeEnd, ridgeZ), color: .black.opacity(0.28), width: 1.6)
-        barnDoors(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, trim: trim)
+        barnDoors(painter, object: object, corners: corners, base: base, eavesZ: eavesZ, trim: trim, facing: facing)
     }
 
     /// The big sliding door with its diagonal brace. Every barn in every
@@ -621,10 +629,11 @@ enum AxoKit {
         corners: [Point],
         base: Double,
         eavesZ: Double,
-        trim: Color
+        trim: Color,
+        facing target: Point?
     ) {
-        let front = (corners[3], corners[2])
-        let width = object.transform.width
+        let front = frontWall(corners, of: object, facing: target)
+        let width = distance(front.0, front.1)
         guard width * painter.scale > 40, eavesZ - base > 1.8 else { return }
 
         let doorHeight = min(3.2, (eavesZ - base) * 0.82)
@@ -649,11 +658,49 @@ enum AxoKit {
         (edge.0.x + edge.0.y + edge.1.x + edge.1.y) / 2
     }
 
-    /// A door on the south wall and windows either side of it — the south
-    /// edge is the engine's own "front", the road side by convention — each
-    /// in a trim frame. The frames are not decoration: white trim on a red
-    /// barn and on a cream house is a large part of why the references read
-    /// at a glance, and a window without one is a blue smudge.
+    /// The wall that looks most nearly at `target` — the way in. Falls back
+    /// to the south wall, the engine's own "front", when nothing serves the
+    /// building.
+    private static func frontWall(_ corners: [Point], of object: PlanObject, facing target: Point?) -> (Point, Point) {
+        guard corners.count == 4 else { return (corners.first ?? Point(x: 0, y: 0), corners.last ?? Point(x: 0, y: 0)) }
+        let centre = object.transform.center
+        let approach = target ?? Point(x: centre.x, y: centre.y + 1000)
+        let toTarget = (x: approach.x - centre.x, y: approach.y - centre.y)
+        let length = (toTarget.x * toTarget.x + toTarget.y * toTarget.y).squareRoot()
+        guard length > 0 else { return (corners[3], corners[2]) }
+
+        var best = (corners[3], corners[2])
+        var bestAlignment = -Double.infinity
+        for index in 0..<4 {
+            let a = corners[index]
+            let b = corners[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            let alignment = (normal.x * toTarget.x + normal.y * toTarget.y) / length
+            if alignment > bestAlignment {
+                bestAlignment = alignment
+                best = (a, b)
+            }
+        }
+        return best
+    }
+
+    /// How a building is entered.
+    enum Doorway {
+        /// A person door with a window either side.
+        case pedestrian
+        /// A wide opening with panel lines and no windows beside it — what a
+        /// car actually drives through.
+        case vehicle
+    }
+
+    /// A door on the wall that faces the way in, with windows either side.
+    ///
+    /// It used to go on the south wall always, whatever was out there. The
+    /// engine routes a driveway from the gate to the garage in every plan
+    /// (measured: eight of eight), so the garage ended up with a pedestrian
+    /// door on a blank elevation facing a fence while the drive arrived at
+    /// the back of it. The door now picks the wall whose outward normal
+    /// points most nearly at whatever serves the building.
     private static func openings(
         _ painter: AxoPainter,
         object: PlanObject,
@@ -661,16 +708,26 @@ enum AxoKit {
         base: Double,
         eavesZ: Double,
         outline: Color,
-        trim: Color
+        trim: Color,
+        facing target: Point?,
+        doorway: Doorway
     ) {
-        let front = (corners[3], corners[2])
-        let width = object.transform.width
-        guard width * painter.scale > 34, eavesZ - base > 1.6 else { return }
+        guard corners.count == 4 else { return }
+        let centre = object.transform.center
+        let wallHeight = eavesZ - base
+        guard wallHeight > 1.6 else { return }
 
-        /// A framed panel on the front wall: trim behind, opening in front.
+        // The wall that looks at the target; the south wall when nothing
+        // serves this building, which is the engine's own "front".
+        let front = frontWall(corners, of: object, facing: target)
+        let wallWidth = distance(front.0, front.1)
+        guard wallWidth * painter.scale > 34 else { return }
+
+        /// A framed panel on the chosen wall: trim behind, opening in front.
         func panel(from: Double, to: Double, bottom: Double, top: Double, fill: Color, frame: Double) {
-            let outerA = lerp(front.0, front.1, max(0, from - frame / width))
-            let outerB = lerp(front.0, front.1, min(1, to + frame / width))
+            let inset = frame / max(wallWidth, 0.1)
+            let outerA = lerp(front.0, front.1, max(0, from - inset))
+            let outerB = lerp(front.0, front.1, min(1, to + inset))
             painter.face(
                 [(outerA, bottom - frame), (outerB, bottom - frame), (outerB, top + frame), (outerA, top + frame)],
                 fill: trim,
@@ -688,71 +745,59 @@ enum AxoKit {
             )
         }
 
-        let wallHeight = eavesZ - base
-        let doorHeight = min(2.1, wallHeight * 0.8)
-        let doorHalf = min(0.45, width * 0.06) / width
-        panel(
-            from: 0.5 - doorHalf, to: 0.5 + doorHalf,
-            bottom: base, top: base + doorHeight,
-            fill: Color(hex: 0x5a3f2c), frame: 0.12
-        )
-        // A doorstep, which is what stops a door looking painted on.
-        let stepA = lerp(front.0, front.1, 0.5 - doorHalf * 1.4)
-        let stepB = lerp(front.0, front.1, 0.5 + doorHalf * 1.4)
-        painter.line((stepA, base + 0.06), (stepB, base + 0.06), color: trim, width: max(1.4, CGFloat(0.22 * painter.scale)))
-
-        guard width * painter.scale > 60 else { return }
-        let sillZ = base + wallHeight * 0.4
-        let headZ = base + wallHeight * 0.76
-        for fraction in [0.22, 0.78] {
+        switch doorway {
+        case .vehicle:
+            // Wide enough to drive through, and tall enough to clear a roof
+            // box: a garage door is most of the elevation it is on.
+            let half = min(0.34, 2.6 / wallWidth)
+            let height = min(2.6, wallHeight * 0.88)
             panel(
-                from: fraction - 0.08, to: fraction + 0.08,
-                bottom: sillZ, top: headZ,
-                fill: Color(hex: 0x86b4cf), frame: 0.1
+                from: 0.5 - half, to: 0.5 + half,
+                bottom: base, top: base + height,
+                fill: Color(hex: 0xb9bec4), frame: 0.14
             )
-            // One glazing bar and a highlight streak: a pane, not a blue hole.
-            let centre = lerp(front.0, front.1, fraction)
-            painter.line((centre, sillZ), (centre, headZ), color: trim.opacity(0.85), width: 0.9)
-            let midZ = (sillZ + headZ) / 2
-            let a = lerp(front.0, front.1, fraction - 0.08)
-            let b = lerp(front.0, front.1, fraction + 0.08)
-            painter.line((a, midZ), (b, midZ), color: trim.opacity(0.85), width: 0.9)
-        }
-    }
+            // Panel lines, which is what makes it an up-and-over door rather
+            // than a hole in the wall.
+            guard wallWidth * painter.scale > 60 else { return }
+            for step in 1...3 {
+                let z = base + height * Double(step) / 4
+                painter.line(
+                    (lerp(front.0, front.1, 0.5 - half), z),
+                    (lerp(front.0, front.1, 0.5 + half), z),
+                    color: outline.opacity(0.45),
+                    width: 0.8
+                )
+            }
 
-    /// Two beds of seedlings running the length of the house, with a walkway
-    /// between them — the arrangement every reference greenhouse has.
-    private static func greenhouseInterior(_ painter: AxoPainter, object: PlanObject, base: Double, alongX: Bool) {
-        let corners = object.transform.corners
-        guard corners.count == 4, painter.scale > 2 else { return }
-        let soil = Color(hex: 0x6f4a30)
-        let leaf = Color(hex: 0x5fa341)
+        case .pedestrian:
+            let doorHeight = min(2.1, wallHeight * 0.8)
+            let doorHalf = min(0.45, wallWidth * 0.06) / wallWidth
+            panel(
+                from: 0.5 - doorHalf, to: 0.5 + doorHalf,
+                bottom: base, top: base + doorHeight,
+                fill: Color(hex: 0x5a3f2c), frame: 0.12
+            )
+            let stepA = lerp(front.0, front.1, 0.5 - doorHalf * 1.4)
+            let stepB = lerp(front.0, front.1, 0.5 + doorHalf * 1.4)
+            painter.line((stepA, base + 0.06), (stepB, base + 0.06), color: trim, width: max(1.4, CGFloat(0.22 * painter.scale)))
 
-        for fraction in [0.26, 0.74] {
-            let (a, b): (Point, Point) = alongX
-                ? (lerp(corners[0], corners[3], fraction), lerp(corners[1], corners[2], fraction))
-                : (lerp(corners[0], corners[1], fraction), lerp(corners[3], corners[2], fraction))
-            let inner: [(Point, Double)] = [
-                (lerp(a, b, 0.08), base + 0.3),
-                (lerp(b, a, 0.08), base + 0.3),
-                (lerp(b, a, 0.08), base),
-                (lerp(a, b, 0.08), base),
-            ]
-            painter.face(inner, fill: soil, shade: 0.1, outline: nil)
-
-            let count = max(3, min(14, Int(distance(a, b) / 0.8)))
-            for index in 0...count {
-                let t = Double(index) / Double(count)
-                let at = lerp(lerp(a, b, 0.08), lerp(b, a, 0.08), t)
-                let top = painter.project(at, base + 0.72)
-                let root = painter.project(at, base + 0.3)
-                painter.context.stroke(
-                    Path { path in
-                        path.move(to: root)
-                        path.addLine(to: top)
-                    },
-                    with: .color(leaf),
-                    lineWidth: max(1, CGFloat(0.16 * painter.scale))
+            guard wallWidth * painter.scale > 60 else { return }
+            let sillZ = base + wallHeight * 0.4
+            let headZ = base + wallHeight * 0.76
+            for fraction in [0.22, 0.78] {
+                panel(
+                    from: fraction - 0.08, to: fraction + 0.08,
+                    bottom: sillZ, top: headZ,
+                    fill: Color(hex: 0x86b4cf), frame: 0.1
+                )
+                let middle = lerp(front.0, front.1, fraction)
+                painter.line((middle, sillZ), (middle, headZ), color: trim.opacity(0.85), width: 0.9)
+                let midZ = (sillZ + headZ) / 2
+                painter.line(
+                    (lerp(front.0, front.1, fraction - 0.08), midZ),
+                    (lerp(front.0, front.1, fraction + 0.08), midZ),
+                    color: trim.opacity(0.85),
+                    width: 0.9
                 )
             }
         }
@@ -1123,6 +1168,115 @@ enum AxoKit {
 
         fencePost(painter, at: jambA, height: jambHeight, color: post)
         fencePost(painter, at: jambB, height: jambHeight, color: post)
+    }
+
+    /// A swimming pool: a coping walk around a basin of water sunk below it,
+    /// with a shallow end and a ladder. It was a flat lilac slab with a
+    /// swimmer glyph painted on it — the plan symbol, dropped into a view
+    /// that draws everything else as a thing.
+    static func pool(_ painter: AxoPainter, object: PlanObject, base: Double, coping: Color) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+        let centre = object.transform.center
+        let width = object.transform.width
+        let depth = object.transform.height
+        let walk = min(0.9, min(width, depth) * 0.16)
+        let copingZ = base + 0.16
+        let waterZ = base - 0.28
+
+        func inset(_ amount: Double) -> [Point] {
+            corners.map { corner in
+                Point(
+                    x: corner.x + (corner.x >= centre.x ? -amount : amount),
+                    y: corner.y + (corner.y >= centre.y ? -amount : amount)
+                )
+            }
+        }
+
+        // Coping: a paved ring, drawn as four trapezoids so the water sits in
+        // a hole rather than on top of a slab.
+        let rim = inset(walk)
+        for index in 0..<4 {
+            let a = corners[index], b = corners[(index + 1) % 4]
+            let innerA = rim[index], innerB = rim[(index + 1) % 4]
+            painter.face(
+                [(a, copingZ), (b, copingZ), (innerB, copingZ), (innerA, copingZ)],
+                fill: coping,
+                shade: AxoLight.shade(normal: AxoLight.up),
+                outline: coping.mix(with: .black, by: 0.25),
+                lineWidth: 0.6
+            )
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face([(a, copingZ), (b, copingZ), (b, base), (a, base)], fill: coping, shade: 0.3, outline: nil)
+        }
+
+        // Basin walls down to the water, then the water itself.
+        let tile = Color(hex: 0x9fd3e4)
+        for index in 0..<4 {
+            let a = rim[index], b = rim[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y <= 0 else { continue }
+            painter.face([(a, copingZ), (b, copingZ), (b, waterZ), (a, waterZ)], fill: tile, shade: 0.2, outline: nil)
+        }
+        painter.face(
+            rim.map { ($0, waterZ) },
+            fill: Color(hex: 0x3fa9d6),
+            shade: -0.06,
+            outline: Color(hex: 0x2b7fa4),
+            lineWidth: 0.8
+        )
+
+        guard painter.scale > 3 else { return }
+        // A paler shallow end and a few ripples: water, not a blue rectangle.
+        let alongX = width >= depth
+        for step in 1...3 {
+            let t = Double(step) / 4
+            let a = alongX ? lerp(rim[0], rim[1], t) : lerp(rim[0], rim[3], t)
+            let b = alongX ? lerp(rim[3], rim[2], t) : lerp(rim[1], rim[2], t)
+            painter.line((a, waterZ + 0.01), (b, waterZ + 0.01), color: .white.opacity(0.28), width: 1.2)
+        }
+        // Ladder rails at one end.
+        let ladderA = lerp(rim[2], rim[3], 0.35)
+        let ladderB = lerp(rim[2], rim[3], 0.5)
+        for foot in [ladderA, ladderB] {
+            painter.line((foot, waterZ), (foot, copingZ + 0.5), color: Color(hex: 0xd6dde2), width: 1.6)
+        }
+    }
+
+    /// A timber dock: a planked deck on piles, standing over the water. Same
+    /// story as the pool — it was a flat slab with a boat glyph on it.
+    static func dock(_ painter: AxoPainter, object: PlanObject, base: Double, deck: Color) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+        let centre = object.transform.center
+        let deckZ = base + 0.55
+        let dark = deck.mix(with: .black, by: 0.3)
+
+        // Piles first, so the deck lands on them.
+        for corner in corners {
+            let inset = Point(
+                x: corner.x + (centre.x - corner.x) * 0.14,
+                y: corner.y + (centre.y - corner.y) * 0.14
+            )
+            painter.line((inset, base - 0.6), (inset, deckZ), color: dark, width: max(1.6, CGFloat(0.24 * painter.scale)))
+        }
+
+        for index in 0..<4 {
+            let a = corners[index], b = corners[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face([(a, deckZ), (b, deckZ), (b, deckZ - 0.18), (a, deckZ - 0.18)], fill: dark, shade: 0.1, outline: nil)
+        }
+        painter.face(
+            corners.map { ($0, deckZ) },
+            fill: deck,
+            shade: AxoLight.shade(normal: AxoLight.up),
+            outline: dark,
+            lineWidth: 0.7,
+            material: .plank,
+            seed: object.id
+        )
     }
 
     /// One span of fence rail. Split out from the posts so both can be sorted

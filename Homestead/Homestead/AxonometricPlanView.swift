@@ -681,6 +681,8 @@ struct AxonometricPlanView: View {
                 trim: Color(hex: palette.trim),
                 glazed: false,
                 walled: !Massing.isOpenSided(object),
+                facing: approach(to: object),
+                doorway: Massing.doorway(for: object),
                 surfaces: Massing.surfaces(for: object)
             )
             if ["house", "house-l", "banya", "smokehouse"].contains(object.typeId) {
@@ -699,6 +701,7 @@ struct AxonometricPlanView: View {
                 wallOutline: wallOutline,
                 roof: roof,
                 trim: Color(hex: palette.trim),
+                facing: approach(to: object),
                 surfaces: Massing.surfaces(for: object)
             )
 
@@ -744,6 +747,12 @@ struct AxonometricPlanView: View {
         case .canopy(let height, let radius, let conifer):
             drawOrchard(painter, object: object, height: height, radius: radius, conifer: conifer, style: style)
 
+        case .basin:
+            AxoKit.pool(painter, object: object, base: base, coping: Color(hex: 0xe6e0d2))
+
+        case .deck:
+            AxoKit.dock(painter, object: object, base: base, deck: Color(hex: 0xb08a5c))
+
         case .panels(let height):
             AxoKit.solarPanels(
                 painter,
@@ -767,6 +776,26 @@ struct AxonometricPlanView: View {
         case "well": return .cone
         default: return .flat
         }
+    }
+
+    /// The nearest point of the path network to this building — what serves
+    /// it, and therefore which wall its door belongs on. A garage with a
+    /// driveway arriving at the back had its door on a blank elevation
+    /// facing a fence.
+    private func approach(to object: PlanObject) -> Point? {
+        var best: Point?
+        var bestDistance = Double.infinity
+        let centre = object.transform.center
+        for path in variant.paths {
+            for point in path.points {
+                let d = distance(point, centre)
+                if d < bestDistance {
+                    bestDistance = d
+                    best = point
+                }
+            }
+        }
+        return best
     }
 
     /// The object's outline as drawn, in screen space.

@@ -69,6 +69,13 @@ enum Silhouette {
         case let .block(height), let .flat(height), let .rows(height, _), let .panels(height):
             points += corners.map { ($0, base + height) }
 
+        case .basin:
+            // The water sits below grade, so the silhouette is the coping.
+            points += corners.map { ($0, base + 0.16) }
+
+        case .deck:
+            points += corners.map { ($0, base + 0.55) }
+
         case let .cylinder(height, radiusScale):
             // A circle, not the square it is inscribed in: a tank's silhouette
             // is noticeably narrower than its footprint.

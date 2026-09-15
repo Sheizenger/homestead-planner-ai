@@ -35,6 +35,10 @@ enum Massing {
         case canopy(height: Double, radius: Double, conifer: Bool)
         /// Rows of tilted photovoltaic panels on legs.
         case panels(height: Double)
+        /// A basin of water sunk below a coping walk.
+        case basin
+        /// A planked deck on piles.
+        case deck
     }
 
     /// What a building is made of. Two gabled boxes of the same size read as
@@ -44,6 +48,14 @@ enum Massing {
     struct Surfaces {
         var roof: AxoMaterial
         var wall: AxoMaterial
+    }
+
+    /// What a car drives through, rather than a person door on a blank
+    /// elevation. The engine routes a driveway from the gate to the garage in
+    /// every plan; the door just has to be on the wall it arrives at, and be
+    /// wide enough to mean it.
+    static func doorway(for object: PlanObject) -> AxoKit.Doorway {
+        object.typeId == "garage" ? .vehicle : .pedestrian
     }
 
     /// Open-sided: posts hold the roof up and there are no walls to put a
@@ -93,6 +105,8 @@ enum Massing {
         case let .rows(height, _): return height
         case let .canopy(height, _, _): return height * 0.85
         case let .panels(height): return height
+        case .basin: return 0
+        case .deck: return 0.55
         }
     }
 
@@ -157,8 +171,8 @@ enum Massing {
         "solar-array": .panels(height: 1.6),
         "septic": .flat(height: 0.2),
         "patio": .flat(height: 0.1),
-        "pool": .flat(height: 0.1),
-        "dock": .flat(height: 0.4),
+        "pool": .basin,
+        "dock": .deck,
         "goat-paddock": .flat(height: 0.05),
 
         // Planted
@@ -184,6 +198,10 @@ enum Massing {
             return eaves + (ridge - eaves) * 0.35
         case .block(let height), .cylinder(let height, _), .flat(let height), .rows(let height, _), .panels(let height):
             return height
+        case .basin:
+            return 0
+        case .deck:
+            return 0.55
         case .canopy(let height, _, _):
             return height
         }
