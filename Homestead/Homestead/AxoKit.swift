@@ -307,7 +307,7 @@ enum AxoKit {
             for index in 0..<4 {
                 let a = corners[index]
                 let b = corners[(index + 1) % 4]
-                let normal = AxoLight.wallNormal(from: a, to: b)
+                let normal = AxoLight.wallNormal(from: a, to: b, about: object.transform.center)
                 guard normal.x + normal.y > 0 else { continue }
                 painter.face([(a, base + 0.12), (b, base + 0.12), (b, base), (a, base)], fill: trim, shade: 0.28, outline: nil)
             }
@@ -328,7 +328,7 @@ enum AxoKit {
         ].sorted { depth($0) < depth($1) }
 
         for wallEdge in walls where walled {
-            let normal = AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1)
+            let normal = AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1, about: object.transform.center)
             painter.face(
                 [(wallEdge.0, base), (wallEdge.1, base), (wallEdge.1, eavesZ), (wallEdge.0, eavesZ)],
                 fill: wall,
@@ -346,7 +346,7 @@ enum AxoKit {
         let deckThickness = 0.18
         for (index, end) in gableEnds.enumerated() where walled {
             let apex = index == 0 ? ridgeA : ridgeB
-            let normal = AxoLight.wallNormal(from: end.0, to: end.1)
+            let normal = AxoLight.wallNormal(from: end.0, to: end.1, about: object.transform.center)
             painter.face(
                 [(end.0, eavesZ), (end.1, eavesZ), (apex, ridgeZ - deckThickness), (apex, ridgeZ - deckThickness)],
                 fill: wall,
@@ -382,15 +382,20 @@ enum AxoKit {
         // `longEdges` is ordered so that edge.0 sits at the ridgeA end and
         // edge.1 at the ridgeB end, in both the along-x and along-y cases —
         // which is what lets the verge be applied to matching ends.
-        for edge in longEdges.sorted(by: { depth($0) < depth($1) }) {
-            let normal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: run, rise: rise)
+        let orderedSlopes = longEdges.sorted(by: { depth($0) < depth($1) })
+        for (slopeIndex, edge) in orderedSlopes.enumerated() {
+            let normal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: run, rise: rise, about: object.transform.center)
             let flat = (normal.x * normal.x + normal.y * normal.y).squareRoot()
             let outward = flat > 0
                 ? Point(x: normal.x / flat * overhang, y: normal.y / flat * overhang)
                 : Point(x: 0, y: 0)
             let a = Point(x: edge.0.x + outward.x - along.x, y: edge.0.y + outward.y - along.y)
             let b = Point(x: edge.1.x + outward.x + along.x, y: edge.1.y + outward.y + along.y)
-            let eavesDrop = eavesZ - overhang * (rise / max(run, 0.1)) - 0.05
+            // Plus, not minus. The roof plane extended back to the wall line
+            // has to sit *above* the top of the wall; dropping it 5 cm below
+            // put the wall through the roof at the gable, which is the pale
+            // wedge that has been showing at every gable end.
+            let eavesDrop = eavesZ - overhang * (rise / max(run, 0.1)) + 0.04
 
             painter.face(
                 [(a, eavesDrop), (b, eavesDrop), (ridgeEnd, ridgeZ), (ridgeStart, ridgeZ)],
@@ -411,18 +416,22 @@ enum AxoKit {
                 shade: 0.34,
                 outline: nil
             )
-            painter.face(
-                [(a, eavesDrop), (ridgeStart, ridgeZ), (ridgeStart, ridgeZ - thickness), (a, eavesDrop - thickness)],
-                fill: roof,
-                shade: 0.26,
-                outline: nil
-            )
-            painter.face(
-                [(b, eavesDrop), (ridgeEnd, ridgeZ), (ridgeEnd, ridgeZ - thickness), (b, eavesDrop - thickness)],
-                fill: roof,
-                shade: 0.26,
-                outline: nil
-            )
+            // Only on the near slope: the far slope's rake boards face away
+            // from the camera, and drawing them laid a flap across the gable.
+            if slopeIndex == orderedSlopes.count - 1 {
+                painter.face(
+                    [(a, eavesDrop), (ridgeStart, ridgeZ), (ridgeStart, ridgeZ - thickness), (a, eavesDrop - thickness)],
+                    fill: roof,
+                    shade: 0.26,
+                    outline: nil
+                )
+                painter.face(
+                    [(b, eavesDrop), (ridgeEnd, ridgeZ), (ridgeEnd, ridgeZ - thickness), (b, eavesDrop - thickness)],
+                    fill: roof,
+                    shade: 0.26,
+                    outline: nil
+                )
+            }
         }
 
         // Ridge cap, which is what makes the two planes read as a pitch.
@@ -494,7 +503,7 @@ enum AxoKit {
             painter.face(
                 [(wallEdge.0, base), (wallEdge.1, base), (wallEdge.1, eavesZ), (wallEdge.0, eavesZ)],
                 fill: wall,
-                shade: AxoLight.shade(normal: AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1)),
+                shade: AxoLight.shade(normal: AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1, about: object.transform.center)),
                 outline: wallOutline,
                 material: surfaces.wall,
                 seed: object.id
@@ -518,7 +527,7 @@ enum AxoKit {
         /// `point` moved straight in from (or, negative, out from) its own
         /// long edge — the direction the roof climbs.
         func inward(_ point: Point, from edge: (Point, Point), by amount: Double) -> Point {
-            let normal = AxoLight.wallNormal(from: edge.0, to: edge.1)
+            let normal = AxoLight.wallNormal(from: edge.0, to: edge.1, about: object.transform.center)
             let length = (normal.x * normal.x + normal.y * normal.y).squareRoot()
             guard length > 0 else { return point }
             return Point(x: point.x - normal.x / length * amount, y: point.y - normal.y / length * amount)
@@ -537,7 +546,7 @@ enum AxoKit {
             let fraction = min(0.45, knuckleInset / span)
             let kneeA = lerp(end.0, end.1, fraction)
             let kneeB = lerp(end.1, end.0, fraction)
-            let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: end.0, to: end.1))
+            let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: end.0, to: end.1, about: object.transform.center))
 
             painter.face(
                 [(end.0, eavesZ), (end.1, eavesZ), (kneeB, knuckleZ), (kneeA, knuckleZ)],
@@ -570,8 +579,8 @@ enum AxoKit {
                               y: inward(edge.1, from: edge, by: knuckleInset).y + along.y)
 
             let lowerRise = knuckle - eaves
-            let eavesDrop = eavesZ - overhang * (lowerRise / max(knuckleInset, 0.1)) - 0.05
-            let lowerNormal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: knuckleInset, rise: lowerRise)
+            let eavesDrop = eavesZ - overhang * (lowerRise / max(knuckleInset, 0.1)) + 0.04
+            let lowerNormal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: knuckleInset, rise: lowerRise, about: object.transform.center)
             painter.face(
                 [(eavesA, eavesDrop), (eavesB, eavesDrop), (kneeB, knuckleZ), (kneeA, knuckleZ)],
                 fill: roof,
@@ -588,7 +597,7 @@ enum AxoKit {
                 outline: nil
             )
 
-            let upperNormal = AxoLight.roofNormal(from: kneeA, to: kneeB, run: max(0.1, run - knuckleInset), rise: ridge - knuckle)
+            let upperNormal = AxoLight.roofNormal(from: kneeA, to: kneeB, run: max(0.1, run - knuckleInset), rise: ridge - knuckle, about: object.transform.center)
             painter.face(
                 [(kneeA, knuckleZ), (kneeB, knuckleZ), (ridgeEnd, ridgeZ), (ridgeStart, ridgeZ)],
                 fill: roof,
@@ -810,7 +819,7 @@ enum AxoKit {
         // The bed stands slightly proud of the grass, with its own cut sides.
         for index in 0..<4 {
             let a = corners[index], b = corners[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b)
+            let normal = AxoLight.wallNormal(from: a, to: b, about: object.transform.center)
             guard normal.x + normal.y > 0 else { continue }
             painter.face(
                 [(a, bedZ), (b, bedZ), (b, base), (a, base)],
@@ -1076,6 +1085,46 @@ enum AxoKit {
         }
     }
 
+    /// The way in. The engine has always known where it is — `findGatePoint`
+    /// puts it on the road-facing boundary edge nearest the house, and the
+    /// driveway and the entrance walk both run to it — but nothing drew it, so
+    /// the plot came out ringed by an unbroken fence with paths running into
+    /// it. Two taller jamb posts and a leaf swung open, which is what every
+    /// reference does.
+    static func gate(
+        _ painter: AxoPainter,
+        at centre: Point,
+        along direction: Point,
+        width: Double,
+        height: Double,
+        post: Color,
+        leaf: Color
+    ) {
+        let half = width / 2
+        let jambA = Point(x: centre.x - direction.x * half, y: centre.y - direction.y * half)
+        let jambB = Point(x: centre.x + direction.x * half, y: centre.y + direction.y * half)
+        let jambHeight = height * 1.35
+
+        // The leaf swings inward off the far jamb, so the opening reads as an
+        // opening rather than as a missing section of fence.
+        let swing = Point(x: -direction.y, y: direction.x)
+        let tip = Point(
+            x: jambB.x - direction.x * width * 0.72 + swing.x * width * 0.62,
+            y: jambB.y - direction.y * width * 0.72 + swing.y * width * 0.62
+        )
+        let light = leaf.mix(with: .white, by: 0.2)
+        let dark = leaf.mix(with: .black, by: 0.28)
+
+        for rail in [0.28, 0.58, 0.88] {
+            painter.line((jambB, height * rail), (tip, height * rail), color: rail == 0.88 ? light : leaf, width: 1.6)
+        }
+        painter.line((jambB, height * 0.28), (tip, height * 0.88), color: dark, width: 1.2)
+        painter.line((tip, 0), (tip, height * 0.95), color: leaf, width: 1.8)
+
+        fencePost(painter, at: jambA, height: jambHeight, color: post)
+        fencePost(painter, at: jambB, height: jambHeight, color: post)
+    }
+
     /// One span of fence rail. Split out from the posts so both can be sorted
     /// into the scene's own depth order: drawing every fence in one pass
     /// before the buildings meant a fence nearer the camera than a building
@@ -1108,7 +1157,7 @@ enum AxoKit {
         ]
         for face in 0..<4 {
             let p = quad[face], q = quad[(face + 1) % 4]
-            let normal = AxoLight.wallNormal(from: p, to: q)
+            let normal = AxoLight.wallNormal(from: p, to: q, about: position)
             guard normal.x + normal.y > 0 else { continue }
             painter.face([(p, 0), (q, 0), (q, height), (p, height)], fill: color, shade: AxoLight.shade(normal: normal), outline: nil)
         }

@@ -56,18 +56,29 @@ enum AxoLight {
     }
 
     /// Outward normal of a vertical wall whose base runs from `a` to `b`,
-    /// with the footprint wound clockwise in screen terms (the order
-    /// `Transform.corners` produces).
-    static func wallNormal(from a: Point, to b: Point) -> (x: Double, y: Double, z: Double) {
-        // Right-hand perpendicular of the edge direction points out of the
-        // footprint for this winding.
-        (x: b.y - a.y, y: -(b.x - a.x), z: 0)
+    /// resolved against the footprint's own centre so it does not depend on
+    /// which way round the caller happened to list the edge.
+    ///
+    /// The perpendicular alone is only outward for one winding, and half the
+    /// edges a roof is built from are listed the other way: `longEdges` and
+    /// `gableEnds` are ordered so each runs from the ridge's `A` end to its
+    /// `B` end, which reverses two of the four. That gave the second slope of
+    /// every roof an inward normal, so its overhang was pushed 0.45 m *inside*
+    /// the wall — the gap between roof and wall at the gable — and it was
+    /// shaded as if facing the sun, which is the pale wedge that came with it.
+    static func wallNormal(from a: Point, to b: Point, about centre: Point? = nil) -> (x: Double, y: Double, z: Double) {
+        let perpendicular = (x: b.y - a.y, y: -(b.x - a.x), z: 0.0)
+        guard let centre else { return perpendicular }
+        let outwardX = (a.x + b.x) / 2 - centre.x
+        let outwardY = (a.y + b.y) / 2 - centre.y
+        let agrees = perpendicular.x * outwardX + perpendicular.y * outwardY >= 0
+        return agrees ? perpendicular : (x: -perpendicular.x, y: -perpendicular.y, z: 0)
     }
 
     /// Outward normal of a roof plane that rises from eaves edge `a`–`b` to a
     /// ridge `rise` metres above, `run` metres horizontally inward.
-    static func roofNormal(from a: Point, to b: Point, run: Double, rise: Double) -> (x: Double, y: Double, z: Double) {
-        let wall = wallNormal(from: a, to: b)
+    static func roofNormal(from a: Point, to b: Point, run: Double, rise: Double, about centre: Point? = nil) -> (x: Double, y: Double, z: Double) {
+        let wall = wallNormal(from: a, to: b, about: centre)
         let length = (wall.x * wall.x + wall.y * wall.y).squareRoot()
         guard length > 0, run > 0 else { return (0, 0, 1) }
         // Tilt the wall normal up by the pitch: horizontal component scales

@@ -170,9 +170,10 @@ struct AxonometricPlanView: View {
 
         // Only the edges facing the viewer have a visible cut face; the far
         // ones are hidden behind the slab's own top.
+        let centre = footprintCentre(boundary)
         let edges = (0..<boundary.count).map { (boundary[$0], boundary[($0 + 1) % boundary.count]) }
         for edge in edges.sorted(by: { edgeDepth($0) < edgeDepth($1) }) {
-            let normal = AxoLight.wallNormal(from: edge.0, to: edge.1)
+            let normal = AxoLight.wallNormal(from: edge.0, to: edge.1, about: centre)
             // Screen-space test: the face is visible when its outward normal
             // points toward the viewer, which in this projection is +x +y.
             guard normal.x + normal.y > 0 else { continue }
@@ -228,6 +229,23 @@ struct AxonometricPlanView: View {
     private static let grassDark = Color(hex: 0x69a63d)
     private static let soil = Color(hex: 0x8a6446)
     private static let soilEdge = Color(hex: 0x6d4e36)
+
+    /// Mean of the vertices — enough to tell inside from outside for a convex
+    /// or mildly concave footprint, which is all an outward normal needs.
+    /// Nearest point on segment `a`–`b`, to test whether the gate lies on
+    /// this particular run of fence rather than another one.
+    private func closestPoint(on a: Point, _ b: Point, to point: Point) -> Point {
+        Polygon.project(point, onto: a, b)
+    }
+
+    private func footprintCentre(_ points: [Point]) -> Point {
+        guard !points.isEmpty else { return Point(x: 0, y: 0) }
+        let count = Double(points.count)
+        return Point(
+            x: points.reduce(0) { $0 + $1.x } / count,
+            y: points.reduce(0) { $0 + $1.y } / count
+        )
+    }
 
     private func edgeDepth(_ edge: (Point, Point)) -> Double {
         (edge.0.x + edge.0.y + edge.1.x + edge.1.y) / 2
@@ -492,6 +510,7 @@ struct AxonometricPlanView: View {
         case object(PlanObject)
         case rail(Point, Point)
         case post(Point)
+        case gate(Point, Point)
 
         /// Depth in this projection is x + y.
         var depth: Double {
@@ -499,6 +518,7 @@ struct AxonometricPlanView: View {
             case let .object(object): return object.transform.x + object.transform.y
             case let .rail(a, b): return (a.x + a.y + b.x + b.y) / 2
             case let .post(at): return at.x + at.y
+            case let .gate(at, _): return at.x + at.y
             }
         }
 
@@ -507,6 +527,7 @@ struct AxonometricPlanView: View {
             case let .object(object): return object.id
             case let .rail(a, _): return "rail-\(a.x)-\(a.y)"
             case let .post(at): return "post-\(at.x)-\(at.y)"
+            case let .gate(at, _): return "gate-\(at.x)-\(at.y)"
             }
         }
     }
@@ -515,14 +536,32 @@ struct AxonometricPlanView: View {
     /// it would sort wrong against everything it passes. Cutting runs into
     /// short pieces is what makes a painter's algorithm behave.
     private static let railPieceM = 2.0
+    /// A gate wide enough for the driveway that runs to it.
+    private static let gateWidthM = 3.2
+
+    /// Where the way in is. The engine decides this — the road-facing
+    /// boundary edge nearest the house, skipping any waterfront — and both
+    /// the driveway and the entrance walk already run to it. This just asks.
+    private var gatePoint: Point? {
+        guard let house = variant.objects.first(where: { ObjectLibrary.houseTypeIDs.contains($0.typeId) }) else { return nil }
+        return PathsAndFences.findGatePoint(
+            boundary: plot.boundary,
+            houseCenter: house.transform.center,
+            waterfrontBounds: WaterfrontModel.bounds(of: plot)
+        )
+    }
 
     private func drawables() -> [Drawable] {
         var items: [Drawable] = []
         for object in variant.objects {
             items.append(.object(object))
         }
+        let gate = gatePoint
         for fence in variant.fences {
             guard fence.points.count > 1 else { continue }
+            // A gated fence gets an opening rather than an unbroken ring with
+            // the driveway running into it.
+            let opening: Point? = fence.gated ? gate : nil
             for index in 0..<(fence.points.count - 1) {
                 let a = fence.points[index]
                 let b = fence.points[index + 1]
@@ -536,10 +575,18 @@ struct AxonometricPlanView: View {
                     let t1: Double = Double(piece + 1) / Double(pieces)
                     let from = Point(x: a.x + spanX * t0, y: a.y + spanY * t0)
                     let to = Point(x: a.x + spanX * t1, y: a.y + spanY * t1)
+                    let middle = Point(x: (from.x + to.x) / 2, y: (from.y + to.y) / 2)
+                    if let opening, distance(middle, opening) < Self.gateWidthM / 2 { continue }
                     items.append(.rail(from, to))
+                }
+                if let opening, distance(opening, closestPoint(on: a, b, to: opening)) < 0.01 {
+                    let length = max(0.001, distance(a, b))
+                    let direction = Point(x: (b.x - a.x) / length, y: (b.y - a.y) / length)
+                    items.append(.gate(opening, direction))
                 }
             }
             for post in AxoKit.fencePosts(along: fence.points) {
+                if let opening, distance(post, opening) < Self.gateWidthM / 2 { continue }
                 items.append(.post(post))
             }
         }
@@ -560,6 +607,16 @@ struct AxonometricPlanView: View {
                 AxoKit.fenceRail(painter, from: a, to: b, height: Self.fenceHeight, color: Self.timber)
             case let .post(at):
                 AxoKit.fencePost(painter, at: at, height: Self.fenceHeight, color: Self.timber)
+            case let .gate(at, direction):
+                AxoKit.gate(
+                    painter,
+                    at: at,
+                    along: direction,
+                    width: Self.gateWidthM,
+                    height: Self.fenceHeight,
+                    post: Self.timber.mix(with: .black, by: 0.2),
+                    leaf: Self.timber
+                )
             case let .object(object):
                 draw(object, in: context, painter: painter)
             }
@@ -764,7 +821,7 @@ struct AxonometricPlanView: View {
 
             // Tone from the scene's own sun, so a block agrees with the
             // gabled buildings around it about which side is lit.
-            let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: a, to: b))
+            let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: a, to: b, about: footprintCentre(corners)))
             context.fill(face, with: .color(fill))
             if shade > 0 { context.fill(face, with: .color(.black.opacity(shade))) }
             if shade < 0 { context.fill(face, with: .color(.white.opacity(-shade))) }
