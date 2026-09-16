@@ -19,25 +19,9 @@ import HomesteadCore
 
 /// x right-and-down, y left-and-down, z straight up: the classic 30° site
 /// axonometric.
-enum Axonometry {
-    static let cosA = 0.866   // cos 30°
-    static let sinA = 0.5     // sin 30°
-
-    static func project(x: Double, y: Double, z: Double = 0) -> Point {
-        Point(x: (x - y) * cosA, y: (x + y) * sinA - z)
-    }
-
-    static func project(_ point: Point, z: Double = 0) -> Point {
-        project(x: point.x, y: point.y, z: z)
-    }
-
-    /// Inverse at ground level, for hit-testing a click.
-    static func groundPoint(_ axo: Point) -> Point {
-        let a = axo.x / cosA
-        let b = axo.y / sinA
-        return Point(x: (a + b) / 2, y: (b - a) / 2)
-    }
-}
+// `Axonometry` is gone: it was a camera with its angles written into the
+// arithmetic. `Camera3D` is the same thing with the angles as parameters, and
+// `Camera3DTests` pins that the defaults reproduce it exactly.
 
 struct AxonometricPlanView: View {
     let plot: Plot
@@ -49,8 +33,25 @@ struct AxonometricPlanView: View {
     var showsDimensions: Bool
 
     @Environment(\.colorScheme) private var colorScheme
+    @State private var cameraYaw: Double = Camera3D.isometricYaw
+    @State private var cameraPitch: Double = Camera3D.isometricPitch
+    /// Where the camera was when the current orbit began. The drag reads
+    /// absolute translation rather than accumulating per-frame deltas, so a
+    /// dropped or coalesced event can't leave the camera drifted from where
+    /// the cursor says it should be.
+    @State private var yawAnchor: Double = Camera3D.isometricYaw
+    @State private var pitchAnchor: Double = Camera3D.isometricPitch
     @State private var dragAnchor: CGSize = .zero
+    @State private var dragKind: DragKind?
     @State private var magnifyAnchor: CGFloat = 1
+    /// Held modifiers, sampled by the view rather than read off the drag:
+    /// `DragGesture.Value` doesn't carry them.
+    @State private var orbitModifierHeld = false
+
+    /// A drag is one thing or the other for its whole length, decided from
+    /// where it started. Deciding per-frame would let a pan turn into an
+    /// orbit halfway through if the user happened to press ⌥ mid-drag.
+    private enum DragKind { case pan, orbit }
 
     private var chrome: CanvasChrome { CanvasChrome.of(colorScheme) }
 
@@ -79,20 +80,39 @@ struct AxonometricPlanView: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        let delta = CGSize(
-                            width: value.translation.width - dragAnchor.width,
-                            height: value.translation.height - dragAnchor.height
-                        )
-                        dragAnchor = value.translation
-                        viewport.pan(byScreen: Point(x: Double(delta.width), y: Double(delta.height)))
+                        let kind = dragKind ?? beginDrag(at: value.startLocation, in: geometry.size)
+                        switch kind {
+                        case .pan:
+                            let delta = CGSize(
+                                width: value.translation.width - dragAnchor.width,
+                                height: value.translation.height - dragAnchor.height
+                            )
+                            dragAnchor = value.translation
+                            viewport.pan(byScreen: Point(x: Double(delta.width), y: Double(delta.height)))
+                        case .orbit:
+                            orbit(by: value.translation)
+                        }
                     }
                     .onEnded { value in
+                        let kind = dragKind
                         dragAnchor = .zero
+                        dragKind = nil
                         let moved = abs(value.translation.width) + abs(value.translation.height)
                         guard moved < 4 else { return }
-                        selectedObjectID = objectID(at: value.location)
+                        // A click, not a drag. On the compass that means the
+                        // map-app gesture — put north back where it was; the
+                        // compass is not over the plan, so nothing there is
+                        // selectable anyway.
+                        if kind == .orbit, isOnCompass(value.location, in: geometry.size) {
+                            resetCamera()
+                        } else if kind == .pan {
+                            selectedObjectID = objectID(at: value.location)
+                        }
                     }
             )
+            .onModifierKeysChanged(mask: .option) { _, held in
+                orbitModifierHeld = held.contains(.option)
+            }
             .gesture(
                 MagnifyGesture()
                     .onChanged { value in
@@ -125,7 +145,7 @@ struct AxonometricPlanView: View {
 
     private func fit(in size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
-        let projected = plot.boundary.map { Axonometry.project($0) }
+        let projected = plot.boundary.map { camera.project($0) }
         // Tall buildings stand up out of the plot's own footprint, so the
         // framed box is padded upward rather than fitted to the ground alone.
         guard var bounds = Rect(bounding: projected) else { return }
@@ -135,17 +155,106 @@ struct AxonometricPlanView: View {
         viewport.fit(bounds, in: Size(width: Double(size.width), height: Double(size.height)), padding: 36)
     }
 
+    /// The camera the whole view is drawn through. Yaw is state so it can be
+    /// turned; pitch stays at the isometric elevation, which is what keeps the
+    /// plan readable as a plan.
+    private var camera: Camera3D { Camera3D(yaw: cameraYaw, pitch: cameraPitch) }
+
+    /// The scene's light, which travels with the camera — see `SceneLight`.
+    /// A fixed compass sun leaves half of the orbit unlit, measured.
+    private var light: SceneLight { SceneLight.following(camera) }
+
+    // MARK: - Orbit
+
+    /// Radians per point of drag. A full turn takes a little over half a
+    /// canvas width across, and the whole usable range of elevation about a
+    /// third of its height — enough that a deliberate drag reaches any angle
+    /// without the view spinning away from a twitch.
+    private static let yawPerPoint = 2 * Double.pi / 640
+    private static let pitchPerPoint = (Camera3D.maxPitch - Camera3D.minPitch) / 340
+
+    /// Which gesture this drag is, decided once from where it started.
+    private func beginDrag(at start: CGPoint, in size: CGSize) -> DragKind {
+        let kind: DragKind = (orbitModifierHeld || isOnCompass(start, in: size)) ? .orbit : .pan
+        dragKind = kind
+        if kind == .orbit {
+            yawAnchor = cameraYaw
+            pitchAnchor = cameraPitch
+        }
+        return kind
+    }
+
+    private func orbit(by translation: CGSize) {
+        let turned = Camera3D(yaw: yawAnchor, pitch: pitchAnchor).turned(
+            byYaw: Double(translation.width) * Self.yawPerPoint,
+            pitch: Double(translation.height) * Self.pitchPerPoint
+        )
+        setCamera(turned)
+    }
+
+    /// Moves the camera while keeping the site centred where it already is.
+    /// Without the pivot the plot swings out of frame within a few degrees
+    /// and the gesture becomes a chase; `Viewport.turn` is covered by tests
+    /// that run on Linux, which this layer can't.
+    private func setCamera(_ new: Camera3D) {
+        let old = camera
+        cameraYaw = new.yaw
+        cameraPitch = new.pitch
+        viewport.turn(from: old, to: new, holding: pivot)
+    }
+
+    /// What the camera turns around: the middle of the plot, at eye height
+    /// for the buildings on it rather than at ground level, so tall objects
+    /// don't slide up and down the screen as the elevation changes.
+    private var pivot: Point {
+        plot.bounds.map { Point(x: $0.midX, y: $0.midY) } ?? Point(x: 0, y: 0)
+    }
+
+    private func step(byYaw radians: Double) {
+        setCamera(camera.turned(byYaw: radians))
+    }
+
+    private func resetCamera() {
+        setCamera(Camera3D())
+    }
+
+    private func compassCentre(in size: CGSize) -> CGPoint {
+        CGPoint(x: size.width - 42, y: 44)
+    }
+
+    private func isOnCompass(_ point: CGPoint, in size: CGSize) -> Bool {
+        let centre = compassCentre(in: size)
+        let dx = point.x - centre.x
+        let dy = point.y - centre.y
+        return (dx * dx + dy * dy).squareRoot() <= Self.compassRadius + 6
+    }
+
+    private static let compassRadius: CGFloat = 22
+
     private func screen(_ world: Point, z: Double = 0) -> CGPoint {
-        let axo = Axonometry.project(world, z: z)
-        let point = viewport.toScreen(axo)
+        let point = viewport.toScreen(camera.project(world, z: z))
         return CGPoint(x: point.x, y: point.y)
     }
 
     private func zoomControls(in size: CGSize) -> some View {
         VStack(spacing: 4) {
             Button { zoom(by: 1.3, in: size) } label: { Image(systemName: "plus.magnifyingglass") }
+                .help("Zoom in")
             Button { zoom(by: 1 / 1.3, in: size) } label: { Image(systemName: "minus.magnifyingglass") }
+                .help("Zoom out")
             Button { fit(in: size) } label: { Image(systemName: "arrow.up.left.and.down.right.magnifyingglass") }
+                .help("Fit the plot to the window")
+
+            Divider().frame(width: 26)
+
+            // Discrete steps as well as the drag, because a modifier-drag is
+            // not something anyone finds by accident, and because an eighth
+            // of a turn is exactly what you want when a building is hiding
+            // behind another one.
+            Button { step(byYaw: -.pi / 4) } label: { Image(systemName: "rotate.left") }
+                .help("Turn the view 45° anticlockwise")
+            Button { step(byYaw: .pi / 4) } label: { Image(systemName: "rotate.right") }
+                .help("Turn the view 45° clockwise")
         }
         .buttonStyle(.bordered)
         .padding(12)
@@ -165,21 +274,36 @@ struct AxonometricPlanView: View {
     private func drawGround(_ context: GraphicsContext) {
         let boundary = plot.boundary
         guard boundary.count >= 3 else { return }
-        let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
+        // Its own pass, rendered before anything else: the block of land is
+        // the backdrop, and sorting it with the buildings standing on it would
+        // only ever be a way to get it wrong.
+        let scene = AxoScene()
+        defer { scene.render(into: context) }
+        let painter = AxoPainter(
+            context: context,
+            project: { point, z in self.screen(point, z: z) },
+            scale: viewport.scale,
+            scene: scene,
+            depthOf: { point, z in self.camera.depthKey(point, z: z) },
+            ellipseAxes: { radius in
+                let axes = self.camera.horizontalEllipse(radius: radius)
+                return (rx: axes.rx * self.viewport.scale, ry: axes.ry * self.viewport.scale)
+            },
+            facesCamera: { normal in self.camera.faces(normal) },
+            light: light
+        )
 
         // Only the edges facing the viewer have a visible cut face; the far
         // ones are hidden behind the slab's own top.
         let centre = footprintCentre(boundary)
         let edges = (0..<boundary.count).map { (boundary[$0], boundary[($0 + 1) % boundary.count]) }
         for edge in edges.sorted(by: { edgeDepth($0) < edgeDepth($1) }) {
-            let normal = AxoLight.wallNormal(from: edge.0, to: edge.1, about: centre)
-            // Screen-space test: the face is visible when its outward normal
-            // points toward the viewer, which in this projection is +x +y.
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: edge.0, to: edge.1, about: centre)
+            guard camera.faces(normal) else { continue }
             painter.face(
                 [(edge.0, 0), (edge.1, 0), (edge.1, -Self.slabDepth), (edge.0, -Self.slabDepth)],
                 fill: Self.soil,
-                shade: AxoLight.shade(normal: normal),
+                shade: light.shade(normal: normal),
                 outline: Self.soilEdge,
                 lineWidth: 0.8,
                 material: .brick,
@@ -246,8 +370,12 @@ struct AxonometricPlanView: View {
         )
     }
 
+    /// Depth of the midpoint of an edge, for ordering the slab's cut faces.
+    /// Was `x + y`, the fixed camera's sort written out by hand — the third
+    /// copy of it to survive the sweep, and the reason the plot's own sides
+    /// would have stacked wrongly once the view turned.
     private func edgeDepth(_ edge: (Point, Point)) -> Double {
-        (edge.0.x + edge.0.y + edge.1.x + edge.1.y) / 2
+        camera.depthKey(Point(x: (edge.0.x + edge.1.x) / 2, y: (edge.0.y + edge.1.y) / 2))
     }
 
     /// Patches of a second green, then tufts. The references never use one
@@ -459,9 +587,9 @@ struct AxonometricPlanView: View {
             // put a soft rectangle under the whole orchard.
             if case let .canopy(_, radius, _) = Massing.form(for: object) {
                 for position in Massing.grovePositions(for: object) {
-                    let offset = AxoLight.shadowOffset(height: height)
+                    let offset = light.shadowOffset(height: height)
                     let centre = screen(Point(x: position.x + offset.x, y: position.y + offset.y))
-                    let rx = CGFloat(radius * 1.414 * Axonometry.cosA * viewport.scale)
+                    let rx = CGFloat(camera.horizontalEllipse(radius: radius).rx * viewport.scale)
                     shadow.addEllipse(in: CGRect(x: centre.x - rx, y: centre.y - rx * 0.6, width: rx * 2, height: rx * 1.2))
                     any = true
                 }
@@ -470,7 +598,7 @@ struct AxonometricPlanView: View {
 
             let corners = object.transform.corners
             guard corners.count == 4 else { continue }
-            let offset = AxoLight.shadowOffset(height: height)
+            let offset = light.shadowOffset(height: height)
             let cast = corners.map { Point(x: $0.x + offset.x, y: $0.y + offset.y) }
             any = true
 
@@ -511,13 +639,13 @@ struct AxonometricPlanView: View {
         case post(Point)
         case gate(Point, Point)
 
-        /// Depth in this projection is x + y.
-        var depth: Double {
+        /// Where this sits, for the camera to measure the depth of.
+        var anchor: Point {
             switch self {
-            case let .object(object): return object.transform.x + object.transform.y
-            case let .rail(a, b): return (a.x + a.y + b.x + b.y) / 2
-            case let .post(at): return at.x + at.y
-            case let .gate(at, _): return at.x + at.y
+            case let .object(object): return object.transform.center
+            case let .rail(a, b): return Point(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+            case let .post(at): return at
+            case let .gate(at, _): return at
             }
         }
 
@@ -589,16 +717,36 @@ struct AxonometricPlanView: View {
                 items.append(.post(post))
             }
         }
+        let camera = self.camera
         return items.sorted { a, b in
-            if a.depth == b.depth { return a.tiebreak < b.tiebreak }
-            return a.depth < b.depth
+            let da = camera.depthKey(a.anchor)
+            let db = camera.depthKey(b.anchor)
+            if da == db { return a.tiebreak < b.tiebreak }
+            return da < db
         }
     }
 
     /// Back to front: whatever is further from the viewer is drawn first, so
     /// nearer things paint over it.
     private func drawMassing(_ context: GraphicsContext) {
-        let painter = AxoPainter(context: context, project: { point, z in self.screen(point, z: z) }, scale: viewport.scale)
+        // Everything that stands up goes into one scene and is sorted against
+        // the camera, rather than each routine emitting its own pieces in an
+        // order that only works from one angle.
+        let scene = AxoScene()
+        defer { scene.render(into: context) }
+        let painter = AxoPainter(
+            context: context,
+            project: { point, z in self.screen(point, z: z) },
+            scale: viewport.scale,
+            scene: scene,
+            depthOf: { point, z in self.camera.depthKey(point, z: z) },
+            ellipseAxes: { radius in
+                let axes = self.camera.horizontalEllipse(radius: radius)
+                return (rx: axes.rx * self.viewport.scale, ry: axes.ry * self.viewport.scale)
+            },
+            facesCamera: { normal in self.camera.faces(normal) },
+            light: light
+        )
 
         for item in drawables() {
             switch item {
@@ -880,7 +1028,9 @@ struct AxonometricPlanView: View {
         // Back to front within the grove, so near trees overlap far ones, and
         // every tree its own seed: a grove where each one is identical reads
         // as wallpaper.
-        for (index, position) in Massing.grovePositions(for: object).sorted(by: { $0.x + $0.y < $1.x + $1.y }).enumerated() {
+        let grove = Massing.grovePositions(for: object)
+            .sorted { camera.depthKey($0) < camera.depthKey($1) }
+        for (index, position) in grove.enumerated() {
             let seed = object.id + "-\(index)"
             let jittered = Point(
                 x: position.x + AxoNoise.jitter(seed, index, 1, 0.55),
@@ -916,7 +1066,7 @@ struct AxonometricPlanView: View {
 
             // Tone from the scene's own sun, so a block agrees with the
             // gabled buildings around it about which side is lit.
-            let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: a, to: b, about: footprintCentre(corners)))
+            let shade = light.shade(normal: SceneLight.wallNormal(from: a, to: b, about: footprintCentre(corners)))
             context.fill(face, with: .color(fill))
             if shade > 0 { context.fill(face, with: .color(.black.opacity(shade))) }
             if shade < 0 { context.fill(face, with: .color(.white.opacity(-shade))) }
@@ -940,7 +1090,7 @@ struct AxonometricPlanView: View {
         context.fill(face, with: .color(fill ?? style.fill))
         // A top face is the brightest thing on any object: it is the one
         // pointing at the sky.
-        let shade = AxoLight.shade(normal: AxoLight.up) - lit
+        let shade = light.shade(normal: SceneLight.up) - lit
         if shade < 0 { context.fill(face, with: .color(.white.opacity(min(0.35, -shade)))) }
         context.stroke(face, with: .color(style.stroke), lineWidth: selected ? 2.2 : 0.9)
         if selected {
@@ -1019,25 +1169,75 @@ struct AxonometricPlanView: View {
         )
     }
 
+    /// The compass, which is also the rotation control: a dial you can grab.
+    ///
+    /// A modifier-drag is invisible, and a pair of step buttons only gets you
+    /// to eight angles. Every map app puts the free rotation on the compass
+    /// and resets the bearing when you click it, so that is what this does —
+    /// and it has the advantage that the thing you are turning is the thing
+    /// that shows you which way you are facing.
     private func drawCompass(_ context: GraphicsContext, size: CGSize) {
-        let centre = CGPoint(x: size.width - 42, y: 44)
+        let centre = compassCentre(in: size)
+        let radius = Self.compassRadius
+        let turned = !camera.isIsometric
+
         // North runs along -y in world space; project it to get its screen
         // direction under this rotation, so the arrow matches the drawing.
-        let origin = Axonometry.project(x: 0, y: 0)
-        let north = Axonometry.project(x: 0, y: -1)
+        let origin = camera.project(x: 0, y: 0, z: 0)
+        let north = camera.project(x: 0, y: -1, z: 0)
         let dx = north.x - origin.x
         let dy = north.y - origin.y
         let length = (dx * dx + dy * dy).squareRoot()
         guard length > 0 else { return }
-        let tip = CGPoint(x: centre.x + CGFloat(dx / length * 18), y: centre.y + CGFloat(dy / length * 18))
+
+        // A dial to aim at. Faint at the default view so it stays furniture,
+        // and firmer once the camera has been turned, when it doubles as the
+        // "click to put north back" affordance.
+        let dial = Path(ellipseIn: CGRect(
+            x: centre.x - radius, y: centre.y - radius,
+            width: radius * 2, height: radius * 2
+        ))
+        context.fill(dial, with: .color(chrome.furniture.opacity(turned ? 0.10 : 0.05)))
+        context.stroke(dial, with: .color(chrome.furniture.opacity(turned ? 0.55 : 0.28)), lineWidth: 1)
+
+        // Ticks at the eight steps the buttons move in, so a turned view
+        // reads as turned by a definite amount rather than just crooked.
+        for step in 0..<8 {
+            let angle = Double(step) / 8 * 2 * .pi
+            let unit = camera.project(x: sin(angle), y: -cos(angle), z: 0)
+            let tickLength = (unit.x * unit.x + unit.y * unit.y).squareRoot()
+            guard tickLength > 0 else { continue }
+            let ux = unit.x / tickLength
+            let uy = unit.y / tickLength
+            var tick = Path()
+            tick.move(to: CGPoint(x: centre.x + CGFloat(ux) * (radius - 4), y: centre.y + CGFloat(uy) * (radius - 4)))
+            tick.addLine(to: CGPoint(x: centre.x + CGFloat(ux) * (radius - 1), y: centre.y + CGFloat(uy) * (radius - 1)))
+            context.stroke(tick, with: .color(chrome.furniture.opacity(0.35)), lineWidth: 1)
+        }
+
+        let reach = radius - 6
+        let tip = CGPoint(x: centre.x + CGFloat(dx / length) * reach, y: centre.y + CGFloat(dy / length) * reach)
+        let tail = CGPoint(x: centre.x - CGFloat(dx / length) * reach * 0.7, y: centre.y - CGFloat(dy / length) * reach * 0.7)
+
+        // A needle rather than a bare line: the head reads as a direction at
+        // a glance where a stick needs the N to disambiguate it.
+        let sideX = CGFloat(-dy / length) * 4.5
+        let sideY = CGFloat(dx / length) * 4.5
+        var needle = Path()
+        needle.move(to: tip)
+        needle.addLine(to: CGPoint(x: centre.x + sideX, y: centre.y + sideY))
+        needle.addLine(to: CGPoint(x: centre.x - sideX, y: centre.y - sideY))
+        needle.closeSubpath()
+        context.fill(needle, with: .color(chrome.furniture))
 
         var shaft = Path()
         shaft.move(to: centre)
-        shaft.addLine(to: tip)
-        context.stroke(shaft, with: .color(chrome.furniture), lineWidth: 1.5)
+        shaft.addLine(to: tail)
+        context.stroke(shaft, with: .color(chrome.furniture.opacity(0.45)), lineWidth: 1.5)
+
         context.draw(
-            Text("N").font(.system(size: 10, weight: .semibold)).foregroundColor(chrome.furniture),
-            at: CGPoint(x: tip.x, y: tip.y - 10)
+            Text("N").font(.system(size: 9, weight: .semibold)).foregroundColor(chrome.furniture),
+            at: CGPoint(x: centre.x + CGFloat(dx / length) * (radius + 8), y: centre.y + CGFloat(dy / length) * (radius + 8))
         )
     }
 }

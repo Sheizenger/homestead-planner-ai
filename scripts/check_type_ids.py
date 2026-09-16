@@ -11,6 +11,7 @@ rather than being caught here:
 3. Every function the app calls must be declared somewhere. Three times a
    scripted edit slicing between two anchors has swallowed a helper that
    happened to sit between them, leaving the call behind.
+4. No one writes the camera's angles out by hand again.
 
 On (1): the view layer keys several tables by type id — massing, materials, palettes,
 cylinder caps, foliage. A typo or a renamed catalog entry makes the row
@@ -136,6 +137,39 @@ def check_missing_calls() -> list[str]:
     return failures
 
 
+# The fixed isometric camera, in every disguise it wore. `Camera3D` replaced
+# eighteen hand-written copies of it; three more survived the first sweep and
+# were only found by grep afterwards — a negated visibility test, a grove sort
+# and the plot slab's edge order. Each would have failed silently the moment
+# the view was turned, which is the worst way for a thing to fail. Ask the
+# camera instead: `camera.depthKey`, `camera.faces`, `camera.project`,
+# `camera.horizontalEllipse`, or `painter.facesCamera` / `painter.depthOf`
+# inside the kit.
+HARDCODED_CAMERA = [
+    (r"\b0\.866\b|\b1\.414\b", "the isometric projection's constants"),
+    (r"\bAxonometry\b", "the camera type that was replaced"),
+    # `a.x + a.y` as a value, which is the old depth key. Multiplication is
+    # left alone: `n.x * n.x + n.y * n.y` is a length, not a camera.
+    (r"(?<![\w.])[\w.$]+\.x \+ [\w.$]+\.y(?! \*)", "the old `x + y` depth sort or visibility test"),
+]
+
+
+def check_hardcoded_camera():
+    """Flag any line that spells the fixed camera out instead of asking it."""
+    failures = []
+    for path in sorted(APP.glob("*.swift")):
+        for line_number, line in enumerate(path.read_text().splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("//"):
+                continue
+            for pattern, what in HARDCODED_CAMERA:
+                if re.search(pattern, line):
+                    failures.append(
+                        f"{path.relative_to(ROOT)}:{line_number}: writes {what} by hand; ask the camera"
+                    )
+    return failures
+
+
 def main() -> int:
     known = set(re.findall(r'id: "([a-z0-9\-]+)"', LIBRARY.read_text()))
     if not known:
@@ -152,6 +186,7 @@ def main() -> int:
 
     failures += check_nested_types()
     failures += check_missing_calls()
+    failures += check_hardcoded_camera()
 
     for failure in failures:
         print(f"error: {failure}", file=sys.stderr)

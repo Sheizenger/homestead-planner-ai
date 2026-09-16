@@ -57,6 +57,13 @@ if [ "$DO_SELF_CHECK" = 1 ]; then
     # nested in. Both have reached Xcode as build failures.
     step "App-layer static checks"
     python3 "$ROOT/scripts/check_type_ids.py"
+
+    # The view's geometry transcribed and rendered from a dozen camera angles.
+    # It writes a contact sheet to look at, and fails on the two things worth
+    # asserting without eyes: a face drawn as visible that is turned away, and
+    # a display list that paints something over what is nearer to the camera.
+    step "Orbit geometry"
+    python3 "$ROOT/scripts/preview_orbit.py"
 fi
 
 command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild not found — this part needs macOS with Xcode"

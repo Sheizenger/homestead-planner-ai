@@ -86,3 +86,24 @@ public struct Viewport: Equatable, Sendable {
         return result
     }
 }
+
+extension Viewport {
+    /// Turns the camera while holding one world point still on screen.
+    ///
+    /// Orbiting without this is unusable: the projection of a point swings in
+    /// an arc as the yaw changes, so the plot slides out of frame within a
+    /// few degrees and the user spends the gesture chasing it with the other
+    /// hand. Re-fitting instead would work, but it changes the zoom mid-drag,
+    /// which is worse. Pinning the site centre is what makes the drag read as
+    /// a turntable: the plot stays put and the camera goes round it.
+    public mutating func turn(
+        from old: Camera3D,
+        to new: Camera3D,
+        holding pivot: Point,
+        at elevation: Double = 0
+    ) {
+        let before = toScreen(old.project(pivot, z: elevation))
+        let after = toScreen(new.project(pivot, z: elevation))
+        pan(byScreen: Point(x: before.x - after.x, y: before.y - after.y))
+    }
+}

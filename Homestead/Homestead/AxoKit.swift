@@ -15,11 +15,107 @@
 import SwiftUI
 import HomesteadEngine
 
+/// Everything the kit draws, held until the whole scene has been described.
+///
+/// The kit used to draw straight into the context, which forced the draw order
+/// to *be* the depth order: each routine emitted its own faces far-to-near by
+/// hand, using `x + y`. That is a camera written into a hundred call sites,
+/// and it is why the view could not turn. Collecting instead lets one pass
+/// sort everything against the actual camera, and leaves all hundred call
+/// sites exactly as they were.
+final class AxoScene {
+    struct Item {
+        let depth: Double
+        /// Emission index, so a tie keeps the order the kit intended — a
+        /// fascia emitted just after its roof plane stays just after it.
+        let order: Int
+        let draw: (GraphicsContext) -> Void
+    }
+
+    private(set) var items: [Item] = []
+
+    func add(depth: Double, draw: @escaping (GraphicsContext) -> Void) {
+        items.append(Item(depth: depth, order: items.count, draw: draw))
+    }
+
+    /// Far to near.
+    func render(into context: GraphicsContext) {
+        for item in items.sorted(by: { $0.depth == $1.depth ? $0.order < $1.order : $0.depth < $1.depth }) {
+            item.draw(context)
+        }
+    }
+}
+
+/// A little buffer of drawing, so a routine that builds its own paths can hand
+/// them to the scene as one piece at one depth instead of painting straight
+/// into the context. Trees, crops, the pool, the patio and the turbine all
+/// build ellipses and curves directly; without this they would be drawn in
+/// call order and would not sort against anything.
+struct AxoOps {
+    private var ops: [(path: Path, color: Color, width: CGFloat, isFill: Bool)] = []
+
+    mutating func fill(_ path: Path, with color: Color) {
+        ops.append((path, color, 0, true))
+    }
+
+    mutating func stroke(_ path: Path, with color: Color, lineWidth: CGFloat) {
+        ops.append((path, color, lineWidth, false))
+    }
+
+    func emit(into painter: AxoPainter, at anchor: Point, z: Double) {
+        guard !ops.isEmpty else { return }
+        let collected = ops
+        painter.sprite(at: anchor, z: z) { context in
+            for op in collected {
+                if op.isFill {
+                    context.fill(op.path, with: .color(op.color))
+                } else {
+                    context.stroke(op.path, with: .color(op.color), lineWidth: op.width)
+                }
+            }
+        }
+    }
+}
+
 struct AxoPainter {
+    /// Only for routines that still draw immediately into a scene of their
+    /// own; everything in the kit goes through `scene`.
     let context: GraphicsContext
     /// World point at elevation z → screen.
     let project: (Point, Double) -> CGPoint
     let scale: Double
+    /// Where drawing is collected, and the camera the depth is measured
+    /// against. Both are supplied by the view.
+    let scene: AxoScene
+    let depthOf: (Point, Double) -> Double
+    /// Screen semi-axes of a horizontal circle of `radius` metres. A horizontal
+    /// circle projects to an axis-aligned ellipse at any yaw — full width
+    /// across, foreshortened by the camera's pitch — so a tank lid stays an
+    /// ellipse however far the view is turned. The kit used to spell this
+    /// `r * 1.414 * cos30` and `r * 1.414 * sin30`, which is this for one
+    /// camera; `Camera3DTests` pins that they agree at the default.
+    let ellipseAxes: (Double) -> (rx: Double, ry: Double)
+    /// True when a face with this outward normal is turned toward the camera.
+    /// Every routine here used to ask `normal.x + normal.y > 0`, which is this
+    /// question answered for one fixed camera — ten copies of it, and the main
+    /// reason the view could not be turned.
+    let facesCamera: ((x: Double, y: Double, z: Double)) -> Bool
+    /// The scene's one light. It travels with the camera, so it has to come
+    /// in with the camera rather than being a global the kit reaches for.
+    let light: SceneLight
+
+    /// Hands a piece of drawing to the scene at the depth of one world point —
+    /// for the ellipses and glyphs that build their own paths rather than
+    /// going through `face`.
+    func sprite(at anchor: Point, z: Double, draw: @escaping (GraphicsContext) -> Void) {
+        scene.add(depth: depthOf(anchor, z), draw: draw)
+    }
+
+    /// Depth of a run of world points, which is what a face or a line sorts by.
+    private func depth(of vertices: [(Point, Double)]) -> Double {
+        guard !vertices.isEmpty else { return 0 }
+        return vertices.reduce(0.0) { $0 + depthOf($1.0, $1.1) } / Double(vertices.count)
+    }
 
     func path(_ vertices: [(Point, Double)]) -> Path {
         var path = Path()
@@ -33,10 +129,12 @@ struct AxoPainter {
     /// are enough to read as solid.
     func face(_ vertices: [(Point, Double)], fill: Color, shade: Double, outline: Color? = nil, lineWidth: CGFloat = 0.7) {
         let shape = path(vertices)
-        context.fill(shape, with: .color(fill))
-        if shade > 0 { context.fill(shape, with: .color(.black.opacity(shade))) }
-        if shade < 0 { context.fill(shape, with: .color(.white.opacity(-shade))) }
-        if let outline { context.stroke(shape, with: .color(outline), lineWidth: lineWidth) }
+        scene.add(depth: depth(of: vertices)) { context in
+            context.fill(shape, with: .color(fill))
+            if shade > 0 { context.fill(shape, with: .color(.black.opacity(shade))) }
+            if shade < 0 { context.fill(shape, with: .color(.white.opacity(-shade))) }
+            if let outline { context.stroke(shape, with: .color(outline), lineWidth: lineWidth) }
+        }
     }
 
     /// A face with a surface on it. The pattern is drawn in the face's own
@@ -79,6 +177,15 @@ struct AxoPainter {
 
     func texture(_ vertices: [(Point, Double)], material: AxoMaterial, seed: String) {
         guard vertices.count == 4, material.pitch > 0 else { return }
+        // Collected, not drawn: the pattern belongs to its face and has to
+        // travel with it when the scene is sorted against the camera.
+        var ops: [(path: Path, color: Color, width: CGFloat, isFill: Bool)] = []
+        func stroke(_ path: Path, with shading: Color, lineWidth: CGFloat) {
+            ops.append((path, shading, lineWidth, false))
+        }
+        func fill(_ path: Path, with shading: Color) {
+            ops.append((path, shading, 0, true))
+        }
         let uSpan = max(span(vertices[0], vertices[1]), span(vertices[3], vertices[2]))
         let vSpan = max(span(vertices[0], vertices[3]), span(vertices[1], vertices[2]))
         guard uSpan > 0, vSpan > 0 else { return }
@@ -113,7 +220,7 @@ struct AxoPainter {
                     let end = at(vertices, 1, v)
                     path.addLine(to: project(end.0, end.1))
                 }
-                context.stroke(path, with: .color(ink), lineWidth: lineWidth)
+                stroke(path, with: (ink), lineWidth: lineWidth)
             }
         default:
             break
@@ -127,7 +234,7 @@ struct AxoPainter {
                 var path = Path()
                 path.move(to: project(top.0, top.1))
                 path.addLine(to: project(bottom.0, bottom.1))
-                context.stroke(path, with: .color(ink), lineWidth: material == .board ? 0.9 : lineWidth)
+                stroke(path, with: (ink), lineWidth: material == .board ? 0.9 : lineWidth)
             }
         case .brick, .shingle:
             // Staggered joints, which is what separates a brick wall from a
@@ -145,7 +252,7 @@ struct AxoPainter {
                     var path = Path()
                     path.move(to: project(a.0, a.1))
                     path.addLine(to: project(b.0, b.1))
-                    context.stroke(path, with: .color(ink), lineWidth: 0.5)
+                    stroke(path, with: (ink), lineWidth: 0.5)
                 }
             }
         case .glass:
@@ -159,9 +266,21 @@ struct AxoPainter {
             streak.addLine(to: project(c.0, c.1))
             streak.addLine(to: project(d.0, d.1))
             streak.closeSubpath()
-            context.fill(streak, with: .color(.white.opacity(0.16)))
+            fill(streak, with: (.white.opacity(0.16)))
         default:
             break
+        }
+
+        guard !ops.isEmpty else { return }
+        let collected = ops
+        scene.add(depth: depth(of: vertices)) { context in
+            for op in collected {
+                if op.isFill {
+                    context.fill(op.path, with: .color(op.color))
+                } else {
+                    context.stroke(op.path, with: .color(op.color), lineWidth: op.width)
+                }
+            }
         }
     }
 
@@ -169,7 +288,9 @@ struct AxoPainter {
         var path = Path()
         path.move(to: project(a.0, a.1))
         path.addLine(to: project(b.0, b.1))
-        context.stroke(path, with: .color(color), lineWidth: width)
+        scene.add(depth: depth(of: [a, b])) { context in
+            context.stroke(path, with: .color(color), lineWidth: width)
+        }
     }
 
     /// What sits on top of a cylinder. A flat disc is a drum; a dome is a
@@ -183,9 +304,11 @@ struct AxoPainter {
     /// this projection, so a cylinder is two ellipses plus the strip between
     /// their tangents.
     func cylinder(center: Point, radius: Double, from: Double, to: Double, fill: Color, outline: Color, shade: Double, cap: Cap = .flat) {
-        let rx = CGFloat(radius * 1.414 * Axonometry.cosA * scale)
-        let ry = CGFloat(radius * 1.414 * Axonometry.sinA * scale)
+        let rx = CGFloat(ellipseAxes(radius).rx)
+        let ry = CGFloat(ellipseAxes(radius).ry)
         guard rx > 1 else { return }
+        var ops = AxoOps()
+        defer { ops.emit(into: self, at: center, z: (from + to) / 2) }
 
         let bottom = project(center, from)
         let top = project(center, to)
@@ -196,18 +319,18 @@ struct AxoPainter {
         body.addLine(to: CGPoint(x: top.x + rx, y: top.y))
         body.addLine(to: CGPoint(x: bottom.x + rx, y: bottom.y))
         body.closeSubpath()
-        context.fill(body, with: .color(fill))
-        context.fill(body, with: .color(.black.opacity(shade)))
+        ops.fill(body, with: (fill))
+        ops.fill(body, with: (.black.opacity(shade)))
 
         let bottomCap = Path(ellipseIn: CGRect(x: bottom.x - rx, y: bottom.y - ry, width: rx * 2, height: ry * 2))
-        context.fill(bottomCap, with: .color(fill))
-        context.fill(bottomCap, with: .color(.black.opacity(shade)))
+        ops.fill(bottomCap, with: (fill))
+        ops.fill(bottomCap, with: (.black.opacity(shade)))
 
         let topCap = Path(ellipseIn: CGRect(x: top.x - rx, y: top.y - ry, width: rx * 2, height: ry * 2))
-        context.fill(topCap, with: .color(fill))
-        context.fill(topCap, with: .color(.white.opacity(0.12)))
-        context.stroke(topCap, with: .color(outline), lineWidth: 0.8)
-        context.stroke(body, with: .color(outline), lineWidth: 0.8)
+        ops.fill(topCap, with: (fill))
+        ops.fill(topCap, with: (.white.opacity(0.12)))
+        ops.stroke(topCap, with: (outline), lineWidth: 0.8)
+        ops.stroke(body, with: (outline), lineWidth: 0.8)
 
         switch cap {
         case .flat:
@@ -230,9 +353,9 @@ struct AxoPainter {
                 control2: CGPoint(x: top.x - rx * 0.55, y: top.y + ry * 1.15)
             )
             shell.closeSubpath()
-            context.fill(shell, with: .color(fill))
-            context.fill(shell, with: .color(.white.opacity(0.10)))
-            context.stroke(shell, with: .color(outline), lineWidth: 0.8)
+            ops.fill(shell, with: (fill))
+            ops.fill(shell, with: (.white.opacity(0.10)))
+            ops.stroke(shell, with: (outline), lineWidth: 0.8)
         }
     }
 }
@@ -304,15 +427,15 @@ enum AxoKit {
             painter.face(
                 corners.map { ($0, base + 0.12) },
                 fill: trim,
-                shade: AxoLight.shade(normal: AxoLight.up),
+                shade: painter.light.shade(normal: SceneLight.up),
                 outline: wallOutline,
                 lineWidth: 0.7
             )
             for index in 0..<4 {
                 let a = corners[index]
                 let b = corners[(index + 1) % 4]
-                let normal = AxoLight.wallNormal(from: a, to: b, about: object.transform.center)
-                guard normal.x + normal.y > 0 else { continue }
+                let normal = SceneLight.wallNormal(from: a, to: b, about: object.transform.center)
+                guard painter.facesCamera(normal) else { continue }
                 painter.face([(a, base + 0.12), (b, base + 0.12), (b, base), (a, base)], fill: trim, shade: 0.28, outline: nil)
             }
             let centre = object.transform.center
@@ -329,14 +452,14 @@ enum AxoKit {
         let walls = [
             (corners[0], corners[1]), (corners[1], corners[2]),
             (corners[2], corners[3]), (corners[3], corners[0]),
-        ].sorted { depth($0) < depth($1) }
+        ].sorted { depth($0, painter) < depth($1, painter) }
 
         for wallEdge in walls where walled {
-            let normal = AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1, about: object.transform.center)
+            let normal = SceneLight.wallNormal(from: wallEdge.0, to: wallEdge.1, about: object.transform.center)
             painter.face(
                 [(wallEdge.0, base), (wallEdge.1, base), (wallEdge.1, eavesZ), (wallEdge.0, eavesZ)],
                 fill: wall,
-                shade: AxoLight.shade(normal: normal) * (glazed ? 0.5 : 1),
+                shade: painter.light.shade(normal: normal) * (glazed ? 0.5 : 1),
                 outline: wallOutline,
                 material: glazed ? .glass : surfaces.wall,
                 seed: object.id
@@ -350,11 +473,11 @@ enum AxoKit {
         let deckThickness = 0.18
         for (index, end) in gableEnds.enumerated() where walled {
             let apex = index == 0 ? ridgeA : ridgeB
-            let normal = AxoLight.wallNormal(from: end.0, to: end.1, about: object.transform.center)
+            let normal = SceneLight.wallNormal(from: end.0, to: end.1, about: object.transform.center)
             painter.face(
                 [(end.0, eavesZ), (end.1, eavesZ), (apex, ridgeZ - deckThickness), (apex, ridgeZ - deckThickness)],
                 fill: wall,
-                shade: AxoLight.shade(normal: normal) * (glazed ? 0.5 : 1),
+                shade: painter.light.shade(normal: normal) * (glazed ? 0.5 : 1),
                 outline: wallOutline,
                 material: glazed ? .glass : surfaces.wall,
                 seed: object.id + "gable"
@@ -386,9 +509,9 @@ enum AxoKit {
         // `longEdges` is ordered so that edge.0 sits at the ridgeA end and
         // edge.1 at the ridgeB end, in both the along-x and along-y cases —
         // which is what lets the verge be applied to matching ends.
-        let orderedSlopes = longEdges.sorted(by: { depth($0) < depth($1) })
+        let orderedSlopes = longEdges.sorted(by: { depth($0, painter) < depth($1, painter) })
         for (slopeIndex, edge) in orderedSlopes.enumerated() {
-            let normal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: run, rise: rise, about: object.transform.center)
+            let normal = SceneLight.roofNormal(from: edge.0, to: edge.1, run: run, rise: rise, about: object.transform.center)
             let flat = (normal.x * normal.x + normal.y * normal.y).squareRoot()
             let outward = flat > 0
                 ? Point(x: normal.x / flat * overhang, y: normal.y / flat * overhang)
@@ -404,7 +527,7 @@ enum AxoKit {
             painter.face(
                 [(a, eavesDrop), (b, eavesDrop), (ridgeEnd, ridgeZ), (ridgeStart, ridgeZ)],
                 fill: roof,
-                shade: AxoLight.shade(normal: normal),
+                shade: painter.light.shade(normal: normal),
                 outline: Color.black.opacity(0.22),
                 lineWidth: 0.7,
                 material: glazed ? .glass : surfaces.roof,
@@ -506,12 +629,12 @@ enum AxoKit {
         let walls = [
             (corners[0], corners[1]), (corners[1], corners[2]),
             (corners[2], corners[3]), (corners[3], corners[0]),
-        ].sorted { depth($0) < depth($1) }
+        ].sorted { depth($0, painter) < depth($1, painter) }
         for wallEdge in walls {
             painter.face(
                 [(wallEdge.0, base), (wallEdge.1, base), (wallEdge.1, eavesZ), (wallEdge.0, eavesZ)],
                 fill: wall,
-                shade: AxoLight.shade(normal: AxoLight.wallNormal(from: wallEdge.0, to: wallEdge.1, about: object.transform.center)),
+                shade: painter.light.shade(normal: SceneLight.wallNormal(from: wallEdge.0, to: wallEdge.1, about: object.transform.center)),
                 outline: wallOutline,
                 material: surfaces.wall,
                 seed: object.id
@@ -535,7 +658,7 @@ enum AxoKit {
         /// `point` moved straight in from (or, negative, out from) its own
         /// long edge — the direction the roof climbs.
         func inward(_ point: Point, from edge: (Point, Point), by amount: Double) -> Point {
-            let normal = AxoLight.wallNormal(from: edge.0, to: edge.1, about: object.transform.center)
+            let normal = SceneLight.wallNormal(from: edge.0, to: edge.1, about: object.transform.center)
             let length = (normal.x * normal.x + normal.y * normal.y).squareRoot()
             guard length > 0 else { return point }
             return Point(x: point.x - normal.x / length * amount, y: point.y - normal.y / length * amount)
@@ -554,7 +677,7 @@ enum AxoKit {
             let fraction = min(0.45, knuckleInset / span)
             let kneeA = lerp(end.0, end.1, fraction)
             let kneeB = lerp(end.1, end.0, fraction)
-            let shade = AxoLight.shade(normal: AxoLight.wallNormal(from: end.0, to: end.1, about: object.transform.center))
+            let shade = painter.light.shade(normal: SceneLight.wallNormal(from: end.0, to: end.1, about: object.transform.center))
 
             painter.face(
                 [(end.0, eavesZ), (end.1, eavesZ), (kneeB, knuckleZ), (kneeA, knuckleZ)],
@@ -574,7 +697,7 @@ enum AxoKit {
             )
         }
 
-        for edge in longEdges.sorted(by: { depth($0) < depth($1) }) {
+        for edge in longEdges.sorted(by: { depth($0, painter) < depth($1, painter) }) {
             // Both slopes oversail the gable by the same verge as the gabled
             // roof does, so the barn is detailed like everything else.
             let eavesA = Point(x: inward(edge.0, from: edge, by: -overhang).x - along.x,
@@ -588,11 +711,11 @@ enum AxoKit {
 
             let lowerRise = knuckle - eaves
             let eavesDrop = eavesZ - overhang * (lowerRise / max(knuckleInset, 0.1)) + 0.04
-            let lowerNormal = AxoLight.roofNormal(from: edge.0, to: edge.1, run: knuckleInset, rise: lowerRise, about: object.transform.center)
+            let lowerNormal = SceneLight.roofNormal(from: edge.0, to: edge.1, run: knuckleInset, rise: lowerRise, about: object.transform.center)
             painter.face(
                 [(eavesA, eavesDrop), (eavesB, eavesDrop), (kneeB, knuckleZ), (kneeA, knuckleZ)],
                 fill: roof,
-                shade: AxoLight.shade(normal: lowerNormal),
+                shade: painter.light.shade(normal: lowerNormal),
                 outline: Color.black.opacity(0.2),
                 lineWidth: 0.7,
                 material: surfaces.roof,
@@ -605,11 +728,11 @@ enum AxoKit {
                 outline: nil
             )
 
-            let upperNormal = AxoLight.roofNormal(from: kneeA, to: kneeB, run: max(0.1, run - knuckleInset), rise: ridge - knuckle, about: object.transform.center)
+            let upperNormal = SceneLight.roofNormal(from: kneeA, to: kneeB, run: max(0.1, run - knuckleInset), rise: ridge - knuckle, about: object.transform.center)
             painter.face(
                 [(kneeA, knuckleZ), (kneeB, knuckleZ), (ridgeEnd, ridgeZ), (ridgeStart, ridgeZ)],
                 fill: roof,
-                shade: AxoLight.shade(normal: upperNormal),
+                shade: painter.light.shade(normal: upperNormal),
                 outline: Color.black.opacity(0.2),
                 lineWidth: 0.7,
                 material: surfaces.roof,
@@ -654,8 +777,12 @@ enum AxoKit {
         painter.line((centre, base), (centre, base + doorHeight), color: .black.opacity(0.3), width: 1.2)
     }
 
-    private static func depth(_ edge: (Point, Point)) -> Double {
-        (edge.0.x + edge.0.y + edge.1.x + edge.1.y) / 2
+    /// Far-to-near ordering within one routine. The scene sorts everything
+    /// against the camera afterwards, so this only decides ties — but a
+    /// tie-break that assumes a fixed camera is still a tie-break that turns
+    /// wrong when the view does, so it asks the painter.
+    private static func depth(_ edge: (Point, Point), _ painter: AxoPainter, z: Double = 0) -> Double {
+        (painter.depthOf(edge.0, z) + painter.depthOf(edge.1, z)) / 2
     }
 
     /// The wall the door goes on. Falls back to the south wall, the engine's
@@ -794,6 +921,8 @@ enum AxoKit {
         guard corners.count == 4, painter.scale > 2 else { return }
         let soil = Color(hex: 0x6f4a30)
         let leaf = Color(hex: 0x5fa341)
+        var ops = AxoOps()
+        defer { ops.emit(into: painter, at: object.transform.center, z: base + 0.5) }
 
         for fraction in [0.26, 0.74] {
             let (a, b): (Point, Point) = alongX
@@ -813,12 +942,12 @@ enum AxoKit {
                 let at = lerp(lerp(a, b, 0.08), lerp(b, a, 0.08), t)
                 let top = painter.project(at, base + 0.72)
                 let root = painter.project(at, base + 0.3)
-                painter.context.stroke(
+                ops.stroke(
                     Path { path in
                         path.move(to: root)
                         path.addLine(to: top)
                     },
-                    with: .color(leaf),
+                    with: (leaf),
                     lineWidth: max(1, CGFloat(0.16 * painter.scale))
                 )
             }
@@ -882,23 +1011,25 @@ enum AxoKit {
         let depthM = object.transform.height
         let alongX = width >= depthM
         let bedZ = base + planting.bed
+        var ops = AxoOps()
+        defer { ops.emit(into: painter, at: object.transform.center, z: bedZ) }
 
         // The bed stands slightly proud of the grass, with its own cut sides.
         for index in 0..<4 {
             let a = corners[index], b = corners[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: object.transform.center)
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: object.transform.center)
+            guard painter.facesCamera(normal) else { continue }
             painter.face(
                 [(a, bedZ), (b, bedZ), (b, base), (a, base)],
                 fill: tilledSoil,
-                shade: AxoLight.shade(normal: normal),
+                shade: painter.light.shade(normal: normal),
                 outline: nil
             )
         }
         painter.face(
             corners.map { ($0, bedZ) },
             fill: tilledSoil,
-            shade: AxoLight.shade(normal: AxoLight.up),
+            shade: painter.light.shade(normal: SceneLight.up),
             outline: outline.opacity(0.45),
             lineWidth: 0.7
         )
@@ -953,17 +1084,17 @@ enum AxoKit {
                     // top, because that is what they look like.
                     let root = painter.project(at, bedZ)
                     let top = painter.project(at, bedZ + height)
-                    painter.context.stroke(
+                    ops.stroke(
                         Path { path in
                             path.move(to: root)
                             path.addLine(to: top)
                         },
-                        with: .color(leafDark),
+                        with: (leafDark),
                         lineWidth: max(1, radius * 0.3)
                     )
-                    painter.context.fill(
+                    ops.fill(
                         Path(ellipseIn: CGRect(x: top.x - radius * 0.7, y: top.y - radius * 0.8, width: radius * 1.4, height: radius * 1.5)),
-                        with: .color(leaf)
+                        with: (leaf)
                     )
                     continue
                 }
@@ -980,9 +1111,9 @@ enum AxoKit {
                         width: size * 2,
                         height: size * 1.44
                     )
-                    painter.context.fill(
+                    ops.fill(
                         Path(ellipseIn: rect),
-                        with: .color(lobe == -1 ? leafLight : (lobe == 1 ? leafDark : leaf))
+                        with: (lobe == -1 ? leafLight : (lobe == 1 ? leafDark : leaf))
                     )
                 }
             }
@@ -1010,6 +1141,8 @@ enum AxoKit {
         seed: String = ""
     ) {
         let key = seed.isEmpty ? "\(Int(position.x * 7))-\(Int(position.y * 7))" : seed
+        var ops = AxoOps()
+        defer { ops.emit(into: painter, at: position, z: height * 0.6) }
         let trunkTop = height * (conifer ? 0.26 : 0.5)
         let trunkWidth = max(1.4, CGFloat(radius * 0.22 * painter.scale))
         painter.line((position, 0), (position, trunkTop), color: Color(hex: 0x7b5433), width: trunkWidth)
@@ -1030,8 +1163,8 @@ enum AxoKit {
                 let bottom = trunkTop + (height - trunkTop) * (t / 3.4)
                 let top = trunkTop + (height - trunkTop) * ((t + 1.7) / 3)
                 let r = radius * (1 - t * 0.24)
-                let rx = CGFloat(r * 1.414 * Axonometry.cosA * painter.scale)
-                let ry = CGFloat(r * 1.414 * Axonometry.sinA * painter.scale)
+                let rx = CGFloat(painter.ellipseAxes(r).rx)
+                let ry = CGFloat(painter.ellipseAxes(r).ry)
                 let baseScreen = painter.project(position, bottom)
                 let apex = painter.project(position, top)
 
@@ -1048,8 +1181,8 @@ enum AxoKit {
                     control2: CGPoint(x: baseScreen.x - rx * 0.55, y: baseScreen.y + ry * 1.15)
                 )
                 cone.closeSubpath()
-                painter.context.fill(cone, with: .color(tier == 0 ? dark : (tier == 1 ? mid : light)))
-                painter.context.stroke(cone, with: .color(outline.opacity(0.45)), lineWidth: 0.6)
+                ops.fill(cone, with: (tier == 0 ? dark : (tier == 1 ? mid : light)))
+                ops.stroke(cone, with: (outline.opacity(0.45)), lineWidth: 0.6)
             }
             return
         }
@@ -1059,11 +1192,11 @@ enum AxoKit {
         let crownZ = height - radius * 0.45
         let lobeCount = painter.scale > 2.5 ? 7 : 4
         var lobes: [(offset: CGPoint, radius: CGFloat, tone: Color)] = []
-        let unit = CGFloat(radius * 1.414 * Axonometry.cosA * painter.scale)
+        let unit = CGFloat(painter.ellipseAxes(radius).rx)
         guard unit > 2 else {
             let centre = painter.project(position, crownZ)
             let rect = CGRect(x: centre.x - unit, y: centre.y - unit * 0.92, width: unit * 2, height: unit * 1.84)
-            painter.context.fill(Path(ellipseIn: rect), with: .color(mid))
+            ops.fill(Path(ellipseIn: rect), with: (mid))
             return
         }
 
@@ -1090,7 +1223,7 @@ enum AxoKit {
                 width: lobe.radius * 2,
                 height: lobe.radius * 1.88
             )
-            painter.context.fill(Path(ellipseIn: rect), with: .color(lobe.tone))
+            ops.fill(Path(ellipseIn: rect), with: (lobe.tone))
         }
     }
 
@@ -1134,7 +1267,7 @@ enum AxoKit {
             painter.face(
                 [(northA, high), (northB, high), (southB, low), (southA, low)],
                 fill: panel,
-                shade: AxoLight.shade(normal: (x: 0, y: 0.42, z: 0.91)),
+                shade: painter.light.shade(normal: (x: 0, y: 0.42, z: 0.91)),
                 outline: frame,
                 lineWidth: 0.8
             )
@@ -1235,19 +1368,19 @@ enum AxoKit {
         let plinth = expanded(by: 0.12)
         for index in 0..<4 {
             let a = plinth[index], b = plinth[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            guard painter.facesCamera(normal) else { continue }
             painter.face([(a, plinthZ), (b, plinthZ), (b, base), (a, base)], fill: Color(hex: 0xb8b4ac), shade: 0.26, outline: nil)
         }
         painter.face(plinth.map { ($0, plinthZ) }, fill: Color(hex: 0xc6c2b9), shade: 0.05, outline: nil)
 
         for index in 0..<4 {
             let a = corners[index], b = corners[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
             painter.face(
                 [(a, plinthZ), (b, plinthZ), (b, eavesZ), (a, eavesZ)],
                 fill: wall,
-                shade: AxoLight.shade(normal: normal),
+                shade: painter.light.shade(normal: normal),
                 outline: wall.mix(with: .black, by: 0.35),
                 lineWidth: 0.7
             )
@@ -1258,14 +1391,14 @@ enum AxoKit {
         painter.face(
             lid.map { ($0, eavesZ + 0.1) },
             fill: roof,
-            shade: AxoLight.shade(normal: AxoLight.up),
+            shade: painter.light.shade(normal: SceneLight.up),
             outline: roof.mix(with: .black, by: 0.35),
             lineWidth: 0.7
         )
         for index in 0..<4 {
             let a = lid[index], b = lid[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            guard painter.facesCamera(normal) else { continue }
             painter.face([(a, eavesZ + 0.1), (b, eavesZ + 0.1), (b, eavesZ - 0.02), (a, eavesZ - 0.02)], fill: roof, shade: 0.34, outline: nil)
         }
 
@@ -1337,6 +1470,8 @@ enum AxoKit {
         let width = object.transform.width
         let depth = object.transform.height
         let topZ = base + 0.22
+        var ops = AxoOps()
+        defer { ops.emit(into: painter, at: centre, z: topZ) }
 
         // Battered sides, so it reads as earth heaped over something rather
         // than a slab dropped on the grass.
@@ -1349,14 +1484,14 @@ enum AxoKit {
         for index in 0..<4 {
             let a = corners[index], b = corners[(index + 1) % 4]
             let ca = crown[index], cb = crown[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y > 0 else { continue }
-            painter.face([(ca, topZ), (cb, topZ), (b, base), (a, base)], fill: mound, shade: AxoLight.shade(normal: normal), outline: nil)
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            guard painter.facesCamera(normal) else { continue }
+            painter.face([(ca, topZ), (cb, topZ), (b, base), (a, base)], fill: mound, shade: painter.light.shade(normal: normal), outline: nil)
         }
         painter.face(
             crown.map { ($0, topZ) },
             fill: mound,
-            shade: AxoLight.shade(normal: AxoLight.up),
+            shade: painter.light.shade(normal: SceneLight.up),
             outline: mound.mix(with: .black, by: 0.25),
             lineWidth: 0.7
         )
@@ -1366,19 +1501,19 @@ enum AxoKit {
         // Two inspection covers along the long axis.
         let alongX = width >= depth
         let radius = min(0.42, min(width, depth) * 0.16)
-        let rx = CGFloat(radius * 1.414 * Axonometry.cosA * painter.scale)
-        let ry = CGFloat(radius * 1.414 * Axonometry.sinA * painter.scale)
+        let rx = CGFloat(painter.ellipseAxes(radius).rx)
+        let ry = CGFloat(painter.ellipseAxes(radius).ry)
         for fraction in [0.32, 0.68] {
             let at = alongX
                 ? Point(x: centre.x + (fraction - 0.5) * width * 0.7, y: centre.y)
                 : Point(x: centre.x, y: centre.y + (fraction - 0.5) * depth * 0.7)
             let screen = painter.project(at, topZ + 0.02)
             let rect = CGRect(x: screen.x - rx, y: screen.y - ry, width: rx * 2, height: ry * 2)
-            painter.context.fill(Path(ellipseIn: rect), with: .color(cover))
-            painter.context.stroke(Path(ellipseIn: rect), with: .color(cover.mix(with: .black, by: 0.45)), lineWidth: 1.2)
-            painter.context.stroke(
+            ops.fill(Path(ellipseIn: rect), with: (cover))
+            ops.stroke(Path(ellipseIn: rect), with: (cover.mix(with: .black, by: 0.45)), lineWidth: 1.2)
+            ops.stroke(
                 Path(ellipseIn: rect.insetBy(dx: rx * 0.3, dy: ry * 0.3)),
-                with: .color(cover.mix(with: .black, by: 0.3)),
+                with: (cover.mix(with: .black, by: 0.3)),
                 lineWidth: 0.8
             )
         }
@@ -1389,9 +1524,9 @@ enum AxoKit {
             : Point(x: centre.x + width * 0.28, y: centre.y - depth * 0.38)
         painter.line((vent, topZ), (vent, topZ + 1.25), color: Color(hex: 0x6f7a80), width: max(1.8, CGFloat(0.1 * painter.scale)))
         let cap = painter.project(vent, topZ + 1.3)
-        painter.context.fill(
+        ops.fill(
             Path(ellipseIn: CGRect(x: cap.x - rx * 0.5, y: cap.y - ry * 0.5, width: rx, height: ry)),
-            with: .color(Color(hex: 0x8d979d))
+            with: (Color(hex: 0x8d979d))
         )
     }
 
@@ -1404,17 +1539,19 @@ enum AxoKit {
         let centre = object.transform.center
         let slabZ = base + 0.12
         let joint = paving.mix(with: .black, by: 0.22)
+        var ops = AxoOps()
+        defer { ops.emit(into: painter, at: centre, z: slabZ + 1.2) }
 
         for index in 0..<4 {
             let a = corners[index], b = corners[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            guard painter.facesCamera(normal) else { continue }
             painter.face([(a, slabZ), (b, slabZ), (b, base), (a, base)], fill: paving, shade: 0.28, outline: nil)
         }
         painter.face(
             corners.map { ($0, slabZ) },
             fill: paving,
-            shade: AxoLight.shade(normal: AxoLight.up),
+            shade: painter.light.shade(normal: SceneLight.up),
             outline: joint,
             lineWidth: 0.7,
             material: .brick,
@@ -1428,8 +1565,8 @@ enum AxoKit {
         let tableR = min(0.62, min(object.transform.width, object.transform.height) * 0.16)
         let tableZ = slabZ + 0.74
         let timber = Color(hex: 0x9a6b42)
-        let rx = CGFloat(tableR * 1.414 * Axonometry.cosA * painter.scale)
-        let ry = CGFloat(tableR * 1.414 * Axonometry.sinA * painter.scale)
+        let rx = CGFloat(painter.ellipseAxes(tableR).rx)
+        let ry = CGFloat(painter.ellipseAxes(tableR).ry)
 
         for step in 0..<4 {
             let angle = Double(step) / 4 * 2 * .pi + .pi / 4
@@ -1437,21 +1574,21 @@ enum AxoKit {
             painter.line((seat, slabZ), (seat, slabZ + 0.42), color: timber.mix(with: .black, by: 0.3), width: max(1.4, CGFloat(0.12 * painter.scale)))
             let top = painter.project(seat, slabZ + 0.42)
             let seatR = rx * 0.42
-            painter.context.fill(
+            ops.fill(
                 Path(ellipseIn: CGRect(x: top.x - seatR, y: top.y - seatR * 0.6, width: seatR * 2, height: seatR * 1.2)),
-                with: .color(timber)
+                with: (timber)
             )
         }
 
         painter.line((centre, slabZ), (centre, tableZ), color: timber.mix(with: .black, by: 0.35), width: max(1.6, CGFloat(0.14 * painter.scale)))
         let tableTop = painter.project(centre, tableZ)
-        painter.context.fill(
+        ops.fill(
             Path(ellipseIn: CGRect(x: tableTop.x - rx, y: tableTop.y - ry, width: rx * 2, height: ry * 2)),
-            with: .color(timber.mix(with: .white, by: 0.15))
+            with: (timber.mix(with: .white, by: 0.15))
         )
-        painter.context.stroke(
+        ops.stroke(
             Path(ellipseIn: CGRect(x: tableTop.x - rx, y: tableTop.y - ry, width: rx * 2, height: ry * 2)),
-            with: .color(timber.mix(with: .black, by: 0.3)),
+            with: (timber.mix(with: .black, by: 0.3)),
             lineWidth: 0.8
         )
 
@@ -1459,8 +1596,8 @@ enum AxoKit {
         let mastZ = tableZ + 1.5
         painter.line((centre, tableZ), (centre, mastZ), color: timber, width: max(1.2, CGFloat(0.08 * painter.scale)))
         let canopyR = tableR * 2.4
-        let cx = CGFloat(canopyR * 1.414 * Axonometry.cosA * painter.scale)
-        let cy = CGFloat(canopyR * 1.414 * Axonometry.sinA * painter.scale)
+        let cx = CGFloat(painter.ellipseAxes(canopyR).rx)
+        let cy = CGFloat(painter.ellipseAxes(canopyR).ry)
         let hub = painter.project(centre, mastZ)
         let brim = painter.project(centre, mastZ - 0.42)
         var canopy = Path()
@@ -1473,9 +1610,9 @@ enum AxoKit {
             control2: CGPoint(x: brim.x - cx * 0.55, y: brim.y + cy * 1.2)
         )
         canopy.closeSubpath()
-        painter.context.fill(canopy, with: .color(Color(hex: 0xd96f5a)))
-        painter.context.fill(canopy, with: .color(.white.opacity(0.12)))
-        painter.context.stroke(canopy, with: .color(Color(hex: 0xa04d3c)), lineWidth: 0.8)
+        ops.fill(canopy, with: (Color(hex: 0xd96f5a)))
+        ops.fill(canopy, with: (.white.opacity(0.12)))
+        ops.stroke(canopy, with: (Color(hex: 0xa04d3c)), lineWidth: 0.8)
     }
 
     /// A micro-hydro set: a housing on the bank with an overshot wheel turning
@@ -1489,6 +1626,8 @@ enum AxoKit {
         let depth = object.transform.height
         let alongX = width >= depth
         let housingTop = base + 1.9
+        var ops = AxoOps()
+        defer { ops.emit(into: painter, at: centre, z: base + 1.0) }
 
         // Housing: the near half of the footprint.
         let shed = corners.enumerated().map { index, corner -> Point in
@@ -1500,12 +1639,12 @@ enum AxoKit {
         }
         for index in 0..<4 {
             let a = shed[index], b = shed[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            guard painter.facesCamera(normal) else { continue }
             painter.face(
                 [(a, base), (b, base), (b, housingTop), (a, housingTop)],
                 fill: housing,
-                shade: AxoLight.shade(normal: normal),
+                shade: painter.light.shade(normal: normal),
                 outline: housing.mix(with: .black, by: 0.35),
                 lineWidth: 0.7,
                 material: .board,
@@ -1515,7 +1654,7 @@ enum AxoKit {
         painter.face(
             shed.map { ($0, housingTop) },
             fill: metal,
-            shade: AxoLight.shade(normal: AxoLight.up),
+            shade: painter.light.shade(normal: SceneLight.up),
             outline: metal.mix(with: .black, by: 0.3),
             lineWidth: 0.7,
             material: .metalRoof,
@@ -1547,8 +1686,8 @@ enum AxoKit {
             if step == 0 { rim.move(to: screen) } else { rim.addLine(to: screen) }
         }
         rim.closeSubpath()
-        painter.context.fill(rim, with: .color(metal.mix(with: .black, by: 0.12)))
-        painter.context.stroke(rim, with: .color(metal.mix(with: .black, by: 0.45)), lineWidth: 1.4)
+        ops.fill(rim, with: (metal.mix(with: .black, by: 0.12)))
+        ops.stroke(rim, with: (metal.mix(with: .black, by: 0.45)), lineWidth: 1.4)
 
         // Paddles and spokes: what makes it a wheel rather than a disc.
         for step in 0..<8 {
@@ -1597,12 +1736,12 @@ enum AxoKit {
             painter.face(
                 [(a, copingZ), (b, copingZ), (innerB, copingZ), (innerA, copingZ)],
                 fill: coping,
-                shade: AxoLight.shade(normal: AxoLight.up),
+                shade: painter.light.shade(normal: SceneLight.up),
                 outline: coping.mix(with: .black, by: 0.25),
                 lineWidth: 0.6
             )
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            guard painter.facesCamera(normal) else { continue }
             painter.face([(a, copingZ), (b, copingZ), (b, base), (a, base)], fill: coping, shade: 0.3, outline: nil)
         }
 
@@ -1610,8 +1749,13 @@ enum AxoKit {
         let tile = Color(hex: 0x9fd3e4)
         for index in 0..<4 {
             let a = rim[index], b = rim[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y <= 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            // The *far* sides of the basin: the ones you see the inside of.
+            // This was spelled `normal.x + normal.y <= 0` — the fixed
+            // camera's visibility test, negated, which is why the sweep that
+            // replaced the other ten copies walked straight past it. Turned
+            // 90° it tiled the near walls and left the far ones as holes.
+            guard !painter.facesCamera(normal) else { continue }
             painter.face([(a, copingZ), (b, copingZ), (b, waterZ), (a, waterZ)], fill: tile, shade: 0.2, outline: nil)
         }
         painter.face(
@@ -1659,14 +1803,14 @@ enum AxoKit {
 
         for index in 0..<4 {
             let a = corners[index], b = corners[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            guard normal.x + normal.y > 0 else { continue }
+            let normal = SceneLight.wallNormal(from: a, to: b, about: centre)
+            guard painter.facesCamera(normal) else { continue }
             painter.face([(a, deckZ), (b, deckZ), (b, deckZ - 0.18), (a, deckZ - 0.18)], fill: dark, shade: 0.1, outline: nil)
         }
         painter.face(
             corners.map { ($0, deckZ) },
             fill: deck,
-            shade: AxoLight.shade(normal: AxoLight.up),
+            shade: painter.light.shade(normal: SceneLight.up),
             outline: dark,
             lineWidth: 0.7,
             material: .plank,
@@ -1706,9 +1850,9 @@ enum AxoKit {
         ]
         for face in 0..<4 {
             let p = quad[face], q = quad[(face + 1) % 4]
-            let normal = AxoLight.wallNormal(from: p, to: q, about: position)
-            guard normal.x + normal.y > 0 else { continue }
-            painter.face([(p, 0), (q, 0), (q, height), (p, height)], fill: color, shade: AxoLight.shade(normal: normal), outline: nil)
+            let normal = SceneLight.wallNormal(from: p, to: q, about: position)
+            guard painter.facesCamera(normal) else { continue }
+            painter.face([(p, 0), (q, 0), (q, height), (p, height)], fill: color, shade: painter.light.shade(normal: normal), outline: nil)
         }
         painter.face(quad.map { ($0, height) }, fill: light, shade: 0, outline: nil)
     }
