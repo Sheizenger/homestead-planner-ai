@@ -236,6 +236,14 @@ struct AxonometricPlanView: View {
         return CGPoint(x: point.x, y: point.y)
     }
 
+    /// The chimney belongs to a wing, not to the box the wings are inscribed
+    /// in — on the box's centre it would stand in the courtyard.
+    private func mainWingObject(_ object: PlanObject, _ wing: Transform) -> PlanObject {
+        var part = object
+        part.transform = wing
+        return part
+    }
+
     private func zoomControls(in size: CGSize) -> some View {
         VStack(spacing: 4) {
             Button { zoom(by: 1.3, in: size) } label: { Image(systemName: "plus.magnifyingglass") }
@@ -596,8 +604,10 @@ struct AxonometricPlanView: View {
                 continue
             }
 
-            let corners = object.transform.corners
-            guard corners.count == 4 else { continue }
+            // The footprint, which for the L-shaped house is six points and
+            // not four — it casts the shadow of an L.
+            let corners = Massing.footprint(for: object)
+            guard corners.count >= 3 else { continue }
             let offset = light.shadowOffset(height: height)
             let cast = corners.map { Point(x: $0.x + offset.x, y: $0.y + offset.y) }
             any = true
@@ -606,8 +616,8 @@ struct AxonometricPlanView: View {
             shadow.closeSubpath()
             shadow.addLines(cast.map { screen($0) })
             shadow.closeSubpath()
-            for index in 0..<4 {
-                let next = (index + 1) % 4
+            for index in corners.indices {
+                let next = (index + 1) % corners.count
                 shadow.addLines([
                     screen(corners[index]), screen(corners[next]),
                     screen(cast[next]), screen(cast[index]),
@@ -836,6 +846,41 @@ struct AxonometricPlanView: View {
             if ["house", "house-l", "banya", "smokehouse"].contains(object.typeId) {
                 AxoKit.chimney(painter, object: object, base: base, ridgeZ: base + ridge, wall: Color(hex: palette.trim), outline: wallOutline)
             }
+
+        case .ell(let eaves, let ridge):
+            // Two wings, each an ordinary gabled building. They butt rather
+            // than overlap (see `LShape`), they share an eaves height, and
+            // because they are the same depth the common roof pitch puts
+            // their ridges at the same height — so the junction reads as one
+            // roof with a valley in it rather than two buildings touching.
+            let (main, cross) = LShape.wings(of: object.transform)
+            let wings = [(main, true), (cross, false)]
+                .sorted { camera.depthKey($0.0.center) < camera.depthKey($1.0.center) }
+            for (wing, isMain) in wings {
+                var part = object
+                part.transform = wing
+                // Its own id, or both wings draw with the same grain, the
+                // same plank offsets and the same shingle scatter.
+                part.id = object.id + (isMain ? "-main" : "-cross")
+                AxoKit.gabledBuilding(
+                    painter,
+                    object: part,
+                    base: base,
+                    eaves: eaves,
+                    ridge: ridge,
+                    wall: wallColor,
+                    wallOutline: wallOutline,
+                    roof: roof,
+                    trim: Color(hex: palette.trim),
+                    glazed: false,
+                    walled: true,
+                    // One front door, on the range that faces the way in.
+                    facing: isMain ? approach(to: object) : nil,
+                    doorway: isMain ? .pedestrian : .windows,
+                    surfaces: Massing.surfaces(for: object)
+                )
+            }
+            AxoKit.chimney(painter, object: mainWingObject(object, main), base: base, ridgeZ: base + ridge, wall: Color(hex: palette.trim), outline: wallOutline)
 
         case .gambrel(let eaves, let knuckle, let ridge):
             AxoKit.gambrelBuilding(

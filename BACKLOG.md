@@ -305,3 +305,19 @@ divergence cannot mask a genuine porting error.
   carried by colour alone.
 - Quick-edit commands match English labels only, in a UI translated into five
   languages.
+
+## The L-shaped house is costed as its bounding box
+
+`Materials`, `Analytics` and `Resolve` all take an object's area as
+`transform.width * transform.height`. For `house-l` that is the box the L is
+inscribed in — 154 m² at the catalog's 14 × 11 — while the house that gets
+drawn is 99 m². The quantities and the cost estimate are therefore about 55%
+over for an L-shaped house, and the zone breakdown counts its courtyard as
+built.
+
+`LShape.area` is the right number and is already there. What stops it being
+used is that all three call sites are pinned by the 48 golden fixtures, which
+hold the frozen web app's behaviour — and the web app drew the L as a
+rectangle too. This wants the same treatment `Constraints.SeparationPolicy`
+got: a `.frozen` reading that the fixtures keep, and a `.corrected` one that
+asks the shape for its area.

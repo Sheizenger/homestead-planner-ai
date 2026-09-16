@@ -61,6 +61,33 @@ enum Silhouette {
             points += expanded(by: overhang).map { ($0, base + eaves) }
             points += ridgeEnds().map { ($0, base + ridge) }
 
+        case let .ell(eaves, ridge):
+            // The hull of an L is not the L — the courtyard is inside it. For
+            // a selection target that is the right answer anyway: the yard is
+            // the house's own, and a click in it means the house. What would
+            // be wrong is the hull of the *bounding box*, which is what a
+            // gabled fallback gave: a wall of the house is not where its box
+            // is. Both wings, each with its own eaves and ridge.
+            let (main, cross) = LShape.wings(of: object.transform)
+            for wing in [main, cross] {
+                let run = min(wing.width, wing.height) / 2
+                let verge = min(0.45, run * 0.22)
+                let centre = wing.center
+                points += wing.corners.map { ($0, base) }
+                points += wing.corners.map { corner in
+                    (Point(
+                        x: corner.x + (corner.x >= centre.x ? verge : -verge),
+                        y: corner.y + (corner.y >= centre.y ? verge : -verge)
+                    ), base + eaves)
+                }
+                let alongX = wing.width >= wing.height
+                let half = (alongX ? wing.width : wing.height) / 2 + verge
+                points += (alongX
+                    ? [Point(x: centre.x - half, y: centre.y), Point(x: centre.x + half, y: centre.y)]
+                    : [Point(x: centre.x, y: centre.y - half), Point(x: centre.x, y: centre.y + half)]
+                ).map { ($0, base + ridge) }
+            }
+
         case let .gambrel(eaves, knuckle, ridge):
             points += expanded(by: overhang).map { ($0, base + eaves) }
             points += expanded(by: -run * 0.45).map { ($0, base + knuckle) }

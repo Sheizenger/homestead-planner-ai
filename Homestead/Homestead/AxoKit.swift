@@ -802,6 +802,9 @@ enum AxoKit {
         /// A wide opening with panel lines and no windows beside it — what a
         /// car actually drives through.
         case vehicle
+        /// Windows and no door. A house has one front door, so the second
+        /// wing of an L gets a side elevation rather than a rival entrance.
+        case windows
     }
 
     /// A door on the wall that faces the way in, with windows either side.
@@ -879,22 +882,27 @@ enum AxoKit {
                 )
             }
 
-        case .pedestrian:
-            let doorHeight = min(2.1, wallHeight * 0.8)
-            let doorHalf = min(0.45, wallWidth * 0.06) / wallWidth
-            panel(
-                from: 0.5 - doorHalf, to: 0.5 + doorHalf,
-                bottom: base, top: base + doorHeight,
-                fill: Color(hex: 0x5a3f2c), frame: 0.12
-            )
-            let stepA = lerp(front.0, front.1, 0.5 - doorHalf * 1.4)
-            let stepB = lerp(front.0, front.1, 0.5 + doorHalf * 1.4)
-            painter.line((stepA, base + 0.06), (stepB, base + 0.06), color: trim, width: max(1.4, CGFloat(0.22 * painter.scale)))
+        case .pedestrian, .windows:
+            if doorway == .pedestrian {
+                let doorHeight = min(2.1, wallHeight * 0.8)
+                let doorHalf = min(0.45, wallWidth * 0.06) / wallWidth
+                panel(
+                    from: 0.5 - doorHalf, to: 0.5 + doorHalf,
+                    bottom: base, top: base + doorHeight,
+                    fill: Color(hex: 0x5a3f2c), frame: 0.12
+                )
+                let stepA = lerp(front.0, front.1, 0.5 - doorHalf * 1.4)
+                let stepB = lerp(front.0, front.1, 0.5 + doorHalf * 1.4)
+                painter.line((stepA, base + 0.06), (stepB, base + 0.06), color: trim, width: max(1.4, CGFloat(0.22 * painter.scale)))
+            }
 
             guard wallWidth * painter.scale > 60 else { return }
             let sillZ = base + wallHeight * 0.4
             let headZ = base + wallHeight * 0.76
-            for fraction in [0.22, 0.78] {
+            // A blank wall gets its windows spread across it rather than
+            // pushed to the ends, since there is no door for them to flank.
+            let fractions = doorway == .pedestrian ? [0.22, 0.78] : [0.3, 0.7]
+            for fraction in fractions {
                 panel(
                     from: fraction - 0.08, to: fraction + 0.08,
                     bottom: sillZ, top: headZ,

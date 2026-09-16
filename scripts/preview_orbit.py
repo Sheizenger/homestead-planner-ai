@@ -238,6 +238,21 @@ def fence(scene, a, b, posts=9):
                    0x8a6f4a, 0.1)
 
 
+def ell(scene, cx, cy, w, h, base, eaves, ridge, wall, wall_outline, roof, fraction=0.45):
+    """`LShape.wings` + two gabled buildings, transcribed.
+
+    The wings butt rather than overlap, and because they are the same depth a
+    common roof pitch puts their ridges at the same height, so the junction is
+    a valley rather than two roofs crashing through each other.
+    """
+    depth = min(w, h) * fraction
+    along = (cx, cy - h / 2 + depth / 2, w, depth)
+    across = (cx - w / 2 + depth / 2, cy + depth / 2, depth, h - depth)
+    cam = scene.camera
+    for wx, wy, ww, wh in sorted([along, across], key=lambda g: cam.depth((g[0], g[1]))):
+        gabled(scene, wx, wy, ww, wh, base, eaves, ridge, wall, wall_outline, roof)
+
+
 def build(camera):
     scene = Scene(camera)
     plot = [(-14, -12), (16, -12), (16, 16), (-14, 16)]
@@ -245,7 +260,7 @@ def build(camera):
                depth=min(camera.depth(p) for p in plot) - 1000)
     gabled(scene, 0, 0, 6, 5, 0, 2.4, 3.8, 0xC8CDD2, "#7e858c", 0x4A5B6B)
     gabled(scene, 11, 2, 5, 9, 0, 2.6, 4.6, 0xF5E7C8, "#a08f6f", 0xC4553F)
-    gabled(scene, -6, 10, 11, 7, 0, 3.4, 6.4, 0xF5E7C8, "#a08f6f", 0xC4553F)
+    ell(scene, -6, 9, 14, 11, 0, 3.4, 6.4, 0xF5E7C8, "#a08f6f", 0xC4553F)
     block(scene, 7, -8, 4, 3, 2.2, 0xB9A882, "#8a7c5c")
     cylinder(scene, -10, -6, 1.6, 3.2, 0xA8B4BE, None)
     fence(scene, (-14, -12), (16, -12))

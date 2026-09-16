@@ -12,6 +12,7 @@ rather than being caught here:
    scripted edit slicing between two anchors has swallowed a helper that
    happened to sit between them, leaving the call behind.
 4. No one writes the camera's angles out by hand again.
+5. Every switch over `Massing.Form` handles every case it has.
 
 On (1): the view layer keys several tables by type id — massing, materials, palettes,
 cylinder caps, foliage. A typo or a renamed catalog entry makes the row
@@ -170,6 +171,49 @@ def check_hardcoded_camera():
     return failures
 
 
+def check_form_switches():
+    """Every switch over a `Massing.Form` must cover every case of it.
+
+    Swift requires this and says so, but only at compile time — and the app
+    target does not compile here. Adding `.ell` for the L-shaped house left
+    four switches to update in three files; a missed one is a build failure
+    the user finds by running the build.
+    """
+    massing = APP / "ObjectMassing.swift"
+    if not massing.exists():
+        return []
+    enum = re.search(r"enum Form \{(.*?)\n    \}", massing.read_text(), re.S)
+    if not enum:
+        return [f"{massing.relative_to(ROOT)}: cannot find `enum Form`"]
+    cases = re.findall(r"^\s*case (\w+)", enum.group(1), re.M)
+    if not cases:
+        return [f"{massing.relative_to(ROOT)}: `enum Form` has no cases"]
+
+    failures = []
+    for path in sorted(APP.glob("*.swift")):
+        lines = path.read_text().splitlines()
+        for index, line in enumerate(lines):
+            if not re.search(r"switch (Massing\.)?form\(", line):
+                continue
+            indent = len(line) - len(line.lstrip())
+            body = []
+            for following in lines[index + 1:]:
+                if following.strip() == "}" and len(following) - len(following.lstrip()) == indent:
+                    break
+                body.append(following)
+            body = "\n".join(body)
+            # A `default:` covers whatever is left, by the author's choice.
+            if re.search(r"^\s*default\s*:", body, re.M):
+                continue
+            for case in cases:
+                if not re.search(r"[.\s]" + case + r"\b", body):
+                    failures.append(
+                        f"{path.relative_to(ROOT)}:{index + 1}: switch over Massing.Form "
+                        f"does not handle `.{case}`"
+                    )
+    return failures
+
+
 def main() -> int:
     known = set(re.findall(r'id: "([a-z0-9\-]+)"', LIBRARY.read_text()))
     if not known:
@@ -187,6 +231,7 @@ def main() -> int:
     failures += check_nested_types()
     failures += check_missing_calls()
     failures += check_hardcoded_camera()
+    failures += check_form_switches()
 
     for failure in failures:
         print(f"error: {failure}", file=sys.stderr)

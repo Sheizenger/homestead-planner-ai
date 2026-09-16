@@ -17,6 +17,11 @@ enum Massing {
         /// Walls to the eaves, then a pitched roof with gable ends: the
         /// default for anything with a roof over it.
         case gabled(eaves: Double, ridge: Double)
+        /// Two gabled wings meeting at a corner, their roofs in a valley,
+        /// around a courtyard: the L-shaped house. The catalog has carried
+        /// `.lshape` since the port and nothing read it, so picking
+        /// "L-shaped" in the brief drew the same box as "Rectangular".
+        case ell(eaves: Double, ridge: Double)
         /// Same shape, glazed — low walls and a translucent roof.
         case glass(eaves: Double, ridge: Double)
         /// The barn shape: a steep lower roof slope breaking at a knuckle
@@ -98,6 +103,15 @@ enum Massing {
         "greenhouse": Surfaces(roof: .glass, wall: .glass),
             ]
 
+    /// The outline the object actually stands on, which for everything but
+    /// the L-shaped house is its four corners. Anything that draws the shape
+    /// on the ground — a cast shadow, a footprint outline — wants this rather
+    /// than the transform, or the L casts the shadow of a box.
+    static func footprint(for object: PlanObject) -> [Point] {
+        if case .ell = form(for: object) { return LShape.footprint(of: object.transform) }
+        return object.transform.corners
+    }
+
     /// How tall a thing is for the purpose of casting a shadow — the ridge
     /// for a roof, the canopy top for a tree, near nothing for a path. Flat
     /// features return 0 and cast none: a gravel path with a shadow under it
@@ -105,6 +119,7 @@ enum Massing {
     static func shadowHeight(for object: PlanObject) -> Double {
         switch form(for: object) {
         case let .gabled(_, ridge): return ridge
+        case let .ell(_, ridge): return ridge
         case let .glass(_, ridge): return ridge * 0.9
         case let .gambrel(_, _, ridge): return ridge
         case let .cylinder(height, _): return height
@@ -147,7 +162,7 @@ enum Massing {
     private static let forms: [String: Form] = [
         // Roofed
         "house": .gabled(eaves: 3.4, ridge: 6.4),
-        "house-l": .gabled(eaves: 3.4, ridge: 6.4),
+        "house-l": .ell(eaves: 3.4, ridge: 6.4),
         "barn": .gambrel(eaves: 3.2, knuckle: 5.4, ridge: 6.8),
         "workshop": .gabled(eaves: 2.8, ridge: 4.0),
         "garage": .gabled(eaves: 2.6, ridge: 3.4),
@@ -206,7 +221,7 @@ enum Massing {
         }
         guard let host else { return 0 }
         switch form(for: host) {
-        case .gabled(let eaves, let ridge), .glass(let eaves, let ridge):
+        case .gabled(let eaves, let ridge), .glass(let eaves, let ridge), .ell(let eaves, let ridge):
             // On the slope, a little above the eaves.
             return eaves + (ridge - eaves) * 0.35
         case .gambrel(let eaves, _, let ridge):
