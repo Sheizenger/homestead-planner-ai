@@ -36,6 +36,43 @@ public struct Transform: Equatable, Hashable, Codable, Sendable {
         ].map { Point(x: x + $0.x * cos - $0.y * sin, y: y + $0.x * sin + $0.y * cos) }
     }
 
+    /// The wall that looks most nearly at `target`, as the pair of base
+    /// corners it runs between.
+    ///
+    /// This is where a door goes. A garage door has to face the gate — a car
+    /// arrives from the road and leaves toward it — and picking the wall by
+    /// anything else (the nearest path node, say, which can be beside or
+    /// behind the building) puts it on a blank elevation facing a fence.
+    /// Geometry, so it lives here where it can be tested, rather than in the
+    /// view that draws the door.
+    public func wall(facing target: Point) -> (Point, Point) {
+        let corners = self.corners
+        guard corners.count == 4 else { return (center, center) }
+        let toTarget = (x: target.x - x, y: target.y - y)
+        let length = (toTarget.x * toTarget.x + toTarget.y * toTarget.y).squareRoot()
+        guard length > 0 else { return (corners[3], corners[2]) }
+
+        var best = (corners[3], corners[2])
+        var bestAlignment = -Double.infinity
+        for index in 0..<4 {
+            let a = corners[index]
+            let b = corners[(index + 1) % 4]
+            // Outward normal resolved against the centre, so it does not
+            // depend on which way round the edge is listed.
+            var normal = (x: b.y - a.y, y: -(b.x - a.x))
+            let midX = (a.x + b.x) / 2 - x
+            let midY = (a.y + b.y) / 2 - y
+            if normal.x * midX + normal.y * midY < 0 { normal = (x: -normal.x, y: -normal.y) }
+
+            let alignment = (normal.x * toTarget.x + normal.y * toTarget.y) / length
+            if alignment > bestAlignment {
+                bestAlignment = alignment
+                best = (a, b)
+            }
+        }
+        return best
+    }
+
     /// The axis-aligned box `transformAabb` in the TypeScript engine
     /// computes: exact for the axis-aligned rotations the generator ever
     /// produces (0/90/180/270°), by swapping width and height rather than

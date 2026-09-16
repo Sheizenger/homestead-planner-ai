@@ -658,30 +658,14 @@ enum AxoKit {
         (edge.0.x + edge.0.y + edge.1.x + edge.1.y) / 2
     }
 
-    /// The wall that looks most nearly at `target` — the way in. Falls back
-    /// to the south wall, the engine's own "front", when nothing serves the
-    /// building.
+    /// The wall the door goes on. Falls back to the south wall, the engine's
+    /// own "front", when nothing serves the building. The geometry itself
+    /// lives on `Transform`, where it is covered by tests that run on Linux —
+    /// this layer can only be built on a Mac.
     private static func frontWall(_ corners: [Point], of object: PlanObject, facing target: Point?) -> (Point, Point) {
         guard corners.count == 4 else { return (corners.first ?? Point(x: 0, y: 0), corners.last ?? Point(x: 0, y: 0)) }
         let centre = object.transform.center
-        let approach = target ?? Point(x: centre.x, y: centre.y + 1000)
-        let toTarget = (x: approach.x - centre.x, y: approach.y - centre.y)
-        let length = (toTarget.x * toTarget.x + toTarget.y * toTarget.y).squareRoot()
-        guard length > 0 else { return (corners[3], corners[2]) }
-
-        var best = (corners[3], corners[2])
-        var bestAlignment = -Double.infinity
-        for index in 0..<4 {
-            let a = corners[index]
-            let b = corners[(index + 1) % 4]
-            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
-            let alignment = (normal.x * toTarget.x + normal.y * toTarget.y) / length
-            if alignment > bestAlignment {
-                bestAlignment = alignment
-                best = (a, b)
-            }
-        }
-        return best
+        return object.transform.wall(facing: target ?? Point(x: centre.x, y: centre.y + 1000))
     }
 
     /// How a building is entered.

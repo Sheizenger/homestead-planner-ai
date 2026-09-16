@@ -817,9 +817,19 @@ struct AxonometricPlanView: View {
     /// driveway arriving at the back had its door on a blank elevation
     /// facing a fence.
     private func approach(to object: PlanObject) -> Point? {
+        let centre = object.transform.center
+
+        // A garage faces the gate. A car arrives from the road and leaves
+        // toward it, so the one wall its door can be on is the one looking
+        // that way — the nearest point of the path network is not the same
+        // thing and can easily be a node beside or behind the building,
+        // which is how the door ended up on a blank elevation again.
+        if Massing.doorway(for: object) == .vehicle, let gate = gatePoint {
+            return gate
+        }
+
         var best: Point?
         var bestDistance = Double.infinity
-        let centre = object.transform.center
         for path in variant.paths {
             for point in path.points {
                 let d = distance(point, centre)
