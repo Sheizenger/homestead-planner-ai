@@ -17,7 +17,6 @@
 
 import SwiftUI
 import HomesteadEngine
-import HomesteadCore
 
 /// Deterministic pseudo-randomness. Scatter driven by `Double.random` would
 /// re-roll every frame and make the grass crawl; hashing the object's own id

@@ -13,6 +13,7 @@ rather than being caught here:
    happened to sit between them, leaving the call behind.
 4. No one writes the camera's angles out by hand again.
 5. Every switch over `Massing.Form` handles every case it has.
+6. Every file imports the module of every type it names.
 
 On (1): the view layer keys several tables by type id — massing, materials, palettes,
 cylinder caps, foliage. A typo or a renamed catalog entry makes the row
@@ -214,6 +215,45 @@ def check_form_switches():
     return failures
 
 
+# Which module each name comes from. Not every type — the ones that move
+# between layers, which are the ones that get named in a file whose imports
+# were written before they existed.
+MODULE_OF = {
+    "HomesteadCore": ["Camera3D", "SceneLight", "Viewport", "ProjectModel", "PlanStore"],
+    "HomesteadEngine": ["PlanObject", "Transform", "Polygon", "LShape", "WaterfrontModel",
+                        "Waterfront", "ObjectLibrary", "Placement", "Sizing", "Plot"],
+    "SwiftUI": ["Color", "GraphicsContext", "StrokeStyle", "LinearGradient"],
+}
+
+
+def check_imports():
+    """A type named without importing its module is a build failure, and
+    `swiftc -parse` does not see it — it resolves nothing.
+
+    Both of the ones this was written for were introduced by moving code
+    between layers: `SceneLight` went from the app target to HomesteadCore
+    and forty call sites in AxoKit kept compiling on Linux's parser alone,
+    and `WaterLook` brought `Color` into a file that had never needed SwiftUI.
+    """
+    failures = []
+    for path in sorted(APP.glob("*.swift")):
+        source = path.read_text()
+        imported = set(re.findall(r"^import (\w+)", source, re.M))
+        body = "\n".join(
+            line for line in source.splitlines() if not line.strip().startswith("//")
+        )
+        for module, names in MODULE_OF.items():
+            if module in imported:
+                continue
+            for name in names:
+                if re.search(r"(?<![\w.])" + name + r"\b", body):
+                    failures.append(
+                        f"{path.relative_to(ROOT)}: names `{name}` but does not import {module}"
+                    )
+                    break
+    return failures
+
+
 def main() -> int:
     known = set(re.findall(r'id: "([a-z0-9\-]+)"', LIBRARY.read_text()))
     if not known:
@@ -232,6 +272,7 @@ def main() -> int:
     failures += check_missing_calls()
     failures += check_hardcoded_camera()
     failures += check_form_switches()
+    failures += check_imports()
 
     for failure in failures:
         print(f"error: {failure}", file=sys.stderr)

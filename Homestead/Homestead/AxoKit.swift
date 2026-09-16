@@ -14,6 +14,7 @@
 
 import SwiftUI
 import HomesteadEngine
+import HomesteadCore
 
 /// Everything the kit draws, held until the whole scene has been described.
 ///
