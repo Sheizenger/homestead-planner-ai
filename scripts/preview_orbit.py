@@ -141,10 +141,21 @@ class Scene:
             " ".join("%.2f,%.2f" % q for q in pts), tone(fill, sh), stroke)
         self.items.append((d, len(self.items), svg, verts))
 
-    def ellipse(self, centre, z, r, fill, sh):
+    def polyline(self, points, color, width=0.12, opacity=1.0, depth=None):
+        """An open stroked line. The kit strokes as well as fills — current
+        streaks, ripples, reeds — and a transcription that could only fill
+        showed none of it."""
+        pts = [self.camera.project(p, z) for p, z in points]
+        d = depth if depth is not None else max(self.camera.depth(p, z) for p, z in points)
+        self.items.append((d, len(self.items),
+                           '<polyline points="%s" fill="none" stroke="%s" stroke-opacity="%s" stroke-width="%s"/>'
+                           % (" ".join("%.2f,%.2f" % q for q in pts), tone(color, 0), opacity, width),
+                           points))
+
+    def ellipse(self, centre, z, r, fill, sh, depth=None):
         cx, cy = self.camera.project(centre, z)
         rx, ry = self.camera.ellipse(r)
-        self.items.append((self.camera.depth(centre, z), len(self.items),
+        self.items.append((depth if depth is not None else self.camera.depth(centre, z), len(self.items),
                            '<ellipse cx="%.2f" cy="%.2f" rx="%.2f" ry="%.2f" fill="%s"/>'
                            % (cx, cy, rx, ry, tone(fill, sh)), None))
 
@@ -287,6 +298,152 @@ def check(camera, scene):
     return problems
 
 
+# --- Water -----------------------------------------------------------------
+#
+# `WaterfrontModel.bankProfile` and `shoreline`, transcribed. River, lake and
+# pond drew one blue rectangle with a different word on it; this is how the
+# three shapes are checked without a Mac.
+
+# The water's surface dressing is a layer stack, not a depth-sorted scene.
+ON_TOP = 1e6
+
+
+def in_strip(width, depth_m, along, across):
+    """`inStrip`: fraction along the frontage, fraction across from the open
+    side. The strip runs from y = -depth_m (the property line, open water) to
+    y = 0 (the shore)."""
+    return (width * along, -depth_m + depth_m * across)
+
+
+def bank_profile(kind, t):
+    t = min(max(t, 0.0), 1.0)
+    if kind == "river":
+        return 0.09 + 0.06 * math.sin(t * 2 * math.pi * 1.5 + 0.6)
+    if kind == "lake":
+        return 0.22 * (1 - math.sin(t * math.pi))
+    return 0.06 + 0.36 * (1 - math.sin(t * math.pi) ** 0.55)
+
+
+WATER = {
+    "river": dict(deep=0x2e6f8e, shallow=0x6fa8bd, bank=0xc6bda4, weed=0x6f8f4a, depth=0.45),
+    "lake": dict(deep=0x1f5f86, shallow=0x7cb8d1, bank=0xd8cfb2, weed=0x5f8a44, depth=0.6),
+    "pond": dict(deep=0x3c6b57, shallow=0x76a071, bank=0x9c8f6a, weed=0x4e7a33, depth=0.3),
+}
+
+
+def water_scene(camera, kind, width=44.0, depth_m=13.0, samples=48):
+    """One plot with a north waterfront of this kind, drawn the way the view
+    draws it: bank, sunk basin, cut sides, then the surface dressing."""
+    scene = Scene(camera)
+    look = WATER[kind]
+    z = -look["depth"]
+
+    plot = [(0, -depth_m), (width, -depth_m), (width, 26), (0, 26)]
+    scene.face([(p, 0) for p in plot], 0x7ab648, -0.05, "#5e8c34", 1.0,
+               depth=min(camera.depth(p) for p in plot) - 1000)
+    # The planning strip, which is what the bank material fills.
+    strip = [(0, -depth_m), (width, -depth_m), (width, 0), (0, 0)]
+    scene.face([(p, 0) for p in strip], look["bank"], 0.0,
+               depth=min(camera.depth(p) for p in strip) - 500)
+
+    shore = []
+    for step in range(samples + 1):
+        t = step / samples
+        pull = min(max(bank_profile(kind, t), 0), 0.45) * depth_m
+        shore.append((width * t, -pull))
+    polygon = shore + [(width, -depth_m), (0, -depth_m)]
+
+    centre = (sum(p[0] for p in polygon) / len(polygon), sum(p[1] for p in polygon) / len(polygon))
+    for i in range(len(polygon)):
+        a, b = polygon[i], polygon[(i + 1) % len(polygon)]
+        n = wall_normal(a, b, centre)
+        if not camera.faces(n):
+            scene.face([(a, 0), (b, 0), (b, z), (a, z)], look["deep"], 0.12)
+    scene.face([(p, z) for p in polygon], look["deep"], 0.0, "#1b4a63", 0.6)
+
+    if kind == "river":
+        for i in range(4):
+            across = 0.26 + 0.16 * i
+            phase = AXO_NOISE("current", i, 1) * 2 * math.pi
+            pts = []
+            for step in range(21):
+                t = step / 20
+                drift = math.sin(t * 2 * math.pi * 1.2 + phase) * 0.045
+                pts.append((in_strip(width, depth_m, t, across + drift), z))
+            scene.polyline(pts, 0xffffff, width=0.1, opacity=0.5, depth=ON_TOP)
+    elif kind == "lake":
+        for i in range(26):
+            along = 0.06 + 0.88 * AXO_NOISE("glint", i, 1)
+            across = 0.12 + 0.6 * AXO_NOISE("glint", i, 2)
+            length = 0.02 + 0.035 * AXO_NOISE("glint", i, 3)
+            scene.polyline(
+                [(in_strip(width, depth_m, along - length, across), z),
+                 (in_strip(width, depth_m, along + length, across), z)],
+                0xffffff, width=0.13, opacity=0.65, depth=ON_TOP)
+    else:
+        for i in range(14):
+            along = 0.12 + 0.76 * AXO_NOISE("pad", i, 1)
+            across = 0.18 + 0.5 * AXO_NOISE("pad", i, 2)
+            r = 0.28 + AXO_NOISE("pad", i, 3) * 0.3
+            scene.ellipse(in_strip(width, depth_m, along, across), z, r, look["weed"], 0.05, depth=ON_TOP)
+
+    # Reeds in clumps, not one per shoreline sample.
+    clumps = 0 if kind == "river" else (4 if kind == "lake" else 7)
+    for clump in range(clumps):
+        position = (clump + 0.5) / clumps + (AXO_NOISE("clump", clump, 1) - 0.5) * 2 * 0.06
+        anchor = int(min(max(position, 0), 0.999) * (len(shore) - 1))
+        stalks = 3 + int(AXO_NOISE("clump", clump, 2) * 4)
+        root = shore[anchor]
+        for stalk in range(stalks):
+            point = (root[0] + (AXO_NOISE("reed", clump * 10 + stalk, 4) - 0.5) * 2 * 0.5,
+                     root[1] + (AXO_NOISE("reed", clump * 10 + stalk, 5) - 0.5) * 2 * 0.5)
+            h = 0.4 + AXO_NOISE("reed", clump * 10 + stalk, 2) * 0.55
+            lean = (AXO_NOISE("reed", clump * 10 + stalk, 3) - 0.5) * 2 * 0.16
+            tip = (point[0] + lean, point[1] + lean * 0.4)
+            scene.polyline([(point, z), (tip, z + h)], look["weed"], width=0.13, depth=ON_TOP)
+    return scene
+
+
+def AXO_NOISE(seed, index, salt=0):
+    """`AxoNoise.value`: FNV-1a over the seed, then the index and the salt."""
+    h = 0xcbf29ce484222325
+    for byte in seed.encode():
+        h = ((h ^ byte) * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
+    for extra in (index, salt):
+        h = ((h ^ (extra & 0xFFFFFFFFFFFFFFFF)) * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
+    h ^= h >> 33
+    return (h % 100000) / 100000
+
+
+def water_sheet():
+    views = [(kind, Camera()) for kind in ("river", "lake", "pond")]
+    views += [("pond, turned", Camera(yaw=math.radians(100)))]
+    global CELL_W, CELL_H
+    out = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d">' % (2 * CELL_W, 2 * CELL_H),
+           '<rect width="100%" height="100%" fill="#dfe8ef"/>']
+    for index, (label, camera) in enumerate(views):
+        scene = water_scene(camera, label.split(",")[0])
+        drawn = scene.render()
+        pts = [camera.project(p, z) for _, _, _, verts in drawn if verts for p, z in verts]
+        minx, maxx = min(q[0] for q in pts), max(q[0] for q in pts)
+        miny, maxy = min(q[1] for q in pts), max(q[1] for q in pts)
+        s = min((CELL_W - 24) / max(maxx - minx, 1e-6), (CELL_H - 44) / max(maxy - miny, 1e-6))
+        ox = index % 2 * CELL_W + 12 - minx * s + ((CELL_W - 24) - (maxx - minx) * s) / 2
+        oy = index // 2 * CELL_H + 32 - miny * s + ((CELL_H - 44) - (maxy - miny) * s) / 2
+        out.append('<g transform="translate(%.2f,%.2f) scale(%.4f)">' % (ox, oy, s))
+        out += [it[2] for it in drawn]
+        out.append('</g>')
+        out.append('<text x="%d" y="%d" font-family="sans-serif" font-size="13" fill="#1e2a33">%s</text>'
+                   % (index % 2 * CELL_W + 12, index // 2 * CELL_H + 20, label))
+    out.append('</svg>')
+    open("water.svg", "w").write("".join(out))
+    try:
+        import cairosvg
+        cairosvg.svg2png(url="water.svg", write_to="water.png", output_width=2 * CELL_W * 2)
+    except Exception:
+        pass
+
+
 # --- Contact sheet ---------------------------------------------------------
 
 CELL_W, CELL_H = 340, 300
@@ -332,6 +489,8 @@ def main():
         cairosvg.svg2png(url="orbit.svg", write_to="orbit.png", output_width=COLS * CELL_W * 2)
     except Exception as error:  # noqa: BLE001
         print("no PNG (%s)" % error)
+
+    water_sheet()
 
     for label, problems in failures:
         for problem in problems:

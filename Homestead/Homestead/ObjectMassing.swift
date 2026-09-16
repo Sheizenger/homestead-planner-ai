@@ -386,3 +386,53 @@ enum Massing {
         "well": Palette(wall: 0xa9a196, roof: 0x7d4f3a, trim: 0xe0dad0),
     ]
 }
+
+/// What each kind of water is made of.
+///
+/// The three were drawn in one colour from `CategoryStyle.of(.water)` — the
+/// flat plan's tint for "this area is water", which is the right answer on a
+/// diagram and the wrong one in a view of a place. A river carries silt and
+/// runs over gravel, a lake is deep and clear with a sandy edge, a pond is
+/// green with weed and sits in mud.
+struct WaterLook {
+    /// The middle, where it is deepest.
+    let deep: Color
+    /// The edge, where the bottom shows through.
+    let shallow: Color
+    /// The ground between the planning line and the waterline.
+    let bank: Color
+    /// Reeds and lily pads.
+    let weed: Color
+    /// How far below grade the surface sits. A pond is a dip; a river has cut
+    /// itself a channel.
+    let depth: Double
+
+    static func of(_ type: WaterfrontType) -> WaterLook {
+        switch type {
+        case .river:
+            return WaterLook(
+                deep: Color(hex: 0x2e6f8e),
+                shallow: Color(hex: 0x6fa8bd),
+                bank: Color(hex: 0xc6bda4),
+                weed: Color(hex: 0x6f8f4a),
+                depth: 0.45
+            )
+        case .lake:
+            return WaterLook(
+                deep: Color(hex: 0x1f5f86),
+                shallow: Color(hex: 0x7cb8d1),
+                bank: Color(hex: 0xd8cfb2),
+                weed: Color(hex: 0x5f8a44),
+                depth: 0.6
+            )
+        case .pond:
+            return WaterLook(
+                deep: Color(hex: 0x3c6b57),
+                shallow: Color(hex: 0x76a071),
+                bank: Color(hex: 0x9c8f6a),
+                weed: Color(hex: 0x4e7a33),
+                depth: 0.3
+            )
+        }
+    }
+}

@@ -436,35 +436,200 @@ struct AxonometricPlanView: View {
     /// rather than as a blue paving slab — the one place this view deliberately
     /// goes below z = 0. Drawn from `plot` rather than `variant`, because the
     /// water is a property of the land and every variant shares it.
+    /// Water that knows what kind of water it is.
+    ///
+    /// River, lake and pond all drew the identical blue rectangle with a
+    /// different word printed in the middle of it. Three things now differ:
+    /// the shape of the bank (`WaterfrontModel.shoreline`, in the engine
+    /// where it is tested), the colour, and what the surface does. A river
+    /// runs, a lake is open and still, a pond is small and green and weedy.
     private func drawWater(_ context: GraphicsContext) {
         guard let waterfront = plot.waterfront,
-              let zone = WaterfrontModel.zone(of: plot),
-              zone.boundary.count > 2,
-              let bounds = Rect(bounding: zone.boundary) else { return }
+              let strip = WaterfrontModel.bounds(of: plot),
+              let shore = WaterfrontModel.shoreline(of: plot),
+              shore.count > 2 else { return }
 
-        let surface = -0.15
+        let look = WaterLook.of(waterfront.type)
+        let surface = -look.depth
+
+        // The bank first: the ground between the planning line and the water,
+        // in the material this kind of water leaves behind. Without it the
+        // water reads as a hole cut in the lawn.
+        if let zone = WaterfrontModel.zone(of: plot), zone.boundary.count > 2 {
+            var land = Path()
+            land.addLines(zone.boundary.map { screen($0) })
+            land.closeSubpath()
+            context.fill(land, with: .color(look.bank))
+        }
+
         var basin = Path()
-        basin.addLines(zone.boundary.map { screen($0, z: surface) })
+        basin.addLines(shore.map { screen($0, z: surface) })
         basin.closeSubpath()
 
-        let style = CategoryStyle.of(.water, daylight)
-        context.fill(basin, with: .color(style.fill.opacity(0.75)))
-        context.stroke(basin, with: .color(style.stroke), lineWidth: 1.2)
+        // The cut sides, so the water sits *in* the ground rather than on it
+        // — the same reason the plot itself is a slab and not an outline.
+        // Only the banks turned away from the camera show their face, which
+        // is the camera's question to answer, not a fixed rule.
+        let middle = footprintCentre(shore)
+        for index in shore.indices {
+            let a = shore[index]
+            let b = shore[(index + 1) % shore.count]
+            let normal = SceneLight.wallNormal(from: a, to: b, about: middle)
+            guard !camera.faces(normal) else { continue }
+            var side = Path()
+            side.addLines([screen(a), screen(b), screen(b, z: surface), screen(a, z: surface)])
+            side.closeSubpath()
+            context.fill(side, with: .color(look.deep.opacity(0.85)))
+        }
 
-        drawWaves(context, in: bounds, z: surface, color: style.stroke)
+        // Deep in the middle, shallower at the edge: a flat fill is what made
+        // every body of water read as coloured paper.
+        context.fill(
+            basin,
+            with: .radialGradient(
+                Gradient(colors: [look.deep, look.shallow]),
+                center: screen(Point(x: strip.midX, y: strip.midY), z: surface),
+                startRadius: 0,
+                endRadius: CGFloat(max(strip.width, strip.height) * viewport.scale * 0.55)
+            )
+        )
+        context.stroke(basin, with: .color(look.deep.opacity(0.8)), lineWidth: 1.2)
+
+        drawWaterSurface(context, waterfront: waterfront, strip: strip, shore: shore, z: surface, look: look)
 
         context.draw(
             Text(waterfront.type.rawValue.capitalized)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(style.stroke.opacity(0.85)),
-            at: screen(Point(x: bounds.midX, y: bounds.midY), z: surface)
+                .foregroundColor(look.deep.opacity(0.9)),
+            at: screen(Point(x: strip.midX, y: strip.midY), z: surface)
         )
+    }
+
+    /// What the surface of each kind of water does.
+    private func drawWaterSurface(
+        _ context: GraphicsContext,
+        waterfront: Waterfront,
+        strip: Rect,
+        shore: [Point],
+        z: Double,
+        look: WaterLook
+    ) {
+        let horizontal = waterfront.edge == .north || waterfront.edge == .south
+        let longLength = horizontal ? strip.width : strip.height
+        guard longLength * viewport.scale > 40 else { return }
+
+        switch waterfront.type {
+        case .river:
+            drawWaves(context, in: strip, z: z, color: look.deep, along: horizontal)
+            // Current: a few long streaks down the channel, which is the one
+            // thing a river has and the other two do not. Four, and drifting
+            // on a slow sine rather than on per-sample noise — noise at every
+            // step drew seven scribbles that read as hatching, not as flow.
+            var streaks = Path()
+            for index in 0..<4 {
+                let across = 0.26 + 0.16 * Double(index)
+                let phase = AxoNoise.value("current", index, 1) * 2 * .pi
+                var points: [CGPoint] = []
+                for step in 0...20 {
+                    let along = Double(step) / 20
+                    let drift = sin(along * 2 * .pi * 1.2 + phase) * 0.045
+                    points.append(screen(inStrip(strip, along: along, across: across + drift, horizontal: horizontal), z: z))
+                }
+                streaks.addLines(points)
+            }
+            context.stroke(streaks, with: .color(.white.opacity(0.3)), lineWidth: 1.1)
+
+        case .lake:
+            // Still water. The first attempt drew long lines down the lake,
+            // which is what the river does — the two came out looking like
+            // the same water at different saturations. Broken dashes lying
+            // *across* the view instead read as glints on a flat surface,
+            // and nothing about them suggests anything is moving.
+            var glints = Path()
+            for index in 0..<26 {
+                let along = 0.06 + 0.88 * AxoNoise.value("glint", index, 1)
+                let across = 0.12 + 0.6 * AxoNoise.value("glint", index, 2)
+                let length = 0.02 + 0.035 * AxoNoise.value("glint", index, 3)
+                glints.move(to: screen(inStrip(strip, along: along - length, across: across, horizontal: horizontal), z: z))
+                glints.addLine(to: screen(inStrip(strip, along: along + length, across: across, horizontal: horizontal), z: z))
+            }
+            context.stroke(glints, with: .color(.white.opacity(0.42)), lineWidth: 1.4)
+            reeds(context, along: shore, z: z, clumps: 4, color: look.weed)
+
+        case .pond:
+            // Small and weedy: lily pads and reeds round the bank. A pond
+            // with wave lines on it reads as a small lake.
+            guard viewport.scale > 2.2 else {
+                reeds(context, along: shore, z: z, clumps: 7, color: look.weed)
+                return
+            }
+            for index in 0..<14 {
+                let along = 0.12 + 0.76 * AxoNoise.value("pad", index, 1)
+                let across = 0.18 + 0.5 * AxoNoise.value("pad", index, 2)
+                let at = inStrip(strip, along: along, across: across, horizontal: horizontal)
+                let radius = 0.28 + AxoNoise.value("pad", index, 3) * 0.3
+                let axes = camera.horizontalEllipse(radius: radius)
+                let centre = screen(at, z: z)
+                var pad = Path()
+                pad.addEllipse(in: CGRect(
+                    x: centre.x - CGFloat(axes.rx * viewport.scale),
+                    y: centre.y - CGFloat(axes.ry * viewport.scale),
+                    width: CGFloat(axes.rx * viewport.scale * 2),
+                    height: CGFloat(axes.ry * viewport.scale * 2)
+                ))
+                context.fill(pad, with: .color(look.weed.opacity(0.85)))
+                context.stroke(pad, with: .color(look.deep.opacity(0.5)), lineWidth: 0.6)
+            }
+            reeds(context, along: shore, z: z, clumps: 7, color: look.weed)
+        }
+    }
+
+    /// A point in the water strip, by fraction along the frontage and
+    /// fraction across it.
+    private func inStrip(_ strip: Rect, along: Double, across: Double, horizontal: Bool) -> Point {
+        horizontal
+            ? Point(x: strip.minX + strip.width * along, y: strip.minY + strip.height * across)
+            : Point(x: strip.minX + strip.width * across, y: strip.minY + strip.height * along)
+    }
+
+    /// Reeds along the bank, in clumps.
+    ///
+    /// The first pass tested every point of the shoreline against a density
+    /// and drew a stem wherever it passed, which at 48 samples gave an even
+    /// picket fence round the whole waterline — a hairy edge, not planting.
+    /// Reeds grow in stands with gaps between them, and the gaps are what
+    /// make it read.
+    private func reeds(_ context: GraphicsContext, along shore: [Point], z: Double, clumps: Int, color: Color) {
+        guard viewport.scale > 2.5, shore.count > 2, clumps > 0 else { return }
+        var stems = Path()
+        for clump in 0..<clumps {
+            // Spread round the shore with a little wander, so the stands are
+            // not at regular intervals either.
+            let position = (Double(clump) + 0.5) / Double(clumps) + AxoNoise.jitter("clump", clump, 1, 0.06)
+            let anchor = Int(min(max(position, 0), 0.999) * Double(shore.count - 1))
+            let stalks = 3 + Int(AxoNoise.value("clump", clump, 2) * 4)
+            let root = shore[anchor]
+            for stalk in 0..<stalks {
+                // Scattered around the anchor, not strung along consecutive
+                // shoreline samples: at 48 samples over a 44 m frontage those
+                // are a metre apart, so a seven-stalk clump came out five
+                // metres wide and seven of them closed up into a hedge.
+                let point = Point(
+                    x: root.x + AxoNoise.jitter("reed", clump * 10 + stalk, 4, 0.5),
+                    y: root.y + AxoNoise.jitter("reed", clump * 10 + stalk, 5, 0.5)
+                )
+                let height = 0.4 + AxoNoise.value("reed", clump * 10 + stalk, 2) * 0.55
+                let lean = AxoNoise.jitter("reed", clump * 10 + stalk, 3, 0.16)
+                stems.move(to: screen(point, z: z))
+                stems.addLine(to: screen(Point(x: point.x + lean, y: point.y + lean * 0.4), z: z + height))
+            }
+        }
+        context.stroke(stems, with: .color(color), lineWidth: 1.3)
     }
 
     /// Same alternating-bump wave the 2D plan draws, projected onto the water
     /// surface so the two views show recognisably the same river.
-    private func drawWaves(_ context: GraphicsContext, in bounds: Rect, z: Double, color: Color) {
-        let horizontal = bounds.width >= bounds.height
+    private func drawWaves(_ context: GraphicsContext, in bounds: Rect, z: Double, color: Color, along horizontal: Bool) {
         let longLength = horizontal ? bounds.width : bounds.height
         let shortLength = horizontal ? bounds.height : bounds.width
         guard longLength * viewport.scale > 40, shortLength > 0 else { return }
