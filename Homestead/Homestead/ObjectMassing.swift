@@ -43,6 +43,10 @@ enum Massing {
         case paved
         /// A micro-hydro set: housing, overshot wheel, flume.
         case turbine
+        /// A technical enclosure on a plinth: plant room, switchgear.
+        case cabinet(height: Double, kind: AxoKit.Cabinet)
+        /// Buried, with covers and a vent showing: a septic tank.
+        case buried
     }
 
     /// What a building is made of. Two gabled boxes of the same size read as
@@ -113,6 +117,8 @@ enum Massing {
         case .deck: return 0.55
         case .paved: return 0.12
         case .turbine: return 1.9
+        case let .cabinet(height, _): return height + 0.26
+        case .buried: return 0
         }
     }
 
@@ -166,8 +172,10 @@ enum Massing {
         "compost": .cylinder(height: 1.1, radiusScale: 0.44),
 
         // Plain kit
-        "battery-room": .block(height: 2.4),
-        "inverter-room": .block(height: 2.2),
+        // Genuinely similar things, so the difference is drawn rather than
+        // coloured: batteries need a lot of air, an inverter sheds heat.
+        "battery-room": .cabinet(height: 2.4, kind: .louvred),
+        "inverter-room": .cabinet(height: 2.2, kind: .finned),
         "generator": .block(height: 1.5),
         "pump": .block(height: 1.3),
 
@@ -175,7 +183,7 @@ enum Massing {
         // On the ground it is a panel array; on a roof the same type is
         // painted flat on the slope, which `form` checks for first.
         "solar-array": .panels(height: 1.6),
-        "septic": .flat(height: 0.2),
+        "septic": .buried,
         "patio": .paved,
         "micro-hydro": .turbine,
         "pool": .basin,
@@ -213,6 +221,10 @@ enum Massing {
             return 0.12
         case .turbine:
             return 1.9
+        case let .cabinet(height, _):
+            return height + 0.26
+        case .buried:
+            return 0.22
         case .canopy(let height, _, _):
             return height
         }

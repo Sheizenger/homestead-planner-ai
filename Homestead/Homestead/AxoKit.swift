@@ -1208,6 +1208,209 @@ enum AxoKit {
         fencePost(painter, at: jambB, height: jambHeight, color: post)
     }
 
+    /// What a technical enclosure is: a cabinet on a plinth under a flat roof
+    /// with a drip edge, with a door and the vents or fins its contents need.
+    ///
+    /// A battery room and an inverter room were both a plain box with a symbol
+    /// on the lid. They are genuinely similar things, so the difference has to
+    /// be drawn rather than coloured: batteries need a lot of air, so that one
+    /// gets a full louvred panel; an inverter sheds heat through fins and runs
+    /// conduit out to the array.
+    enum Cabinet {
+        case louvred
+        case finned
+    }
+
+    static func cabinet(
+        _ painter: AxoPainter,
+        object: PlanObject,
+        base: Double,
+        height: Double,
+        wall: Color,
+        roof: Color,
+        trim: Color,
+        kind: Cabinet,
+        facing target: Point?
+    ) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+        let centre = object.transform.center
+        let plinthZ = base + 0.16
+        let eavesZ = plinthZ + height
+
+        func expanded(by amount: Double) -> [Point] {
+            corners.map { corner in
+                Point(
+                    x: corner.x + (corner.x >= centre.x ? amount : -amount),
+                    y: corner.y + (corner.y >= centre.y ? amount : -amount)
+                )
+            }
+        }
+
+        // Concrete plinth, a little proud of the walls.
+        let plinth = expanded(by: 0.12)
+        for index in 0..<4 {
+            let a = plinth[index], b = plinth[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face([(a, plinthZ), (b, plinthZ), (b, base), (a, base)], fill: Color(hex: 0xb8b4ac), shade: 0.26, outline: nil)
+        }
+        painter.face(plinth.map { ($0, plinthZ) }, fill: Color(hex: 0xc6c2b9), shade: 0.05, outline: nil)
+
+        for index in 0..<4 {
+            let a = corners[index], b = corners[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            painter.face(
+                [(a, plinthZ), (b, plinthZ), (b, eavesZ), (a, eavesZ)],
+                fill: wall,
+                shade: AxoLight.shade(normal: normal),
+                outline: wall.mix(with: .black, by: 0.35),
+                lineWidth: 0.7
+            )
+        }
+
+        // Flat roof with an overhang and a drip edge, so it is a roof.
+        let lid = expanded(by: 0.16)
+        painter.face(
+            lid.map { ($0, eavesZ + 0.1) },
+            fill: roof,
+            shade: AxoLight.shade(normal: AxoLight.up),
+            outline: roof.mix(with: .black, by: 0.35),
+            lineWidth: 0.7
+        )
+        for index in 0..<4 {
+            let a = lid[index], b = lid[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face([(a, eavesZ + 0.1), (b, eavesZ + 0.1), (b, eavesZ - 0.02), (a, eavesZ - 0.02)], fill: roof, shade: 0.34, outline: nil)
+        }
+
+        guard painter.scale > 3 else { return }
+        let front = frontWall(corners, of: object, facing: target)
+        let span = distance(front.0, front.1)
+        guard span > 0.8 else { return }
+
+        // A door, narrow: these are rooms you step into, not drive into.
+        let doorHalf = min(0.4, span * 0.22) / span
+        let doorTop = plinthZ + min(2.0, height * 0.82)
+        painter.face(
+            [(lerp(front.0, front.1, 0.5 - doorHalf), plinthZ),
+             (lerp(front.0, front.1, 0.5 + doorHalf), plinthZ),
+             (lerp(front.0, front.1, 0.5 + doorHalf), doorTop),
+             (lerp(front.0, front.1, 0.5 - doorHalf), doorTop)],
+            fill: trim,
+            shade: 0.08,
+            outline: wall.mix(with: .black, by: 0.4),
+            lineWidth: 0.6
+        )
+        painter.line(
+            (lerp(front.0, front.1, 0.5 + doorHalf * 0.55), plinthZ + height * 0.45),
+            (lerp(front.0, front.1, 0.5 + doorHalf * 0.8), plinthZ + height * 0.45),
+            color: wall.mix(with: .black, by: 0.5),
+            width: 1.6
+        )
+
+        switch kind {
+        case .louvred:
+            // Slats across the whole front above the door: battery rooms are
+            // mostly ventilation.
+            let slats = max(3, min(8, Int(height / 0.28)))
+            for step in 1...slats {
+                let z = plinthZ + height * (0.3 + 0.62 * Double(step) / Double(slats + 1))
+                painter.line(
+                    (lerp(front.0, front.1, 0.08), z),
+                    (lerp(front.0, front.1, 0.92), z),
+                    color: wall.mix(with: .black, by: 0.45),
+                    width: 1.6
+                )
+            }
+        case .finned:
+            // Heat-sink fins down one side, and conduit heading off to the
+            // array.
+            let side = (corners[1], corners[2])
+            let fins = max(3, min(9, Int(distance(side.0, side.1) / 0.3)))
+            for step in 1...fins {
+                let t = Double(step) / Double(fins + 1)
+                painter.line(
+                    (lerp(side.0, side.1, t), plinthZ + 0.2),
+                    (lerp(side.0, side.1, t), eavesZ - 0.2),
+                    color: wall.mix(with: .black, by: 0.4),
+                    width: 1.4
+                )
+            }
+            let conduitFoot = lerp(front.0, front.1, 0.9)
+            painter.line((conduitFoot, plinthZ + 0.3), (conduitFoot, eavesZ + 0.35), color: trim.mix(with: .black, by: 0.2), width: max(1.8, CGFloat(0.1 * painter.scale)))
+        }
+    }
+
+    /// A septic tank is buried. What you see is a low grassed mound with
+    /// manhole covers on it and a vent stack — not a building, and not the
+    /// flat slab with a plan symbol it used to be.
+    static func septicField(_ painter: AxoPainter, object: PlanObject, base: Double, mound: Color, cover: Color) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+        let centre = object.transform.center
+        let width = object.transform.width
+        let depth = object.transform.height
+        let topZ = base + 0.22
+
+        // Battered sides, so it reads as earth heaped over something rather
+        // than a slab dropped on the grass.
+        let crown = corners.map { corner in
+            Point(
+                x: corner.x + (corner.x >= centre.x ? -0.5 : 0.5),
+                y: corner.y + (corner.y >= centre.y ? -0.5 : 0.5)
+            )
+        }
+        for index in 0..<4 {
+            let a = corners[index], b = corners[(index + 1) % 4]
+            let ca = crown[index], cb = crown[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face([(ca, topZ), (cb, topZ), (b, base), (a, base)], fill: mound, shade: AxoLight.shade(normal: normal), outline: nil)
+        }
+        painter.face(
+            crown.map { ($0, topZ) },
+            fill: mound,
+            shade: AxoLight.shade(normal: AxoLight.up),
+            outline: mound.mix(with: .black, by: 0.25),
+            lineWidth: 0.7
+        )
+
+        guard painter.scale > 3 else { return }
+
+        // Two inspection covers along the long axis.
+        let alongX = width >= depth
+        let radius = min(0.42, min(width, depth) * 0.16)
+        let rx = CGFloat(radius * 1.414 * Axonometry.cosA * painter.scale)
+        let ry = CGFloat(radius * 1.414 * Axonometry.sinA * painter.scale)
+        for fraction in [0.32, 0.68] {
+            let at = alongX
+                ? Point(x: centre.x + (fraction - 0.5) * width * 0.7, y: centre.y)
+                : Point(x: centre.x, y: centre.y + (fraction - 0.5) * depth * 0.7)
+            let screen = painter.project(at, topZ + 0.02)
+            let rect = CGRect(x: screen.x - rx, y: screen.y - ry, width: rx * 2, height: ry * 2)
+            painter.context.fill(Path(ellipseIn: rect), with: .color(cover))
+            painter.context.stroke(Path(ellipseIn: rect), with: .color(cover.mix(with: .black, by: 0.45)), lineWidth: 1.2)
+            painter.context.stroke(
+                Path(ellipseIn: rect.insetBy(dx: rx * 0.3, dy: ry * 0.3)),
+                with: .color(cover.mix(with: .black, by: 0.3)),
+                lineWidth: 0.8
+            )
+        }
+
+        // Vent stack at one end, with a cowl.
+        let vent = alongX
+            ? Point(x: centre.x - width * 0.38, y: centre.y + depth * 0.28)
+            : Point(x: centre.x + width * 0.28, y: centre.y - depth * 0.38)
+        painter.line((vent, topZ), (vent, topZ + 1.25), color: Color(hex: 0x6f7a80), width: max(1.8, CGFloat(0.1 * painter.scale)))
+        let cap = painter.project(vent, topZ + 1.3)
+        painter.context.fill(
+            Path(ellipseIn: CGRect(x: cap.x - rx * 0.5, y: cap.y - ry * 0.5, width: rx, height: ry)),
+            with: .color(Color(hex: 0x8d979d))
+        )
+    }
+
     /// A paved terrace with something on it. A patio is where people sit, and
     /// a flat lilac diamond with a plan glyph on it says none of that — paving
     /// joints, a table under a parasol and stools around it do.

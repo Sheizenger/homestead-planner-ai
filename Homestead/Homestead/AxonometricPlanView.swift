@@ -756,6 +756,28 @@ struct AxonometricPlanView: View {
         case .paved:
             AxoKit.patio(painter, object: object, base: base, paving: Color(hex: 0xd8d2c6))
 
+        case let .cabinet(height, kind):
+            AxoKit.cabinet(
+                painter,
+                object: object,
+                base: base,
+                height: height,
+                wall: wallColor,
+                roof: roof,
+                trim: Color(hex: palette.trim),
+                kind: kind,
+                facing: approach(to: object)
+            )
+
+        case .buried:
+            AxoKit.septicField(
+                painter,
+                object: object,
+                base: base,
+                mound: Color(hex: 0x6f9c47),
+                cover: Color(hex: 0x9aa0a6)
+            )
+
         case .turbine:
             AxoKit.turbine(
                 painter,

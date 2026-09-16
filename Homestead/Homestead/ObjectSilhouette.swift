@@ -85,6 +85,13 @@ enum Silhouette {
         case .turbine:
             points += corners.map { ($0, base + 1.9) }
 
+        case let .cabinet(height, _):
+            // The roof oversails the walls, so the hull takes the lid.
+            points += expanded(by: 0.16).map { ($0, base + height + 0.26) }
+
+        case .buried:
+            points += corners.map { ($0, base + 0.22) }
+
         case let .cylinder(height, radiusScale):
             // A circle, not the square it is inscribed in: a tank's silhouette
             // is noticeably narrower than its footprint.
