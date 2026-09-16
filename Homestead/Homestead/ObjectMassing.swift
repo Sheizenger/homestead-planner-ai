@@ -39,6 +39,10 @@ enum Massing {
         case basin
         /// A planked deck on piles.
         case deck
+        /// A paved terrace with furniture on it.
+        case paved
+        /// A micro-hydro set: housing, overshot wheel, flume.
+        case turbine
     }
 
     /// What a building is made of. Two gabled boxes of the same size read as
@@ -107,6 +111,8 @@ enum Massing {
         case let .panels(height): return height
         case .basin: return 0
         case .deck: return 0.55
+        case .paved: return 0.12
+        case .turbine: return 1.9
         }
     }
 
@@ -170,7 +176,8 @@ enum Massing {
         // painted flat on the slope, which `form` checks for first.
         "solar-array": .panels(height: 1.6),
         "septic": .flat(height: 0.2),
-        "patio": .flat(height: 0.1),
+        "patio": .paved,
+        "micro-hydro": .turbine,
         "pool": .basin,
         "dock": .deck,
         "goat-paddock": .flat(height: 0.05),
@@ -202,6 +209,10 @@ enum Massing {
             return 0
         case .deck:
             return 0.55
+        case .paved:
+            return 0.12
+        case .turbine:
+            return 1.9
         case .canopy(let height, _, _):
             return height
         }

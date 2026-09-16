@@ -76,6 +76,15 @@ enum Silhouette {
         case .deck:
             points += corners.map { ($0, base + 0.55) }
 
+        case .paved:
+            // The parasol is the tallest thing on it, and it is what you would
+            // aim at.
+            points += corners.map { ($0, base + 0.12) }
+            points.append((centre, base + 2.4))
+
+        case .turbine:
+            points += corners.map { ($0, base + 1.9) }
+
         case let .cylinder(height, radiusScale):
             // A circle, not the square it is inscribed in: a tank's silhouette
             // is noticeably narrower than its footprint.

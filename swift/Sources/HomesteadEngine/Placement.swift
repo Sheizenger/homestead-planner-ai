@@ -198,6 +198,62 @@ public enum Placement {
                 continue
             }
 
+            // A pier runs out from the bank, not along it. The generic search
+            // treats a dock like any other box: it tried both orientations,
+            // scored them on access and sun like a shed, and parked a 2.5 x 6
+            // pier broadside in the middle of the river with a path walking up
+            // to its long edge. Where a dock goes is not a search problem — it
+            // is determined by which edge the water is on.
+            if item.typeId == "dock", policy == .corrected,
+               let water = waterfrontBounds, let waterfront = plot.waterfront, let bounds = plot.bounds {
+                let long = max(width, height)
+                let narrow = min(width, height)
+                let reach = min(long, (waterfront.edge == .north || waterfront.edge == .south ? water.height : water.width) * 0.9)
+                let anchor = houseCenter ?? Transform(x: bounds.midX, y: bounds.midY, width: 0, height: 0)
+
+                let transform: Transform
+                switch waterfront.edge {
+                case .north:
+                    transform = Transform(
+                        x: clamp(anchor.x, bounds.minX + narrow / 2, bounds.maxX - narrow / 2),
+                        y: water.maxY - reach / 2,
+                        width: narrow, height: reach
+                    )
+                case .south:
+                    transform = Transform(
+                        x: clamp(anchor.x, bounds.minX + narrow / 2, bounds.maxX - narrow / 2),
+                        y: water.minY + reach / 2,
+                        width: narrow, height: reach
+                    )
+                case .west:
+                    transform = Transform(
+                        x: water.maxX - reach / 2,
+                        y: clamp(anchor.y, bounds.minY + narrow / 2, bounds.maxY - narrow / 2),
+                        width: reach, height: narrow
+                    )
+                case .east:
+                    transform = Transform(
+                        x: water.minX + reach / 2,
+                        y: clamp(anchor.y, bounds.minY + narrow / 2, bounds.maxY - narrow / 2),
+                        width: reach, height: narrow
+                    )
+                }
+
+                var metadata = item.metadata
+                metadata["rationaleTokens"] = .array([.string("onWater")])
+                placed.append(PlanObject(
+                    id: "obj-\(item.typeId)-\(placed.count)-\(Int(floor(rand.next() * 1e6)))",
+                    typeId: item.typeId,
+                    category: entry.category,
+                    transform: transform,
+                    label: entry.label,
+                    locked: false,
+                    layerId: entry.category,
+                    metadata: metadata
+                ))
+                continue
+            }
+
             if item.typeId == "solar-array", let house = houseCenter {
                 let roofArea = house.width * house.height * roofUsableFraction
                 if width * height <= roofArea {

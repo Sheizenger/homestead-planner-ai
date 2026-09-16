@@ -753,6 +753,18 @@ struct AxonometricPlanView: View {
         case .deck:
             AxoKit.dock(painter, object: object, base: base, deck: Color(hex: 0xb08a5c))
 
+        case .paved:
+            AxoKit.patio(painter, object: object, base: base, paving: Color(hex: 0xd8d2c6))
+
+        case .turbine:
+            AxoKit.turbine(
+                painter,
+                object: object,
+                base: base,
+                housing: Color(hex: palette.wall),
+                metal: Color(hex: palette.trim)
+            )
+
         case .panels(let height):
             AxoKit.solarPanels(
                 painter,

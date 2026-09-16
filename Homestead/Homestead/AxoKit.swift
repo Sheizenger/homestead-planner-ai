@@ -1208,6 +1208,176 @@ enum AxoKit {
         fencePost(painter, at: jambB, height: jambHeight, color: post)
     }
 
+    /// A paved terrace with something on it. A patio is where people sit, and
+    /// a flat lilac diamond with a plan glyph on it says none of that — paving
+    /// joints, a table under a parasol and stools around it do.
+    static func patio(_ painter: AxoPainter, object: PlanObject, base: Double, paving: Color) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+        let centre = object.transform.center
+        let slabZ = base + 0.12
+        let joint = paving.mix(with: .black, by: 0.22)
+
+        for index in 0..<4 {
+            let a = corners[index], b = corners[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face([(a, slabZ), (b, slabZ), (b, base), (a, base)], fill: paving, shade: 0.28, outline: nil)
+        }
+        painter.face(
+            corners.map { ($0, slabZ) },
+            fill: paving,
+            shade: AxoLight.shade(normal: AxoLight.up),
+            outline: joint,
+            lineWidth: 0.7,
+            material: .brick,
+            seed: object.id
+        )
+
+        guard painter.scale > 3.5 else { return }
+
+        // A round table with a parasol, and stools around it. Small, so it
+        // reads as furniture rather than as more buildings.
+        let tableR = min(0.62, min(object.transform.width, object.transform.height) * 0.16)
+        let tableZ = slabZ + 0.74
+        let timber = Color(hex: 0x9a6b42)
+        let rx = CGFloat(tableR * 1.414 * Axonometry.cosA * painter.scale)
+        let ry = CGFloat(tableR * 1.414 * Axonometry.sinA * painter.scale)
+
+        for step in 0..<4 {
+            let angle = Double(step) / 4 * 2 * .pi + .pi / 4
+            let seat = Point(x: centre.x + cos(angle) * tableR * 2.1, y: centre.y + sin(angle) * tableR * 2.1)
+            painter.line((seat, slabZ), (seat, slabZ + 0.42), color: timber.mix(with: .black, by: 0.3), width: max(1.4, CGFloat(0.12 * painter.scale)))
+            let top = painter.project(seat, slabZ + 0.42)
+            let seatR = rx * 0.42
+            painter.context.fill(
+                Path(ellipseIn: CGRect(x: top.x - seatR, y: top.y - seatR * 0.6, width: seatR * 2, height: seatR * 1.2)),
+                with: .color(timber)
+            )
+        }
+
+        painter.line((centre, slabZ), (centre, tableZ), color: timber.mix(with: .black, by: 0.35), width: max(1.6, CGFloat(0.14 * painter.scale)))
+        let tableTop = painter.project(centre, tableZ)
+        painter.context.fill(
+            Path(ellipseIn: CGRect(x: tableTop.x - rx, y: tableTop.y - ry, width: rx * 2, height: ry * 2)),
+            with: .color(timber.mix(with: .white, by: 0.15))
+        )
+        painter.context.stroke(
+            Path(ellipseIn: CGRect(x: tableTop.x - rx, y: tableTop.y - ry, width: rx * 2, height: ry * 2)),
+            with: .color(timber.mix(with: .black, by: 0.3)),
+            lineWidth: 0.8
+        )
+
+        // Parasol: a pole and a shallow cone over the table.
+        let mastZ = tableZ + 1.5
+        painter.line((centre, tableZ), (centre, mastZ), color: timber, width: max(1.2, CGFloat(0.08 * painter.scale)))
+        let canopyR = tableR * 2.4
+        let cx = CGFloat(canopyR * 1.414 * Axonometry.cosA * painter.scale)
+        let cy = CGFloat(canopyR * 1.414 * Axonometry.sinA * painter.scale)
+        let hub = painter.project(centre, mastZ)
+        let brim = painter.project(centre, mastZ - 0.42)
+        var canopy = Path()
+        canopy.move(to: CGPoint(x: brim.x - cx, y: brim.y))
+        canopy.addQuadCurve(to: hub, control: CGPoint(x: brim.x - cx * 0.5, y: hub.y - cy * 0.3))
+        canopy.addQuadCurve(to: CGPoint(x: brim.x + cx, y: brim.y), control: CGPoint(x: brim.x + cx * 0.5, y: hub.y - cy * 0.3))
+        canopy.addCurve(
+            to: CGPoint(x: brim.x - cx, y: brim.y),
+            control1: CGPoint(x: brim.x + cx * 0.55, y: brim.y + cy * 1.2),
+            control2: CGPoint(x: brim.x - cx * 0.55, y: brim.y + cy * 1.2)
+        )
+        canopy.closeSubpath()
+        painter.context.fill(canopy, with: .color(Color(hex: 0xd96f5a)))
+        painter.context.fill(canopy, with: .color(.white.opacity(0.12)))
+        painter.context.stroke(canopy, with: .color(Color(hex: 0xa04d3c)), lineWidth: 0.8)
+    }
+
+    /// A micro-hydro set: a housing on the bank with an overshot wheel turning
+    /// beside it and a flume feeding the top of it. A plain box with a plan
+    /// glyph painted on the lid could be anything.
+    static func turbine(_ painter: AxoPainter, object: PlanObject, base: Double, housing: Color, metal: Color) {
+        let corners = object.transform.corners
+        guard corners.count == 4 else { return }
+        let centre = object.transform.center
+        let width = object.transform.width
+        let depth = object.transform.height
+        let alongX = width >= depth
+        let housingTop = base + 1.9
+
+        // Housing: the near half of the footprint.
+        let shed = corners.enumerated().map { index, corner -> Point in
+            let pullIn = index == 0 || index == 1
+            let amount = (alongX ? width : depth) * 0.34
+            return alongX
+                ? Point(x: corner.x, y: corner.y + (pullIn ? amount : 0))
+                : Point(x: corner.x + (pullIn ? amount : 0), y: corner.y)
+        }
+        for index in 0..<4 {
+            let a = shed[index], b = shed[(index + 1) % 4]
+            let normal = AxoLight.wallNormal(from: a, to: b, about: centre)
+            guard normal.x + normal.y > 0 else { continue }
+            painter.face(
+                [(a, base), (b, base), (b, housingTop), (a, housingTop)],
+                fill: housing,
+                shade: AxoLight.shade(normal: normal),
+                outline: housing.mix(with: .black, by: 0.35),
+                lineWidth: 0.7,
+                material: .board,
+                seed: object.id
+            )
+        }
+        painter.face(
+            shed.map { ($0, housingTop) },
+            fill: metal,
+            shade: AxoLight.shade(normal: AxoLight.up),
+            outline: metal.mix(with: .black, by: 0.3),
+            lineWidth: 0.7,
+            material: .metalRoof,
+            seed: object.id + "lid"
+        )
+
+        guard painter.scale > 2.5 else { return }
+
+        // The wheel, standing in a vertical plane beside the housing. Its
+        // points are swept in that plane and projected one by one, which the
+        // projection being linear makes exact.
+        let radius = min(1.5, min(width, depth) * 0.42)
+        let hubZ = base + radius + 0.15
+        let hub = alongX
+            ? Point(x: centre.x, y: centre.y - depth * 0.3)
+            : Point(x: centre.x - width * 0.3, y: centre.y)
+
+        func rimPoint(_ angle: Double) -> (Point, Double) {
+            let along = cos(angle) * radius
+            let offset = alongX ? Point(x: hub.x + along, y: hub.y) : Point(x: hub.x, y: hub.y + along)
+            return (offset, hubZ + sin(angle) * radius)
+        }
+
+        var rim = Path()
+        for step in 0...24 {
+            let angle = Double(step) / 24 * 2 * .pi
+            let (point, z) = rimPoint(angle)
+            let screen = painter.project(point, z)
+            if step == 0 { rim.move(to: screen) } else { rim.addLine(to: screen) }
+        }
+        rim.closeSubpath()
+        painter.context.fill(rim, with: .color(metal.mix(with: .black, by: 0.12)))
+        painter.context.stroke(rim, with: .color(metal.mix(with: .black, by: 0.45)), lineWidth: 1.4)
+
+        // Paddles and spokes: what makes it a wheel rather than a disc.
+        for step in 0..<8 {
+            let angle = Double(step) / 8 * 2 * .pi
+            let (outer, outerZ) = rimPoint(angle)
+            painter.line((hub, hubZ), (outer, outerZ), color: metal.mix(with: .black, by: 0.4), width: 1)
+            let (next, nextZ) = rimPoint(angle + .pi / 8)
+            painter.line((outer, outerZ), (next, nextZ), color: Color(hex: 0x8a6a45), width: 2.2)
+        }
+
+        // Flume, feeding the top of the wheel from the bank.
+        let (crest, crestZ) = rimPoint(.pi / 2)
+        let inletOffset = alongX ? Point(x: crest.x, y: crest.y - radius * 1.6) : Point(x: crest.x - radius * 1.6, y: crest.y)
+        painter.line((inletOffset, crestZ + 0.35), (crest, crestZ + 0.12), color: Color(hex: 0x8a6a45), width: max(2, CGFloat(0.3 * painter.scale)))
+    }
+
     /// A swimming pool: a coping walk around a basin of water sunk below it,
     /// with a shallow end and a ladder. It was a flat lilac slab with a
     /// swimmer glyph painted on it — the plan symbol, dropped into a view
