@@ -120,6 +120,9 @@ public enum SceneBuilder {
     public static let grassColour = 0x7FA650
     public static let soilColour = 0x6B5540
     public static let pathColour = 0xC9B48C
+    /// Hardstanding: darker and coarser than a garden path, because a car
+    /// drives on it.
+    public static let drivewayColour = 0x8E8B85
     /// How thick the block of land is. The plot is a solid thing seen from
     /// above, not a sheet of paper.
     public static let groundThickness = 1.6
@@ -134,10 +137,37 @@ public enum SceneBuilder {
         water(plot, into: &scene)
         paths(variant, into: &scene)
 
+        let footprints = variant.objects.map { ($0.id, Massing3D.footprint(of: $0)) }
+        let gate = gatePoint(of: plot, variant: variant)
         for object in variant.objects {
-            place(object, into: &scene, metrics: metrics)
+            place(
+                object, into: &scene,
+                avoiding: footprints.filter { $0.0 != object.id }.map(\.1),
+                gate: gate,
+                base: baseElevation(of: object, among: variant.objects, metrics: metrics),
+                metrics: metrics
+            )
         }
-        fences(variant, into: &scene, metrics: metrics)
+
+        // Props go in a pass of their own, after every building is down,
+        // because each has to keep clear of what is already there — including
+        // other objects' props. Placed per object, the garage's car and the
+        // woodshed's log pile were both pushed out of their own buildings and
+        // onto the same square metre of grass.
+        var taken: [(centre: Point, radius: Double)] = []
+        for object in variant.objects {
+            let look = SceneCatalog.look(for: object)
+            guard !look.props.isEmpty else { continue }
+            scene.meshes += props(
+                object,
+                look: look,
+                avoiding: footprints.filter { $0.0 != object.id }.map(\.1),
+                clearOf: &taken,
+                inside: propsStandOnTheirObject(look),
+                metrics: metrics
+            )
+        }
+        fences(variant, plot, into: &scene, metrics: metrics)
         undergrowth(plot, variant, into: &scene, metrics: metrics)
         return scene
     }
@@ -333,9 +363,19 @@ public enum SceneBuilder {
 
     // MARK: - Objects
 
-    static func place(_ object: PlanObject, into scene: inout Scene3D, metrics: [String: ModelBounds]) {
+    static func place(
+        _ object: PlanObject,
+        into scene: inout Scene3D,
+        avoiding neighbours: [[Point]] = [],
+        gate: Point? = nil,
+        base: Double = 0,
+        metrics: [String: ModelBounds]
+    ) {
         let look = SceneCatalog.look(for: object)
         let transform = object.transform
+        if object.typeId == "garage", let gate {
+            scene.slabs.append(driveway(for: object, towards: gate))
+        }
         let footprint = Size(width: transform.width, height: transform.height)
         let yaw = sceneYaw(fromEngineDegrees: transform.rotationDeg)
 
@@ -347,7 +387,7 @@ public enum SceneBuilder {
 
         case let .single(model, fit):
             if let node = ModelPlacement.node(
-                id: object.id, model: model, centre: transform.center, yaw: yaw,
+                id: object.id, model: model, centre: transform.center, base: base, yaw: yaw,
                 fit: fit, footprint: footprint, objectId: object.id, tint: look.tint, metrics: metrics
             ) {
                 scene.meshes.append(node)
@@ -363,7 +403,7 @@ public enum SceneBuilder {
             scene.meshes += rows(
                 object, model: model, spacing: spacing, height: height,
                 alongLongAxis: alongLongAxis, stretched: stretched, tilt: tilt,
-                tint: look.tint, metrics: metrics
+                base: base, tint: look.tint, metrics: metrics
             )
 
         case let .volume(colour, wallHeight, ridgeRise, opacity):
@@ -397,7 +437,16 @@ public enum SceneBuilder {
             ))
         }
 
-        scene.meshes += props(object, look: look, metrics: metrics)
+    }
+
+    /// Props of a *building* stand beside it; props of a *place* stand on it.
+    /// Pushing everything outside put the paddock's grass and the patio's
+    /// bench out on the lawn.
+    static func propsStandOnTheirObject(_ look: SceneCatalog.Look) -> Bool {
+        switch look.massing {
+        case .surface, .sunken: return true
+        default: return false
+        }
     }
 
     /// A building at its real dimensions.
@@ -646,6 +695,7 @@ public enum SceneBuilder {
         alongLongAxis: Bool,
         stretched: Bool,
         tilt: Double,
+        base: Double,
         tint: Int?,
         metrics: [String: ModelBounds]
     ) -> [SceneNode] {
@@ -657,21 +707,36 @@ public enum SceneBuilder {
 
         let radians = transform.rotationDeg * .pi / 180
         let yaw = sceneYaw(fromEngineDegrees: transform.rotationDeg)
+        // Flat on a roof, leaning on the ground.
+        let tilt = base > 0.01 ? 0 : tilt
 
         if stretched {
+            guard let bounds = metrics[model] else { return [] }
             let count = max(1, min(40, Int((across / spacing).rounded(.down))))
             let step = across / Double(count)
+            // A modular row piece is repeated along the row at close to its
+            // own length, the way a fence panel is — not stretched to the
+            // whole of it. A hedge pulled out to nine metres drags its stone
+            // base out with it, and what you get is a long white plinth.
+            let natural = max(0.5, bounds.depth / max(bounds.height, 1e-6) * height)
+            let pieces = max(1, Int((rowLength * 0.94 / natural).rounded()))
+            let pieceLength = rowLength * 0.94 / Double(pieces)
             var nodes: [SceneNode] = []
             for row in 0..<count {
                 let offset = (Double(row) + 0.5) * step - across / 2
-                let local = longIsX ? Point(x: 0, y: offset) : Point(x: offset, y: 0)
+                for piece in 0..<pieces {
+                    let alongOffset = (Double(piece) + 0.5) * pieceLength - rowLength * 0.94 / 2
+                let local = longIsX
+                    ? Point(x: alongOffset, y: offset)
+                    : Point(x: offset, y: alongOffset)
                 let footprint = longIsX
-                    ? Size(width: rowLength * 0.94, height: min(step * 0.62, spacing * 0.62))
-                    : Size(width: min(step * 0.62, spacing * 0.62), height: rowLength * 0.94)
+                    ? Size(width: pieceLength, height: min(step * 0.62, spacing * 0.62))
+                    : Size(width: min(step * 0.62, spacing * 0.62), height: pieceLength)
                 if var node = ModelPlacement.node(
-                    id: "\(object.id)-row\(row)",
+                    id: "\(object.id)-row\(row)-\(piece)",
                     model: model,
                     centre: rotate(local, by: radians, around: transform.center),
+                    base: base,
                     yaw: yaw,
                     pitch: tilt,
                     fit: .footprint(height: height),
@@ -681,11 +746,16 @@ public enum SceneBuilder {
                     metrics: metrics
                 ) {
                     // Tilting about the node's own origin would swing half the
-                    // panel underground; a leaning array stands on legs.
+                    // panel through whatever it stands on, so a leaning array
+                    // stands on legs. On a roof it does not lean at all —
+                    // panels follow the pitch there, and a tilt on top of a
+                    // seat computed from the roof's own profile lifted them
+                    // clean over the ridge.
                     if tilt != 0 {
                         node.position.y += abs(sin(tilt)) * footprint.height / 2 + 0.5
                     }
                     nodes.append(node)
+                }
                 }
             }
             return nodes
@@ -723,6 +793,7 @@ public enum SceneBuilder {
                     id: "\(object.id)-\(row)-\(plant)",
                     model: model,
                     centre: rotate(local, by: radians, around: transform.center),
+                    base: base,
                     yaw: yaw + SceneNoise.jitter(object.id, index, 3, 0.5),
                     fit: .standing(height: scaled),
                     objectId: object.id,
@@ -736,38 +807,250 @@ public enum SceneBuilder {
         return nodes
     }
 
+    /// How far a prop stands clear of the thing it belongs to.
+    public static let propClearance = 0.6
+
+    /// Props, standing beside their object rather than inside it.
+    ///
+    /// The old rule read the offset as a fraction of the half-extent, so any
+    /// value under 1.0 put the prop inside the footprint: a tractor at 0.7 of
+    /// a ten-metre barn stood three and a half metres from its centre, which
+    /// is indoors. This walks out along the given direction to where the ray
+    /// leaves the footprint, then keeps going by the prop's own half-size, so
+    /// what is placed is beside the building whatever size either of them is.
+    /// The directions a prop will try, in order, before giving up: the one it
+    /// asked for, then further and further round the building.
+    static let propTurns: [Double] = [0, .pi / 4, -.pi / 4, .pi / 2, -.pi / 2, .pi]
+
     static func props(
         _ object: PlanObject,
         look: SceneCatalog.Look,
+        avoiding neighbours: [[Point]] = [],
+        clearOf taken: inout [(centre: Point, radius: Double)],
+        inside standsOn: Bool = false,
         metrics: [String: ModelBounds]
     ) -> [SceneNode] {
         let transform = object.transform
         let radians = transform.rotationDeg * .pi / 180
+        let halfWidth = transform.width / 2
+        let halfDepth = transform.height / 2
+
         var nodes: [SceneNode] = []
         for (index, prop) in look.props.enumerated() {
+            guard let bounds = metrics[prop.model] else { continue }
+            let scale = ModelPlacement.scale(
+                for: prop.fit, bounds: bounds,
+                footprint: Size(width: transform.width, height: transform.height)
+            )
+            let propHalf = max(bounds.width * scale.x, bounds.depth * scale.z) / 2
+
+            let length = (prop.direction.x * prop.direction.x + prop.direction.y * prop.direction.y).squareRoot()
+            let asked = length > 1e-6
+                ? (x: prop.direction.x / length, y: prop.direction.y / length)
+                : (x: 1.0, y: 0.0)
+
+            /// Where the ray from the centre leaves the footprint.
+            func exit(_ unit: (x: Double, y: Double)) -> Double {
+                min(
+                    abs(unit.x) > 1e-6 ? halfWidth / abs(unit.x) : .infinity,
+                    abs(unit.y) > 1e-6 ? halfDepth / abs(unit.y) : .infinity
+                )
+            }
+
+            /// Clear of the building is not the same as clear. Pushing every
+            /// prop out of its own footprint moved them all onto the
+            /// neighbours instead — a tractor out of the barn and into the
+            /// house. A prop tries the side it was given, then walks round
+            /// the building until it finds one that is free, and if none is,
+            /// it is not drawn: a plot with nowhere for the cart does not
+            /// need one drawn through a wall.
+            var unit = asked
+            var reach = 0.0
+            let belongsInside = prop.inside || standsOn
+            var placed = belongsInside
+            if !belongsInside {
+                for turn in propTurns {
+                    let cosine = cos(turn)
+                    let sine = sin(turn)
+                    let candidate = (x: asked.x * cosine - asked.y * sine, y: asked.x * sine + asked.y * cosine)
+                    // Not `distance` — that is the function two lines below.
+                    let outward = exit(candidate) + propHalf + propClearance
+                    let local = Point(x: candidate.x * outward, y: candidate.y * outward)
+                    let world = rotate(local, by: radians, around: transform.center)
+                    let clearOfBuildings = neighbours.allSatisfy { footprint in
+                        if Polygon.contains(world, polygon: footprint) { return false }
+                        return (Polygon.distanceToBoundary(world, polygon: footprint) ?? .infinity) > propHalf
+                    }
+                    let clearOfProps = taken.allSatisfy {
+                        distance(world, $0.centre) > propHalf + $0.radius
+                    }
+                    let clear = clearOfBuildings && clearOfProps
+                    if clear {
+                        unit = candidate
+                        reach = outward
+                        placed = true
+                        break
+                    }
+                }
+            }
+            guard placed else { continue }
+
+            // Several of a thing stand in a line along the wall, spaced by
+            // their own size — the old fixed 1.1 m piled 1.6 m hay bales into
+            // each other.
+            let along = (x: -unit.y, y: unit.x)
+            let step = propHalf * 2 + 0.35
             for copy in 0..<prop.count {
-                let spread = prop.count > 1 ? Double(copy) - Double(prop.count - 1) / 2 : 0
+                let spread = prop.count > 1 ? (Double(copy) - Double(prop.count - 1) / 2) * step : 0
+                let jitter = belongsInside ? 0.25 : 0.14
                 let local = Point(
-                    x: prop.offset.x * transform.width / 2 + spread * 1.1
-                        + SceneNoise.jitter(object.id, index * 10 + copy, 5, 0.3),
-                    y: prop.offset.y * transform.height / 2
-                        + SceneNoise.jitter(object.id, index * 10 + copy, 6, 0.3)
+                    x: unit.x * reach + along.x * spread
+                        + SceneNoise.jitter(object.id, index * 10 + copy, 5, jitter),
+                    y: unit.y * reach + along.y * spread
+                        + SceneNoise.jitter(object.id, index * 10 + copy, 6, jitter)
                 )
                 if let node = ModelPlacement.node(
-                    id: "\(object.id)-prop\(index)-\(copy)",
+                    id: "\(object.id)-\(belongsInside ? "inprop" : "prop")\(index)-\(copy)",
                     model: prop.model,
                     centre: rotate(local, by: radians, around: transform.center),
                     yaw: sceneYaw(fromEngineDegrees: transform.rotationDeg) + prop.yaw
-                        + SceneNoise.jitter(object.id, index * 10 + copy, 7, 0.25),
+                        + SceneNoise.jitter(object.id, index * 10 + copy, 7, 0.2),
                     fit: prop.fit,
+                    footprint: Size(width: transform.width, height: transform.height),
                     objectId: object.id,
                     metrics: metrics
                 ) {
                     nodes.append(node)
+                    if let centre = ModelPlacement.footprintCentre(of: node, metrics: metrics) {
+                        taken.append((centre: centre, radius: propHalf))
+                    }
                 }
             }
         }
         return nodes
+    }
+
+    /// A little clear of the roof, so it reads as mounted on it rather than
+    /// sunk into it.
+    static let roofLift = 0.25
+
+    /// The ground a thing stands on.
+    ///
+    /// Almost always zero. A solar array is the exception: the placer puts it
+    /// *inside* the house's footprint on purpose, because it goes on the
+    /// roof, and a scene builder that does not know this lays it on the lawn
+    /// under the house — which is one building passing through another, and
+    /// the first thing anyone notices.
+    static func baseElevation(
+        of object: PlanObject,
+        among objects: [PlanObject],
+        metrics: [String: ModelBounds]
+    ) -> Double {
+        guard object.metadata["roofMounted"]?.boolValue == true else { return 0 }
+        let host = objects.first { other in
+            other.id != object.id
+                && other.metadata["roofMounted"]?.boolValue != true
+                && Polygon.contains(object.transform.center, polygon: Massing3D.footprint(of: other))
+        }
+        guard let host,
+              let height = buildingHeight(of: host, metrics: metrics),
+              let mesh = hostMesh(of: host, metrics: metrics) else { return 0 }
+
+        // How high the roof still covers what is being put on it.
+        //
+        // Guessing a fraction of the height buried the array inside the roof
+        // with only its edges showing: a bounding box says the house is nine
+        // metres tall, it does not say that at seven metres the house is a
+        // hip and there is nothing left to stand on. `ModelBounds.coverage`
+        // measures that from the mesh itself.
+        // Twice the share it needs, so it sits on roof rather than balancing
+        // on the last of it: covering exactly its own area means the highest
+        // point where it *just* fits, which is the ridge.
+        let share = (object.transform.width * object.transform.height)
+            / max(host.transform.width * host.transform.height, 1e-6)
+        let seat = mesh.height(covering: min(0.9, share * 2)) ?? 0.5
+        return height * seat + roofLift
+    }
+
+    /// The mesh a building is actually drawn from, for anything that needs to
+    /// know its shape rather than just its size.
+    static func hostMesh(of object: PlanObject, metrics: [String: ModelBounds]) -> ModelBounds? {
+        guard case let .building(meshes, _) = SceneCatalog.look(for: object).massing,
+              let choice = chooseBuilding(
+                  meshes: meshes,
+                  width: object.transform.width,
+                  depth: object.transform.height,
+                  seed: object.id,
+                  metrics: metrics
+              ) else { return nil }
+        return metrics[choice.model]
+    }
+
+    /// What a building will actually stand at, for anything that has to go on
+    /// top of it. Recomputed rather than remembered — the alternative is a
+    /// cache that goes stale the first time the catalog changes.
+    static func buildingHeight(of object: PlanObject, metrics: [String: ModelBounds]) -> Double? {
+        guard case let .building(meshes, height) = SceneCatalog.look(for: object).massing else {
+            return nil
+        }
+        let width = object.transform.width
+        let depth = object.transform.height
+        guard let choice = chooseBuilding(
+            meshes: meshes, width: width, depth: depth, seed: object.id, metrics: metrics
+        ), let bounds = metrics[choice.model] else { return nil }
+        let proportional = proportionalHeight(bounds: bounds, choice: choice, width: width, depth: depth)
+        return min(max(proportional, height * 0.7), height * 1.45)
+    }
+
+    /// Where the way in is, if there is a house to measure it from.
+    static func gatePoint(of plot: Plot, variant: Variant) -> Point? {
+        guard let house = variant.objects.first(where: {
+            ObjectLibrary.houseTypeIDs.contains($0.typeId)
+        }) else { return nil }
+        return PathsAndFences.findGatePoint(
+            boundary: plot.boundary,
+            houseCenter: house.transform.center,
+            waterfrontBounds: WaterfrontModel.bounds(of: plot)
+        )
+    }
+
+    /// How far the hardstanding reaches out from the garage door.
+    public static let drivewayReach = 5.0
+
+    /// A slab of hardstanding from the garage out towards the gate.
+    ///
+    /// The garage door already faces the gate — the placer turns it that way
+    /// and the door is drawn on the wall that looks at it — but there was
+    /// nothing to drive on, so the car stood on grass in front of a door with
+    /// no approach.
+    static func driveway(for object: PlanObject, towards gate: Point) -> SceneSlab {
+        let transform = object.transform
+        let centre = transform.center
+        let dx = gate.x - centre.x
+        let dy = gate.y - centre.y
+        let length = (dx * dx + dy * dy).squareRoot()
+        let unit = length > 1e-6 ? (x: dx / length, y: dy / length) : (x: 0.0, y: 1.0)
+        // Out of the door, and wide enough to open a car door beside it.
+        let half = max(1.7, min(transform.width, transform.height) / 2)
+        let across = (x: -unit.y * half, y: unit.x * half)
+        let start = Point(
+            x: centre.x + unit.x * min(transform.width, transform.height) * 0.2,
+            y: centre.y + unit.y * min(transform.width, transform.height) * 0.2
+        )
+        let end = Point(x: centre.x + unit.x * drivewayReach, y: centre.y + unit.y * drivewayReach)
+        return SceneSlab(
+            id: object.id + "-driveway",
+            polygon: [
+                Point(x: start.x + across.x, y: start.y + across.y),
+                Point(x: end.x + across.x, y: end.y + across.y),
+                Point(x: end.x - across.x, y: end.y - across.y),
+                Point(x: start.x - across.x, y: start.y - across.y),
+            ],
+            top: 0.05,
+            thickness: 0,
+            colour: drivewayColour,
+            objectId: object.id
+        )
     }
 
     // MARK: - Boundary
@@ -776,8 +1059,29 @@ public enum SceneBuilder {
     static let gateMesh = "town/fence-gate"
     public static let fenceHeight = 1.5
 
-    static func fences(_ variant: Variant, into scene: inout Scene3D, metrics: [String: ModelBounds]) {
+    /// How wide a hole to leave in a fence for its gate.
+    public static let gateWidth = 3.4
+
+    static func fences(
+        _ variant: Variant,
+        _ plot: Plot,
+        into scene: inout Scene3D,
+        metrics: [String: ModelBounds]
+    ) {
         guard let bounds = metrics[fenceMesh], bounds.depth > 0 else { return }
+        // Where the way in is. The perimeter fence was drawn as an unbroken
+        // run right across it, so the plan had a path that walked up to a
+        // fence and stopped — "нормальных ворот с заездом так и не появилось".
+        let houseCentre = variant.objects
+            .first { ObjectLibrary.houseTypeIDs.contains($0.typeId) }?
+            .transform.center
+        let gate: Point? = houseCentre.map {
+            PathsAndFences.findGatePoint(
+                boundary: plot.boundary,
+                houseCenter: $0,
+                waterfrontBounds: WaterfrontModel.bounds(of: plot)
+            )
+        }
         // Panels are placed end to end at close to their natural length, so
         // the pickets keep their proportions however long the run is.
         let naturalPanel = 2.4
@@ -798,6 +1102,10 @@ public enum SceneBuilder {
                 for panel in 0..<panels {
                     let t = (Double(panel) + 0.5) / Double(panels)
                     let centre = Point(x: a.x + dx * t, y: a.y + dy * t)
+                    // Leave the gateway open, and stand a gate in it.
+                    if fence.gated, let gate, distance(centre, gate) < gateWidth / 2 {
+                        continue
+                    }
                     if let node = ModelPlacement.node(
                         id: "fence-\(line)-\(step)-\(panel)",
                         model: fenceMesh,
@@ -810,8 +1118,36 @@ public enum SceneBuilder {
                         scene.meshes.append(node)
                     }
                 }
+
+                // The gate itself, square in the gap and facing down the run.
+                if fence.gated, let gate,
+                   let onSegment = nearestPoint(to: gate, from: a, to: b),
+                   distance(onSegment, gate) < 0.5,
+                   let gateBounds = metrics[gateMesh],
+                   let node = ModelPlacement.node(
+                       id: "gate-\(line)-\(step)",
+                       model: gateMesh,
+                       centre: onSegment,
+                       yaw: yaw,
+                       fit: .footprint(height: fenceHeight * 1.15),
+                       footprint: Size(width: gateBounds.width, height: gateWidth),
+                       metrics: metrics
+                   ) {
+                    scene.meshes.append(node)
+                }
             }
         }
+    }
+
+    /// The closest point of a segment to `target`, or nil if the segment is a
+    /// point.
+    static func nearestPoint(to target: Point, from a: Point, to b: Point) -> Point? {
+        let dx = b.x - a.x
+        let dy = b.y - a.y
+        let lengthSquared = dx * dx + dy * dy
+        guard lengthSquared > 1e-9 else { return nil }
+        let t = min(max(((target.x - a.x) * dx + (target.y - a.y) * dy) / lengthSquared, 0), 1)
+        return Point(x: a.x + dx * t, y: a.y + dy * t)
     }
 
     // MARK: -

@@ -76,7 +76,11 @@ struct SceneCatalogTests {
             }
             for prop in look.props {
                 #expect(prop.count > 0 && prop.count < 30)
-                #expect(abs(prop.offset.x) <= 1.2 && abs(prop.offset.y) <= 1.2, "\(typeId) prop is off its own plot")
+                // A direction, not a distance: how far out is worked out from
+                // the prop's own size, not stated here.
+                let length = (prop.direction.x * prop.direction.x
+                    + prop.direction.y * prop.direction.y).squareRoot()
+                #expect(length > 0.01, "\(typeId) prop has no direction to stand in")
             }
         }
     }

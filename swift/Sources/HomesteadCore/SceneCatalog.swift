@@ -60,29 +60,44 @@ public enum SceneCatalog {
     public struct Prop: Equatable, Sendable {
         public var model: String
         public var fit: ModelFit
-        /// Where it goes, as a fraction of the footprint from its centre:
-        /// (0, 0) is the middle, (0.5, 0) the middle of the east edge.
-        public var offset: (x: Double, y: Double)
+        /// Which way out of the object it stands, as a direction rather than
+        /// a distance: (1, 0) is off the east side, (-1, 1) off the
+        /// south-west corner. How far out is not a choice — the prop is put
+        /// down clear of the footprint and clear of its neighbours.
+        ///
+        /// It used to be a fraction of the half-extent, which meant every
+        /// value under 1.0 placed the prop *inside* the object. A tractor at
+        /// 0.7 of a ten-metre barn stood three and a half metres in from the
+        /// centre, which is inside the barn, and it looked exactly like a
+        /// tractor embedded in a wall. Twelve of the sixteen faults in the
+        /// first scene were this one.
+        public var direction: (x: Double, y: Double)
         public var yaw: Double
         public var count: Int
+        /// True for the handful of props that belong *under* the thing they
+        /// go with: stools beneath an open canopy, and nothing else so far.
+        public var inside: Bool
 
         public init(
             _ model: String,
             fit: ModelFit,
-            offset: (x: Double, y: Double) = (0, 0),
+            direction: (x: Double, y: Double) = (1, 0),
             yaw: Double = 0,
-            count: Int = 1
+            count: Int = 1,
+            inside: Bool = false
         ) {
             self.model = model
             self.fit = fit
-            self.offset = offset
+            self.direction = direction
             self.yaw = yaw
             self.count = count
+            self.inside = inside
         }
 
         public static func == (lhs: Prop, rhs: Prop) -> Bool {
             lhs.model == rhs.model && lhs.fit == rhs.fit && lhs.yaw == rhs.yaw
-                && lhs.count == rhs.count && lhs.offset == rhs.offset
+                && lhs.count == rhs.count && lhs.direction == rhs.direction
+                && lhs.inside == rhs.inside
         }
     }
 
@@ -126,6 +141,14 @@ public enum SceneCatalog {
         "city/building-type-h", "city/building-type-j",
         "city/building-type-d", "city/building-type-f",
     ]
+    /// Low and single-storey. A garage built from the house meshes comes out
+    /// as a second house, which is what it looked like: the same two storeys,
+    /// the same dormers, the same front door.
+    /// Only the two meshes in the kit whose height is barely half their
+    /// width. Everything else here is a two-storey house with two rows of
+    /// windows, and shrinking one of those does not make a garage — it makes
+    /// a small house, which is what it looked like.
+    static let garageMeshes = ["city/building-type-h", "city/building-type-g"]
     /// Flat-roofed and modern. Nothing on a homestead looks like this.
     static let unsuitableMeshes = ["city/building-type-p", "city/building-type-q"]
     static let broadleafTrees = [
@@ -145,7 +168,7 @@ public enum SceneCatalog {
         // Dwellings -----------------------------------------------------
         "house": Look(
             .building(meshes: houseMeshes, height: 6.4),
-            props: [Prop("town/tree", fit: .standing(height: 4.5), offset: (0.72, 0.4))],
+            props: [Prop("town/tree", fit: .standing(height: 4.5), direction: (0.72, 0.4))],
             tint: 0xEFE3CC
         ),
         "house-l": Look(.building(meshes: houseMeshes, height: 6.4), tint: 0xEFE3CC),
@@ -156,37 +179,37 @@ public enum SceneCatalog {
         "barn": Look(
             .building(meshes: workingMeshes, height: 7.2),
             props: [
-                Prop("yard/hay-bale", fit: .spanning(1.6), offset: (0.68, 0.3), count: 3),
-                Prop("vehicles/tractor", fit: .standing(height: 2.6), offset: (0.7, -0.35), yaw: .pi / 2),
-                Prop("town/cart", fit: .spanning(2.0), offset: (-0.72, 0.4)),
+                Prop("yard/hay-bale", fit: .spanning(1.6), direction: (0.68, 0.3), count: 3),
+                Prop("vehicles/tractor", fit: .standing(height: 2.6), direction: (0.7, -0.35), yaw: .pi / 2),
+                Prop("town/cart", fit: .spanning(2.0), direction: (-0.72, 0.4)),
             ],
             tint: 0xB4503C
         ),
         "workshop": Look(
             .building(meshes: workingMeshes, height: 4.4),
-            props: [Prop("survival/workbench", fit: .spanning(1.6), offset: (0.66, 0))],
+            props: [Prop("survival/workbench", fit: .spanning(1.6), direction: (0.66, 0))],
             tint: 0x9AA2A8
         ),
         "garage": Look(
-            .building(meshes: workingMeshes, height: 3.6),
-            props: [Prop("vehicles/sedan", fit: .standing(height: 1.5), offset: (0, 0.85))],
-            tint: 0xBFC4C8
+            .building(meshes: garageMeshes, height: 2.9),
+            props: [Prop("vehicles/sedan", fit: .standing(height: 1.5), direction: (0, 1))],
+            tint: 0xB6BCC2
         ),
         "shed": Look(.building(meshes: outbuildingMeshes, height: 2.9), tint: 0x9FB08A),
         "woodshed": Look(
-            .single(model: "town/overhang", fit: .footprint(height: 2.6)),
-            props: [Prop("survival/resource-wood", fit: .spanning(1.4), count: 4)],
+            .building(meshes: outbuildingMeshes, height: 2.4),
+            props: [Prop("survival/resource-wood", fit: .spanning(1.4), direction: (0, 1), count: 3)],
             tint: 0x8B6F4A
         ),
         "cellar": Look(
             .volume(colour: 0x7E8A72, wallHeight: 1.2, ridgeRise: 0.9, opacity: 1),
-            props: [Prop("town/wall-wood-door", fit: .standing(height: 1.7), offset: (0, 0.5))]
+            props: [Prop("town/wall-wood-door", fit: .standing(height: 1.7), direction: (0, 0.5))]
         ),
         "greenhouse": Look(.volume(colour: 0xBBE3E8, wallHeight: 1.9, ridgeRise: 1.3, opacity: 0.45)),
         "hydroponic-tower": Look(.building(meshes: outbuildingMeshes, height: 4.4), tint: 0xA8C2A0),
         "gazebo": Look(
             .single(model: "survival/structure-canvas", fit: .inscribed),
-            props: [Prop("town/stall-stool", fit: .spanning(0.7), count: 2)]
+            props: [Prop("town/stall-stool", fit: .spanning(0.7), count: 2, inside: true)]
         ),
 
         // Animals --------------------------------------------------------
@@ -195,8 +218,8 @@ public enum SceneCatalog {
             .surface(colour: 0x9C8E63, height: 0.02),
             props: [
                 Prop("survival/grass-large", fit: .spanning(1.2), count: 7),
-                Prop("survival/patch-grass", fit: .spanning(1.6), offset: (-0.5, 0.4), count: 3),
-                Prop("yard/hay-bale", fit: .spanning(1.5), offset: (0.6, -0.55)),
+                Prop("survival/patch-grass", fit: .spanning(1.6), direction: (-0.5, 0.4), count: 3),
+                Prop("yard/hay-bale", fit: .spanning(1.5), direction: (0.6, -0.55)),
             ]
         ),
         "poultry-coop": Look(.building(meshes: outbuildingMeshes, height: 2.4), tint: 0xD8B26A),
@@ -204,7 +227,7 @@ public enum SceneCatalog {
             .surface(colour: 0x88A257, height: 0.02),
             props: [
                 Prop("survival/box", fit: .spanning(0.9), count: 5),
-                Prop("survival/grass-large", fit: .spanning(0.9), offset: (-0.6, 0.5), count: 2),
+                Prop("survival/grass-large", fit: .spanning(0.9), direction: (-0.6, 0.5), count: 2),
             ]
         ),
 
@@ -217,7 +240,7 @@ public enum SceneCatalog {
         "potato-area": Look(.rows(model: "survival/grass", spacing: 1.1, height: 0.4, alongLongAxis: true)),
         "grain-field": Look(
             .rows(model: "survival/grass-large", spacing: 1.0, height: 0.9, alongLongAxis: true),
-            props: [Prop("yard/hay-bale", fit: .spanning(1.6), offset: (0.7, 0.7), count: 2)]
+            props: [Prop("yard/hay-bale", fit: .spanning(1.6), direction: (0.7, 0.7), count: 2)]
         ),
         "compost": Look(
             .single(model: "survival/box-large-open", fit: .footprint(height: 1.2)),
@@ -233,7 +256,7 @@ public enum SceneCatalog {
         "pool": Look(.sunken(colour: 0x3FA9D6, depth: 1.4)),
         "dock": Look(
             .single(model: "water/ramp-wide", fit: .footprint(height: 1.0)),
-            props: [Prop("water/boat-row-small", fit: .standing(height: 0.9), offset: (0.0, 0.85))]
+            props: [Prop("water/boat-row-small", fit: .standing(height: 0.9), direction: (0.0, 0.85))]
         ),
         "micro-hydro": Look(.single(model: "town/watermill", fit: .inscribed)),
 
@@ -253,8 +276,8 @@ public enum SceneCatalog {
         "patio": Look(
             .surface(colour: 0xCFC2A4, height: 0.12),
             props: [
-                Prop("yard/bench", fit: .spanning(1.8), offset: (-0.5, 0.0)),
-                Prop("yard/lightpost-single", fit: .standing(height: 3.0), offset: (0.62, 0.62)),
+                Prop("yard/bench", fit: .spanning(1.8), direction: (-0.5, 0.0)),
+                Prop("yard/lightpost-single", fit: .standing(height: 3.0), direction: (0.62, 0.62)),
             ]
         ),
     ]

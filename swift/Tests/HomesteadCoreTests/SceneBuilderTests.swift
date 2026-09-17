@@ -211,7 +211,7 @@ struct SceneBuilderTests {
     @Test func fencePanelsFollowTheirLine() {
         let line = Fence(id: "f", points: [Point(x: 0, y: 0), Point(x: 12, y: 0), Point(x: 12, y: 9)], fenceType: .perimeter, gated: false)
         var scene = Scene3D()
-        SceneBuilder.fences(variant([], fences: [line]), into: &scene, metrics: ModelMetrics.all)
+        SceneBuilder.fences(variant([], fences: [line]), plot(), into: &scene, metrics: ModelMetrics.all)
         #expect(scene.meshes.count >= 8)
         guard let bounds = ModelMetrics[SceneBuilder.fenceMesh] else { Issue.record("no fence mesh"); return }
         for node in scene.meshes {
@@ -227,6 +227,148 @@ struct SceneBuilderTests {
     }
 
     /// A plot with nothing on it is still a field, not a green rectangle.
+    // MARK: - Nothing inside anything else
+
+    /// The fault the whole of this file exists for, and the one anybody looking
+    /// at the plan sees first: a tractor halfway into the barn wall.
+    ///
+    /// It came from reading a prop's offset as a fraction of the half-extent,
+    /// which puts every value under 1.0 inside the footprint. Twelve of the
+    /// sixteen faults in the first scene with meshes were this one.
+    @Test func propsStandBesideTheirObjectAndNotInIt() {
+        for typeId in ["barn", "garage", "workshop", "house", "woodshed"] {
+            let item = object(typeId, 30, 30, 10, 8)
+            var taken: [(centre: Point, radius: Double)] = []
+            let props = SceneBuilder.props(
+                item, look: SceneCatalog.look(for: item), clearOf: &taken, metrics: ModelMetrics.all
+            )
+            #expect(!props.isEmpty, "\(typeId) drew no props")
+            for prop in props {
+                guard let centre = ModelPlacement.footprintCentre(of: prop) else { continue }
+                #expect(!Polygon.contains(centre, polygon: item.transform.corners),
+                        "\(typeId): its \(prop.model) stands inside it")
+            }
+        }
+    }
+
+    /// And the other way about: what belongs to a *place* rather than a
+    /// building stands on it. Pushing everything outside emptied the paddock.
+    @Test func whatBelongsToAPlaceStandsOnIt() {
+        for typeId in ["goat-paddock", "patio", "apiary"] {
+            let item = object(typeId, 30, 30, 12, 10)
+            let look = SceneCatalog.look(for: item)
+            var taken: [(centre: Point, radius: Double)] = []
+            let props = SceneBuilder.props(
+                item, look: look, clearOf: &taken,
+                inside: SceneBuilder.propsStandOnTheirObject(look), metrics: ModelMetrics.all
+            )
+            #expect(!props.isEmpty, "\(typeId) drew no props")
+            for prop in props {
+                guard let centre = ModelPlacement.footprintCentre(of: prop) else { continue }
+                #expect(Polygon.contains(centre, polygon: item.transform.corners),
+                        "\(typeId): its \(prop.model) wandered off it")
+            }
+        }
+    }
+
+    /// A prop pushed out of its own building must not land in the next one.
+    @Test func aPropWalksRoundToASideThatIsFree() {
+        let barn = object("barn", 20, 20, 10, 8)
+        // Boxed in on the obvious side.
+        let blocker = object("shed", 20, 30, 12, 8)
+        var taken: [(centre: Point, radius: Double)] = []
+        let props = SceneBuilder.props(
+            barn, look: SceneCatalog.look(for: barn),
+            avoiding: [blocker.transform.corners], clearOf: &taken, metrics: ModelMetrics.all
+        )
+        for prop in props {
+            guard let centre = ModelPlacement.footprintCentre(of: prop) else { continue }
+            #expect(!Polygon.contains(centre, polygon: blocker.transform.corners),
+                    "\(prop.model) was pushed into the shed")
+        }
+    }
+
+    /// Two objects' props must not be pushed onto the same patch of grass.
+    /// Placed one object at a time, the garage's car and the woodshed's log
+    /// pile were both shoved out of their own buildings and into each other.
+    @Test func propsOfDifferentObjectsKeepOutOfEachOther() {
+        let garage = object("garage", 30, 30, 6, 6)
+        let woodshed = object("woodshed", 36, 30, 3, 4)
+        let scene = SceneBuilder.build(plot: plot(), variant: variant([garage, woodshed]))
+        let props = scene.meshes.filter { $0.id.contains("prop") }
+        #expect(props.count >= 2)
+        for i in props.indices {
+            for j in props.indices where j > i {
+                guard props[i].objectId != props[j].objectId,
+                      let a = ModelMetrics[props[i].model], let b = ModelMetrics[props[j].model],
+                      let pa = ModelPlacement.footprintCentre(of: props[i]),
+                      let pb = ModelPlacement.footprintCentre(of: props[j]) else { continue }
+                let radii = (max(a.width * props[i].scale.x, a.depth * props[i].scale.z)
+                    + max(b.width * props[j].scale.x, b.depth * props[j].scale.z)) / 2
+                let gap = ((pa.x - pb.x) * (pa.x - pb.x) + (pa.y - pb.y) * (pa.y - pb.y)).squareRoot()
+                #expect(gap > radii * 0.75,
+                        "\(props[i].model) and \(props[j].model) are \(gap) m apart")
+            }
+        }
+    }
+
+    /// A solar array is placed *inside* the house's footprint on purpose,
+    /// because it goes on the roof. A builder that does not know that lays it
+    /// on the lawn under the house — one building through another.
+    @Test func aRoofMountedThingSitsOnTheRoof() {
+        var house = object("house", 30, 30, 12, 10)
+        house.id = "the-house"
+        var array = object("solar-array", 30, 29, 8, 5)
+        array.id = "the-array"
+        array.metadata["roofMounted"] = .bool(true)
+
+        let ground = SceneBuilder.baseElevation(
+            of: house, among: [house, array], metrics: ModelMetrics.all
+        )
+        #expect(ground == 0, "the house should stand on the ground")
+
+        let roof = SceneBuilder.baseElevation(
+            of: array, among: [house, array], metrics: ModelMetrics.all
+        )
+        guard let height = SceneBuilder.buildingHeight(of: house, metrics: ModelMetrics.all) else {
+            Issue.record("no height for the house"); return
+        }
+        // On the roof: above halfway, and under the ridge.
+        #expect(roof > height * 0.45, "the array is at \(roof) on a \(height) m house")
+        #expect(roof < height, "the array is above the ridge")
+    }
+
+    /// Roof panels lie flat. A lean on top of a seat computed from the roof's
+    /// own profile lifted them clean over it.
+    @Test func roofPanelsDoNotAlsoLean() {
+        var array = object("solar-array", 30, 30, 8, 5)
+        array.id = "array"
+        var scene = Scene3D()
+        SceneBuilder.place(array, into: &scene, base: 6, metrics: ModelMetrics.all)
+        #expect(!scene.meshes.isEmpty)
+        #expect(scene.meshes.allSatisfy { $0.pitch == 0 })
+
+        var onTheGround = Scene3D()
+        SceneBuilder.place(array, into: &onTheGround, base: 0, metrics: ModelMetrics.all)
+        #expect(onTheGround.meshes.contains { $0.pitch != 0 }, "a ground array should lean")
+    }
+
+    /// The measurement roof-mounting rests on: a house is not as wide at the
+    /// ridge as at the eaves, and a bounding box cannot say so.
+    @Test func aBuildingMeshNarrowsTowardsItsRidge() {
+        for name in SceneCatalog.houseMeshes {
+            guard let bounds = ModelMetrics[name] else { Issue.record("no \(name)"); continue }
+            #expect(bounds.coverage.count == 10, "\(name) has no profile")
+            #expect(bounds.coverage[0] > 0.7, "\(name) is hollow at the ground")
+            #expect(bounds.coverage.last! < bounds.coverage[0] * 0.8,
+                    "\(name) is as wide at the top as at the bottom")
+            // And the profile answers the question it exists for.
+            let low = bounds.height(covering: 0.3) ?? 0
+            let high = bounds.height(covering: 0.9) ?? 0
+            #expect(low >= high, "\(name): more area is available higher up")
+        }
+    }
+
     @Test func anEmptyPlanIsGroundAndWhatGrowsOnIt() {
         let scene = SceneBuilder.build(plot: plot(), variant: variant([]))
         #expect(scene.slabs.count == 1)

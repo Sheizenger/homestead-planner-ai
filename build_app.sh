@@ -69,6 +69,13 @@ if [ "$DO_SELF_CHECK" = 1 ]; then
     # are the ones that have actually gone wrong.
     step "Scene preview"
     python3 "$ROOT/scripts/preview_scene.py"
+
+    # Meshes that pass through each other, and surfaces that fight for depth.
+    # No unit test sees this: every object is correctly placed on its own
+    # terms and two of them happen to occupy the same cubic metre. It is the
+    # first thing anyone looking at the result notices.
+    step "Scene overlaps"
+    python3 "$ROOT/scripts/check_scene.py"
 fi
 
 command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild not found — this part needs macOS with Xcode"

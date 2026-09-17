@@ -42,10 +42,14 @@ public struct ModelBounds: Equatable, Sendable {
     public let minY: Double, maxY: Double
     public let minZ: Double, maxZ: Double
 
-    public init(minX: Double, maxX: Double, minY: Double, maxY: Double, minZ: Double, maxZ: Double) {
+    public init(
+        minX: Double, maxX: Double, minY: Double, maxY: Double, minZ: Double, maxZ: Double,
+        coverage: [Double] = []
+    ) {
         self.minX = minX; self.maxX = maxX
         self.minY = minY; self.maxY = maxY
         self.minZ = minZ; self.maxZ = maxZ
+        self.coverage = coverage
     }
 
     /// Extent along each of the mesh's own axes.
@@ -64,6 +68,27 @@ public struct ModelBounds: Equatable, Sendable {
     /// these kits model with the origin on the ground, but not all of them,
     /// and one that does not will float or sink.
     public var baseOffset: Double { -minY }
+
+    /// How much of the mesh's full plan area is still there at each tenth of
+    /// its height, from the bottom up.
+    ///
+    /// A bounding box says a house is nine metres tall; it does not say that
+    /// at seven metres the house is a hipped roof and nearly nothing is left.
+    /// Anything that has to stand *on* something — a solar array on a roof —
+    /// needs to know that, and guessing produced an array buried inside the
+    /// roof with only its edges showing.
+    public let coverage: [Double]
+
+    /// The highest point at which the mesh still covers `fraction` of its own
+    /// plan area, as a fraction of its height. Nil when it never does.
+    public func height(covering fraction: Double) -> Double? {
+        guard !coverage.isEmpty else { return nil }
+        for index in stride(from: coverage.count - 1, through: 0, by: -1)
+        where coverage[index] >= fraction {
+            return Double(index) / Double(coverage.count - 1)
+        }
+        return nil
+    }
 }
 
 public enum ModelMetrics {
@@ -74,7 +99,8 @@ public enum ModelMetrics {
 
     public static var names: [String] { all.keys.sorted() }
 
-    /// One line per mesh: `name minX maxX minY maxY minZ maxZ`.
+    /// One line per mesh: `name minX maxX minY maxY minZ maxZ` and then ten
+    /// coverage values, one per tenth of the height.
     ///
     /// A string rather than a dictionary literal on purpose. Swift type-checks
     /// a 380-entry literal of six-field structs slowly enough to notice, and
@@ -84,11 +110,12 @@ public enum ModelMetrics {
         result.reserveCapacity(400)
         for line in table.split(separator: "\\n") {
             let field = line.split(separator: " ")
-            guard field.count == 7, let minX = Double(field[1]), let maxX = Double(field[2]),
+            guard field.count >= 7, let minX = Double(field[1]), let maxX = Double(field[2]),
                   let minY = Double(field[3]), let maxY = Double(field[4]),
                   let minZ = Double(field[5]), let maxZ = Double(field[6]) else { continue }
             result[String(field[0])] = ModelBounds(
-                minX: minX, maxX: maxX, minY: minY, maxY: maxY, minZ: minZ, maxZ: maxZ
+                minX: minX, maxX: maxX, minY: minY, maxY: maxY, minZ: minZ, maxZ: maxZ,
+                coverage: field.dropFirst(7).compactMap { Double($0) }
             )
         }
         return result
@@ -98,21 +125,134 @@ public enum ModelMetrics {
 '''
 
 
+SLICES = 10
+GRID = 16
+
+
+def clipped(triangle, band):
+    """The part of a triangle between two horizontal planes, as a polygon."""
+    polygon = list(triangle)
+    for keep_above, limit in ((True, band[0]), (False, band[1])):
+        out = []
+        for i in range(len(polygon)):
+            a, b = polygon[i], polygon[(i + 1) % len(polygon)]
+            ina = (a[1] >= limit) if keep_above else (a[1] <= limit)
+            inb = (b[1] >= limit) if keep_above else (b[1] <= limit)
+            if ina:
+                out.append(a)
+            if ina != inb and abs(b[1] - a[1]) > 1e-12:
+                t = (limit - a[1]) / (b[1] - a[1])
+                out.append((a[0] + (b[0] - a[0]) * t, limit, a[2] + (b[2] - a[2]) * t))
+        polygon = out
+        if not polygon:
+            return []
+    return polygon
+
+
+def rasterise(polygon, cells, lo, spanX, spanZ):
+    """Mark the grid cells a plan-projected polygon covers, edges included."""
+    xs = [(p[0] - lo[0]) / spanX * GRID for p in polygon]
+    zs = [(p[2] - lo[2]) / spanZ * GRID for p in polygon]
+    for gx in range(max(0, int(min(xs))), min(GRID, int(max(xs)) + 1)):
+        for gz in range(max(0, int(min(zs))), min(GRID, int(max(zs)) + 1)):
+            px, pz = gx + 0.5, gz + 0.5
+            inside = False
+            for i in range(len(xs)):
+                ax, az = xs[i], zs[i]
+                bx, bz = xs[(i + 1) % len(xs)], zs[(i + 1) % len(zs)]
+                if (az > pz) != (bz > pz) and px < (bx - ax) * (pz - az) / (bz - az + 1e-30) + ax:
+                    inside = not inside
+            if inside:
+                cells.add((gx, gz))
+    # And the edges, because a face seen exactly edge-on has no area at all
+    # and would otherwise mark nothing, leaving the outline broken.
+    for i in range(len(xs)):
+        x0, z0, x1, z1 = xs[i], zs[i], xs[(i + 1) % len(xs)], zs[(i + 1) % len(zs)]
+        steps = int(max(abs(x1 - x0), abs(z1 - z0)) * 2) + 1
+        for step in range(steps + 1):
+            t = step / steps
+            cx, cz = int(x0 + (x1 - x0) * t), int(z0 + (z1 - z0) * t)
+            if 0 <= cx < GRID and 0 <= cz < GRID:
+                cells.add((cx, cz))
+
+
 def measure(path):
+    """Bounding box, and how much plan area the mesh still has at each tenth
+    of its height.
+
+    The coverage is measured by rasterising the triangles, not by taking the
+    spread of the vertices in each slice. Two dormers at opposite ends of a
+    roof span nearly the whole width between them while covering almost none
+    of it, and a bounding-box reading called that 60% — which put a solar
+    array two metres above the ridge.
+    """
+    points = []
+    faces = []
     lo = [float("inf")] * 3
     hi = [float("-inf")] * 3
     with open(path) as handle:
         for line in handle:
-            if not line.startswith("v "):
-                continue
-            parts = line.split()
-            for axis in range(3):
-                value = float(parts[axis + 1])
-                lo[axis] = min(lo[axis], value)
-                hi[axis] = max(hi[axis], value)
-    if lo[0] == float("inf"):
+            if line.startswith("v "):
+                parts = line.split()
+                p = tuple(float(parts[axis + 1]) for axis in range(3))
+                points.append(p)
+                for axis in range(3):
+                    lo[axis] = min(lo[axis], p[axis])
+                    hi[axis] = max(hi[axis], p[axis])
+            elif line.startswith("f "):
+                corners = [int(token.split("/")[0]) - 1 for token in line.split()[1:]]
+                for i in range(1, len(corners) - 1):
+                    faces.append((corners[0], corners[i], corners[i + 1]))
+    if not points:
         return None
-    return lo, hi
+
+    height = hi[1] - lo[1]
+    spanX = max(hi[0] - lo[0], 1e-9)
+    spanZ = max(hi[2] - lo[2], 1e-9)
+    grids = [set() for _ in range(SLICES)]
+    for a, b, c in faces:
+        try:
+            tri = (points[a], points[b], points[c])
+        except IndexError:
+            continue
+        # Every slice the triangle passes through — a wall runs from the
+        # ground to the eaves and counts at every height on the way — but
+        # clipped to each one. Contributing a sloping roof plane's *whole*
+        # footprint to every slice it crosses says the roof is as wide at the
+        # ridge as at the eaves, which is how a solar array ended up two
+        # metres above the house.
+        low, high = min(p[1] for p in tri), max(p[1] for p in tri)
+        if height <= 0:
+            span = range(SLICES)
+        else:
+            first = min(SLICES - 1, max(0, int((low - lo[1]) / height * SLICES)))
+            last = min(SLICES - 1, max(0, int((high - lo[1]) / height * SLICES - 1e-9)))
+            span = range(first, last + 1)
+        for index in span:
+            band = (lo[1] + height * index / SLICES, lo[1] + height * (index + 1) / SLICES)
+            piece = clipped(tri, band)
+            if len(piece) >= 2:
+                rasterise(piece, grids[index], lo, spanX, spanZ)
+
+    # Fill each slice from the outside in. The triangles give the *outline*
+    # of a cross-section — a hollow building is walls, and walls are one cell
+    # thick — so counting occupied cells called a solid house 15% air. What is
+    # wanted is the area enclosed, which is everything the outside cannot
+    # reach.
+    coverage = []
+    for cells in grids:
+        outside = set()
+        queue = [(x, z) for x in range(GRID) for z in (0, GRID - 1) if (x, z) not in cells]
+        queue += [(x, z) for z in range(GRID) for x in (0, GRID - 1) if (x, z) not in cells]
+        outside.update(queue)
+        while queue:
+            x, z = queue.pop()
+            for nx, nz in ((x+1, z), (x-1, z), (x, z+1), (x, z-1)):
+                if 0 <= nx < GRID and 0 <= nz < GRID and (nx, nz) not in cells and (nx, nz) not in outside:
+                    outside.add((nx, nz))
+                    queue.append((nx, nz))
+        coverage.append((GRID * GRID - len(outside)) / (GRID * GRID))
+    return lo, hi, coverage
 
 
 def generate():
@@ -122,9 +262,13 @@ def generate():
         if box is None:
             print("warning: %s has no vertices" % obj.name, file=sys.stderr)
             continue
-        lo, hi = box
+        lo, hi, coverage = box
         name = "%s/%s" % (obj.parent.name, obj.stem)
-        rows.append("%s %s" % (name, " ".join("%.4f" % v for v in (lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]))))
+        rows.append("%s %s %s" % (
+            name,
+            " ".join("%.4f" % v for v in (lo[0], hi[0], lo[1], hi[1], lo[2], hi[2])),
+            " ".join("%.3f" % v for v in coverage),
+        ))
     return HEADER + "\n".join(rows) + '\n"""\n}\n'
 
 
