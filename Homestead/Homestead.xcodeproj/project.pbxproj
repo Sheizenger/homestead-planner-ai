@@ -11,19 +11,34 @@
 		CE384784305448B2006E0ECA /* HomesteadEngine in Frameworks */ = {isa = PBXBuildFile; productRef = CE384783305448B2006E0ECA /* HomesteadEngine */; };
 		CE384787305448FB006E0ECA /* HomesteadCore in Frameworks */ = {isa = PBXBuildFile; productRef = CE384786305448FB006E0ECA /* HomesteadCore */; };
 		CE384789305448FB006E0ECA /* HomesteadEngine in Frameworks */ = {isa = PBXBuildFile; productRef = CE384788305448FB006E0ECA /* HomesteadEngine */; };
+		CE3848A1305500A0006E0ECA /* Models3D in Resources */ = {isa = PBXBuildFile; fileRef = CE3848A0305500A0006E0ECA /* Models3D */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		CE38477230544867006E0ECA /* Homestead.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Homestead.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE3848A0305500A0006E0ECA /* Models3D */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Models3D; path = Homestead/Models3D; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CE38477430544867006E0ECA /* Homestead */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CE3848A2305500A0006E0ECA /* Exceptions for "Homestead" folder in "Homestead" target */,
+			);
 			path = Homestead;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CE3848A2305500A0006E0ECA /* Exceptions for "Homestead" folder in "Homestead" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models3D,
+			);
+			target = CE38477130544867006E0ECA /* Homestead */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		CE38476F30544867006E0ECA /* Frameworks */ = {
@@ -44,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				CE38477430544867006E0ECA /* Homestead */,
+				CE3848A0305500A0006E0ECA /* Models3D */,
 				CE38477330544867006E0ECA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -127,6 +143,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE3848A1305500A0006E0ECA /* Models3D in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

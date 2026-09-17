@@ -250,25 +250,25 @@ struct PlanCanvasView: View {
         var strip = Path()
         strip.addLines(zone.boundary.map(screen))
         strip.closeSubpath()
-        let look = WaterLook.of(waterfront.type)
-        context.fill(strip, with: .color(look.bank.opacity(0.5)))
-        context.stroke(strip, with: .color(look.bank), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+        let look = WaterPalette.of(waterfront.type)
+        context.fill(strip, with: .color(look.bankColour.opacity(0.5)))
+        context.stroke(strip, with: .color(look.bankColour), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
 
         let shore = WaterfrontModel.shoreline(of: plot) ?? zone.boundary
         var surface = Path()
         surface.addLines(shore.map(screen))
         surface.closeSubpath()
 
-        context.fill(surface, with: .color(look.shallow.opacity(0.65)))
-        context.stroke(surface, with: .color(look.deep), lineWidth: 1.5)
+        context.fill(surface, with: .color(look.shallowColour.opacity(0.65)))
+        context.stroke(surface, with: .color(look.deepColour), lineWidth: 1.5)
 
-        drawWaves(context, in: bounds, color: look.deep)
+        drawWaves(context, in: bounds, color: look.deepColour)
 
         // Named, because "river" and "pond" put very different constraints on
         // what can go next to them and the shape alone doesn't say which.
         let label = Text(waterfront.type.rawValue.capitalized)
             .font(.system(size: 10, weight: .medium))
-            .foregroundColor(look.deep.opacity(0.9))
+            .foregroundColor(look.deepColour.opacity(0.9))
         context.draw(label, at: screen(Point(x: bounds.midX, y: bounds.midY)))
     }
 

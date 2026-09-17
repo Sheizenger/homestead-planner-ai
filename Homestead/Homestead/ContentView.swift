@@ -138,13 +138,11 @@ struct ContentView: View {
                             )
                             .transition(.opacity)
                         case .axonometric:
-                            AxonometricPlanView(
+                            SceneViewContainer(
                                 plot: model.document.plot,
                                 variant: variant,
-                                viewport: $viewport,
                                 selectedObjectID: $selectedObjectID,
-                                highlightedObjectIDs: highlightedObjectIDs(in: variant),
-                                showsDimensions: showsDimensions
+                                highlightedObjectIDs: highlightedObjectIDs(in: variant)
                             )
                             .transition(.opacity)
                         }

@@ -58,13 +58,6 @@ if [ "$DO_SELF_CHECK" = 1 ]; then
     step "App-layer static checks"
     python3 "$ROOT/scripts/check_type_ids.py"
 
-    # The view's geometry transcribed and rendered from a dozen camera angles.
-    # It writes a contact sheet to look at, and fails on the two things worth
-    # asserting without eyes: a face drawn as visible that is turned away, and
-    # a display list that paints something over what is nearer to the camera.
-    step "Orbit geometry"
-    python3 "$ROOT/scripts/preview_orbit.py"
-
     # The 3D meshes: all present, and measured into a table that matches them.
     step "Models"
     python3 "$ROOT/scripts/vendor_models.py" --check
