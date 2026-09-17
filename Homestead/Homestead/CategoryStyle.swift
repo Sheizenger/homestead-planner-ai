@@ -16,7 +16,13 @@ import HomesteadEngine
 
 extension Color {
     /// `#rrggbb`, the form the web palette is written in.
-    init(hex: UInt32) {
+    ///
+    /// `Int`, because that is what `HomesteadCore` vends a colour as — every
+    /// `SceneSlab.colour`, `SceneNode.tint` and `WaterPalette` field is one.
+    /// A second width here meant the two halves of the app disagreed about
+    /// what a hex colour is, and everything crossing between them needed a
+    /// conversion to say so.
+    init(hex: Int) {
         self.init(
             .sRGB,
             red: Double((hex >> 16) & 0xFF) / 255,
@@ -38,7 +44,7 @@ struct CategoryStyle {
             : CategoryStyle(fill: Color(hex: lightFill), stroke: Color(hex: lightStroke))
     }
 
-    private static func palette(_ category: ObjectCategory) -> (UInt32, UInt32, UInt32, UInt32) {
+    private static func palette(_ category: ObjectCategory) -> (Int, Int, Int, Int) {
         switch category {
         case .residential:     return (0xe4dccb, 0x8a7a58, 0x3a3527, 0xc8b88a)
         case .access:          return (0xd9d4c9, 0x8a8474, 0x33312b, 0xa9a48f)

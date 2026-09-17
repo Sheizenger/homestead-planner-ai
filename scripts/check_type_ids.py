@@ -13,6 +13,7 @@ rather than being caught here:
    happened to sit between them, leaving the call behind.
 4. No one writes the camera's angles out by hand again.
 5. Every file imports the module of every type it names.
+6. A hex colour is the same width here as it is in HomesteadCore.
 
 On (1): the view layer keys several tables by type id — massing, materials, palettes,
 cylinder caps, foliage. A typo or a renamed catalog entry makes the row
@@ -220,6 +221,41 @@ def check_imports():
     return failures
 
 
+def check_colour_width():
+    """Everything that takes a hex colour takes the type the core vends one as.
+
+    `HomesteadCore` carries a colour as an `Int` — `SceneSlab.colour`,
+    `SceneNode.tint`, every `WaterPalette` field. The app had a second width:
+    `Color.init(hex: UInt32)`, written for the palette ported from the web app,
+    where the colours are literals and the width never showed. It showed the
+    moment a core colour reached it, and that was a Mac-only build failure for
+    a one-line bridge file.
+
+    Narrow on purpose. A general check that two parameters sharing a label
+    share a type reports forty places in this codebase where the same word
+    honestly means two different things, and a check that cries that often is
+    one nobody reads.
+    """
+    core = (ROOT / "swift/Sources/HomesteadCore/SceneBuilder.swift").read_text()
+    vended = re.search(r"public var colour:\s*(\w+)", core)
+    if not vended:
+        return ["SceneBuilder no longer declares `colour`; check_colour_width is looking for nothing"]
+    want = vended.group(1)
+
+    failures = []
+    for path in sorted(APP.glob("*.swift")):
+        for number, line in enumerate(path.read_text().splitlines(), 1):
+            if "init(" not in line and "func " not in line:
+                continue  # a declaration, not a call site
+            found = re.search(r"\bhex:\s*(\w+)\s*[,)]", line)
+            if found and found.group(1) != want:
+                failures.append(
+                    "%s:%d: a hex colour is %s here and %s in HomesteadCore"
+                    % (path.relative_to(ROOT), number, found.group(1), want)
+                )
+    return failures
+
+
 def main() -> int:
     known = set(re.findall(r'id: "([a-z0-9\-]+)"', LIBRARY.read_text()))
     if not known:
@@ -238,6 +274,7 @@ def main() -> int:
     failures += check_missing_calls()
     failures += check_hardcoded_camera()
     failures += check_imports()
+    failures += check_colour_width()
 
     for failure in failures:
         print(f"error: {failure}", file=sys.stderr)
