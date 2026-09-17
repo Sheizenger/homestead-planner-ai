@@ -266,7 +266,7 @@ public enum SceneCatalog {
         // is a flat plate, which is what a photovoltaic panel is.
         "solar-array": Look(
             .rows(model: "works/top-large", spacing: 2.6, height: 0.12, alongLongAxis: false, stretched: true, tilt: -0.5),
-            tint: 0x2B3A55
+            tint: 0x46587A
         ),
         "battery-room": Look(.building(meshes: outbuildingMeshes, height: 2.6), tint: 0x8894A0),
         "inverter-room": Look(.building(meshes: outbuildingMeshes, height: 2.4), tint: 0x9AA6B2),
@@ -274,7 +274,7 @@ public enum SceneCatalog {
 
         // Ground ---------------------------------------------------------
         "patio": Look(
-            .surface(colour: 0xCFC2A4, height: 0.12),
+            .surface(colour: 0xCFC2A4, height: 0.15),
             props: [
                 Prop("yard/bench", fit: .spanning(1.8), direction: (-0.5, 0.0)),
                 Prop("yard/lightpost-single", fit: .standing(height: 3.0), direction: (0.62, 0.62)),

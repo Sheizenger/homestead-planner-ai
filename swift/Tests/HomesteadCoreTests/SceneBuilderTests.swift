@@ -333,9 +333,15 @@ struct SceneBuilderTests {
         guard let height = SceneBuilder.buildingHeight(of: house, metrics: ModelMetrics.all) else {
             Issue.record("no height for the house"); return
         }
-        // On the roof: above halfway, and under the ridge.
+        // On the roof, and clear of everything under it.
+        //
+        // Something laid flat across a pitched roof has to clear the highest
+        // point beneath it, so an array spanning the ridge seats at ridge
+        // height. That is a little proud of the slopes and it is the right
+        // side to err on: the alternative is a rectangle sunk into the tiles,
+        // which reads as a hole cut in the roof.
         #expect(roof > height * 0.45, "the array is at \(roof) on a \(height) m house")
-        #expect(roof < height, "the array is above the ridge")
+        #expect(roof <= height + SceneBuilder.roofLift + 0.01, "the array floats above the house")
     }
 
     /// Roof panels lie flat. A lean on top of a seat computed from the roof's
@@ -353,19 +359,24 @@ struct SceneBuilderTests {
         #expect(onTheGround.meshes.contains { $0.pitch != 0 }, "a ground array should lean")
     }
 
-    /// The measurement roof-mounting rests on: a house is not as wide at the
-    /// ridge as at the eaves, and a bounding box cannot say so.
-    @Test func aBuildingMeshNarrowsTowardsItsRidge() {
-        for name in SceneCatalog.houseMeshes {
+    /// The measurement roof-mounting rests on: how high a mesh stands over
+    /// each patch of its own footprint. A bounding box cannot say *where* the
+    /// nine metres is, and that is the whole question.
+    @Test func everyBuildingMeshKnowsHowHighItIsAtEachPoint() {
+        for name in SceneCatalog.houseMeshes + SceneCatalog.workingMeshes {
             guard let bounds = ModelMetrics[name] else { Issue.record("no \(name)"); continue }
-            #expect(bounds.coverage.count == 10, "\(name) has no profile")
-            #expect(bounds.coverage[0] > 0.7, "\(name) is hollow at the ground")
-            #expect(bounds.coverage.last! < bounds.coverage[0] * 0.8,
-                    "\(name) is as wide at the top as at the bottom")
-            // And the profile answers the question it exists for.
-            let low = bounds.height(covering: 0.3) ?? 0
-            let high = bounds.height(covering: 0.9) ?? 0
-            #expect(low >= high, "\(name): more area is available higher up")
+            #expect(bounds.surface.count == 36, "\(name) has no surface map")
+            #expect(bounds.surface.allSatisfy { $0 >= 0 && $0 <= 1.0001 })
+            // Something reaches full height somewhere — the ridge.
+            #expect(bounds.surface.max()! > 0.9, "\(name) never reaches its own top")
+            // It varies: a building is not a slab, and a map that says one
+            // height everywhere is a map that was not measured.
+            #expect(bounds.surface.min()! < bounds.surface.max()! * 0.9,
+                    "\(name) reads as the same height everywhere")
+            // And asking about a patch gives the highest thing on it, which
+            // is the whole point: something laid there has to clear it.
+            let whole = bounds.top(from: 0, 0, to: 1, 1) ?? 0
+            #expect(abs(whole - bounds.surface.max()!) < 1e-9)
         }
     }
 

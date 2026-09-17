@@ -123,6 +123,23 @@ public enum SceneBuilder {
     /// Hardstanding: darker and coarser than a garden path, because a car
     /// drives on it.
     public static let drivewayColour = 0x8E8B85
+
+    /// What height each kind of flat surface sits at.
+    ///
+    /// Flat things laid on flat things are where a depth buffer has nothing
+    /// to go on: two surfaces within a millimetre of each other have no
+    /// depth order, the renderer picks per pixel, and the seam crawls as the
+    /// camera turns. Four centimetres apart is invisible at plan scale and
+    /// far more than any depth buffer needs, so the order is stated once here
+    /// rather than guessed at each call site.
+    public enum Ground {
+        public static let lawn = 0.0
+        public static let worn = 0.02        // a paddock, an apiary
+        public static let path = 0.06
+        public static let hardstanding = 0.10
+        public static let paving = 0.15      // a patio
+        public static let coping = 0.20      // the rim of a pool
+    }
     /// How thick the block of land is. The plot is a solid thing seen from
     /// above, not a sheet of paper.
     public static let groundThickness = 1.6
@@ -353,7 +370,7 @@ public enum SceneBuilder {
                         Point(x: b.x - nx + ex, y: b.y - ny + ey),
                         Point(x: a.x - nx - ex, y: a.y - ny - ey),
                     ],
-                    top: 0.04,
+                    top: Ground.path,
                     thickness: 0,
                     colour: pathColour
                 ))
@@ -429,7 +446,7 @@ public enum SceneBuilder {
         case let .sunken(colour, depth):
             scene.slabs.append(SceneSlab(
                 id: object.id + "-coping", polygon: Massing3D.footprint(of: object),
-                top: 0.16, thickness: 0.16, colour: 0xD8D2C4, objectId: object.id
+                top: Ground.coping, thickness: Ground.coping, colour: 0xD8D2C4, objectId: object.id
             ))
             scene.slabs.append(SceneSlab(
                 id: object.id, polygon: inset(Massing3D.footprint(of: object), by: 0.5),
@@ -931,8 +948,8 @@ public enum SceneBuilder {
     }
 
     /// A little clear of the roof, so it reads as mounted on it rather than
-    /// sunk into it.
-    static let roofLift = 0.25
+    /// flush with it.
+    static let roofLift = 0.15
 
     /// The ground a thing stands on.
     ///
@@ -956,19 +973,27 @@ public enum SceneBuilder {
               let height = buildingHeight(of: host, metrics: metrics),
               let mesh = hostMesh(of: host, metrics: metrics) else { return 0 }
 
-        // How high the roof still covers what is being put on it.
+        // How high the host stands over the patch of it being built on.
         //
-        // Guessing a fraction of the height buried the array inside the roof
-        // with only its edges showing: a bounding box says the house is nine
-        // metres tall, it does not say that at seven metres the house is a
-        // hip and there is nothing left to stand on. `ModelBounds.coverage`
-        // measures that from the mesh itself.
-        // Twice the share it needs, so it sits on roof rather than balancing
-        // on the last of it: covering exactly its own area means the highest
-        // point where it *just* fits, which is the ridge.
-        let share = (object.transform.width * object.transform.height)
-            / max(host.transform.width * host.transform.height, 1e-6)
-        let seat = mesh.height(covering: min(0.9, share * 2)) ?? 0.5
+        // Not a fraction of its height — that is the question two earlier
+        // attempts answered, and it is the wrong one. A cross-section is
+        // nearly full at a third of a house's height, but that is the first
+        // floor and an array seated there is indoors; it is nearly empty near
+        // the top, and an array seated there floats above the ridge.
+        // `ModelBounds.top` says how high the roof is *over this spot*, which
+        // is what standing on something means.
+        let centre = host.transform.center
+        let spanX = max(host.transform.width, 1e-6)
+        let spanZ = max(host.transform.height, 1e-6)
+        func across(_ value: Double, _ origin: Double, _ span: Double) -> Double {
+            min(1, max(0, (value - origin) / span + 0.5))
+        }
+        let seat = mesh.top(
+            from: across(object.transform.x - object.transform.width / 2, centre.x, spanX),
+            across(object.transform.y - object.transform.height / 2, centre.y, spanZ),
+            to: across(object.transform.x + object.transform.width / 2, centre.x, spanX),
+            across(object.transform.y + object.transform.height / 2, centre.y, spanZ)
+        ) ?? 0.6
         return height * seat + roofLift
     }
 
@@ -1046,7 +1071,7 @@ public enum SceneBuilder {
                 Point(x: end.x - across.x, y: end.y - across.y),
                 Point(x: start.x - across.x, y: start.y - across.y),
             ],
-            top: 0.05,
+            top: Ground.hardstanding,
             thickness: 0,
             colour: drivewayColour,
             objectId: object.id
