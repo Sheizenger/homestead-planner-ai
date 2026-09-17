@@ -124,7 +124,7 @@ enum SceneAssembly {
         let node = SCNNode(geometry: shape)
         // `SCNShape` extrudes a path in the XY plane along +Z; a slab lies in
         // the ground plane, so it is laid down and pushed to its own top.
-        node.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0)
+        node.eulerAngles = SCNVector3(CGFloat(GroundPlane.pitch), 0, 0)
         node.position = SCNVector3(0, CGFloat(slab.top), 0)
         node.castsShadow = slab.thickness > 0.05
         node.name = slab.objectId
@@ -140,7 +140,7 @@ enum SceneAssembly {
         walls.chamferRadius = 0
         walls.materials = [material(solid.colour, opacity: solid.opacity)]
         let wallNode = SCNNode(geometry: walls)
-        wallNode.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0)
+        wallNode.eulerAngles = SCNVector3(CGFloat(GroundPlane.pitch), 0, 0)
         wallNode.position = SCNVector3(0, CGFloat(solid.base + solid.wallHeight), 0)
         wallNode.castsShadow = true
         group.addChildNode(wallNode)
@@ -149,7 +149,7 @@ enum SceneAssembly {
             let lid = SCNShape(path: bezier(solid.polygon), extrusionDepth: 0.05)
             lid.materials = [material(solid.colour, opacity: solid.opacity)]
             let lidNode = SCNNode(geometry: lid)
-            lidNode.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0)
+            lidNode.eulerAngles = SCNVector3(CGFloat(GroundPlane.pitch), 0, 0)
             lidNode.position = SCNVector3(0, CGFloat(solid.base + solid.wallHeight + 0.05), 0)
             group.addChildNode(lidNode)
             return group
@@ -216,18 +216,19 @@ enum SceneAssembly {
 
     // MARK: -
 
+    /// The path a slab is built from, in the coordinates the quarter turn in
+    /// `node(for:)` expects — see `GroundPlane`, which owns that arithmetic
+    /// and is tested on it. Taken straight across, a path comes out laid down
+    /// on the far side of the origin from every mesh.
     private static func bezier(_ polygon: [Point]) -> NSBezierPath {
         let path = NSBezierPath()
-        guard let first = polygon.first else { return path }
+        let points = GroundPlane.path(polygon)
+        guard let first = points.first else { return path }
         path.move(to: CGPoint(x: first.x, y: first.y))
-        for point in polygon.dropFirst() {
+        for point in points.dropFirst() {
             path.line(to: CGPoint(x: point.x, y: point.y))
         }
         path.close()
-        // The ground plane's Y runs south while `SCNShape`'s runs up the page,
-        // so a path taken straight across comes out mirrored. Flipping the
-        // winding here is cheaper than flipping every polygon in the builder.
-        path.windingRule = .evenOdd
         return path
     }
 
