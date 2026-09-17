@@ -16,6 +16,15 @@ material. OBJs are normalised on the way in: Kenney writes `v x y z r g b`,
 and the three trailing vertex colours are not standard OBJ, are redundant
 beside the atlas, and are one more thing for ModelIO to disagree about.
 
+Everything lands flat in one directory under a `kit_name` prefix rather than
+in a directory per kit, because Xcode copies a resource to
+`Contents/Resources/<basename>`: the directory a file sits in on disk is not
+part of where it lands in the bundle. Eight kits that each ship a
+`colormap.png`, and six mesh names that occur in more than one kit, collide
+there and fail the build. The prefix is what makes that flattening harmless,
+and `_` separates it because no Kenney kit or mesh name contains one, so the
+logical `kit/name` splits back out of a filename unambiguously.
+
     python3 scripts/vendor_models.py            # fetch anything missing
     python3 scripts/vendor_models.py --check    # verify what is vendored
     python3 scripts/vendor_models.py --force    # re-fetch everything
@@ -26,13 +35,17 @@ import hashlib
 import io
 import json
 import pathlib
-import shutil
 import sys
 import urllib.request
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEST = ROOT / "Homestead" / "Homestead" / "Models3D"
+
+# Separates the kit from the mesh in a vendored filename. Not "-": mesh
+# names are full of those, so "city-water-tower" could not be split back
+# into a kit and a name without guessing.
+SEPARATOR = "_"
 
 # Pinned to the exact upload each URL points at. Kenney's download links carry
 # a content hash, so a URL that still resolves is the file that was reviewed.
@@ -147,16 +160,21 @@ def resolve_url(kit):
     return found.group(0)
 
 
-def normalise_obj(text):
+def normalise_obj(text, prefix):
     """Standard OBJ, four significant figures, no comments.
 
     Kenney's `v x y z r g b` carries per-vertex colours that the colormap
     atlas already provides. Keeping them risks a loader reading the extra
     components as something else, and drops nothing.
+
+    `mtllib` is rewritten to the vendored filename: a loader resolves it
+    beside the model, and the model's neighbour is now `kit_name.mtl`.
     """
     out = []
     for line in text.splitlines():
-        if line.startswith("v "):
+        if line.startswith("mtllib "):
+            out.append("mtllib " + prefix + line.split(None, 1)[1].strip())
+        elif line.startswith("v "):
             parts = line.split()
             out.append("v " + " ".join("%.5g" % float(p) for p in parts[1:4]))
         elif line.startswith(("vn ", "vt ")):
@@ -169,18 +187,23 @@ def normalise_obj(text):
     return "\n".join(out) + "\n"
 
 
+def vendored(kit_name, stem):
+    return DEST / (kit_name + SEPARATOR + stem)
+
+
 def vendor(name, kit, force):
-    target = DEST / name
-    if target.exists() and not force:
+    prefix = name + SEPARATOR
+    existing = sorted(DEST.glob(prefix + "*"))
+    if existing and not force:
         return None
     url = resolve_url(kit)
     print("fetching %s ..." % name, flush=True)
     blob = urllib.request.urlopen(url, timeout=300).read()
     digest = hashlib.sha256(blob).hexdigest()
 
-    if target.exists():
-        shutil.rmtree(target)
-    target.mkdir(parents=True)
+    for stale in existing:
+        stale.unlink()
+    DEST.mkdir(parents=True, exist_ok=True)
 
     wanted = kit["models"]
     written = []
@@ -190,21 +213,23 @@ def vendor(name, kit, force):
             if "OBJ format" not in entry:
                 continue
             if path.name.lower() == "colormap.png":
-                (target / "colormap.png").write_bytes(archive.read(entry))
+                vendored(name, "colormap.png").write_bytes(archive.read(entry))
                 continue
             if path.suffix not in (".obj", ".mtl"):
                 continue
             if wanted != "all" and path.stem not in wanted:
                 continue
             if path.suffix == ".obj":
-                (target / path.name).write_text(normalise_obj(archive.read(entry).decode("utf8", "replace")))
+                vendored(name, path.name).write_text(
+                    normalise_obj(archive.read(entry).decode("utf8", "replace"), prefix)
+                )
                 written.append(path.stem)
             else:
                 # The material file is three lines and names the atlas; rewrite
                 # it so the texture sits beside the model rather than in a
                 # Textures/ subfolder that only existed in the zip.
-                (target / path.name).write_text(
-                    "newmtl colormap\nKd 1 1 1\nmap_Kd colormap.png\n"
+                vendored(name, path.name).write_text(
+                    "newmtl colormap\nKd 1 1 1\nmap_Kd %scolormap.png\n" % prefix
                 )
     if wanted != "all":
         missing = sorted(set(wanted) - set(written))
@@ -222,19 +247,31 @@ def main():
     if args.check:
         problems = []
         for name in KITS:
-            kit_dir = DEST / name
-            if not kit_dir.is_dir():
-                problems.append("%s is not vendored" % name)
-                continue
-            if not (kit_dir / "colormap.png").exists():
+            prefix = name + SEPARATOR
+            if not vendored(name, "colormap.png").exists():
                 problems.append("%s has no colormap.png" % name)
-            if not list(kit_dir.glob("*.obj")):
-                problems.append("%s has no models" % name)
+            if not list(DEST.glob(prefix + "*.obj")):
+                problems.append("%s is not vendored" % name)
+        # The invariant this whole layout exists to hold. Xcode copies a
+        # resource to `Contents/Resources/<basename>`, so two vendored files
+        # that share a basename are two copy commands writing one path, and
+        # the app target fails to build — on a Mac, where none of the rest of
+        # this toolchain runs. Checking it here is what makes that catchable.
+        seen = {}
+        for path in sorted(DEST.rglob("*")):
+            if path.is_dir():
+                problems.append("%s is a directory; the bundle has no directories"
+                                % path.relative_to(DEST))
+                continue
+            clash = seen.setdefault(path.name, path)
+            if clash != path:
+                problems.append("%s and %s share a basename"
+                                % (clash.relative_to(DEST), path.relative_to(DEST)))
         for problem in problems:
             print("error: " + problem, file=sys.stderr)
         if problems:
             return 1
-        total = len(list(DEST.glob("*/*.obj")))
+        total = len(list(DEST.glob("*.obj")))
         print("models ok (%d meshes in %d kits)" % (total, len(KITS)))
         return 0
 
@@ -253,7 +290,7 @@ def main():
         lines.append("- **%s** — %s (%d meshes)" % (name, record["credit"], record["models"]))
     (DEST / "LICENSE.md").write_text("\n".join(lines) + "\n")
 
-    print("vendored %d meshes in %d kits" % (len(list(DEST.glob("*/*.obj"))), len(KITS)))
+    print("vendored %d meshes in %d kits" % (len(list(DEST.glob("*.obj"))), len(KITS)))
     return 0
 
 

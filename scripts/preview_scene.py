@@ -64,24 +64,29 @@ def load_obj(name):
     """Vertices, texture coordinates and triangles for one mesh."""
     if name in _cache:
         return _cache[name]
-    path = MODELS / (name + ".obj")
+    # `kit/name` is the logical key; the file is vendored flat as `kit_name`.
+    path = MODELS / (name.replace("/", "_", 1) + ".obj")
+    # Loudly: a preview that quietly draws nothing where a mesh should be is a
+    # preview that reports a scene clean because it never looked at it.
+    if not path.exists():
+        raise SystemExit("error: no vendored mesh for %s (looked for %s)"
+                         % (name, path.relative_to(ROOT)))
     positions, uvs, faces = [], [], []
-    if path.exists():
-        for line in path.read_text().splitlines():
-            if line.startswith("v "):
-                positions.append(tuple(float(v) for v in line.split()[1:4]))
-            elif line.startswith("vt "):
-                uvs.append(tuple(float(v) for v in line.split()[1:3]))
-            elif line.startswith("f "):
-                corners = []
-                for token in line.split()[1:]:
-                    bits = token.split("/")
-                    vertex = int(bits[0]) - 1
-                    texture = int(bits[1]) - 1 if len(bits) > 1 and bits[1] else None
-                    corners.append((vertex, texture))
-                # Fan-triangulate; these kits are convex quads and triangles.
-                for i in range(1, len(corners) - 1):
-                    faces.append((corners[0], corners[i], corners[i + 1]))
+    for line in path.read_text().splitlines():
+        if line.startswith("v "):
+            positions.append(tuple(float(v) for v in line.split()[1:4]))
+        elif line.startswith("vt "):
+            uvs.append(tuple(float(v) for v in line.split()[1:3]))
+        elif line.startswith("f "):
+            corners = []
+            for token in line.split()[1:]:
+                bits = token.split("/")
+                vertex = int(bits[0]) - 1
+                texture = int(bits[1]) - 1 if len(bits) > 1 and bits[1] else None
+                corners.append((vertex, texture))
+            # Fan-triangulate; these kits are convex quads and triangles.
+            for i in range(1, len(corners) - 1):
+                faces.append((corners[0], corners[i], corners[i + 1]))
     _cache[name] = (positions, uvs, faces)
     return _cache[name]
 
@@ -94,7 +99,7 @@ def atlas(kit):
         return _atlases[kit]
     try:
         from PIL import Image
-        path = MODELS / kit / "colormap.png"
+        path = MODELS / (kit + "_colormap.png")
         image = Image.open(path).convert("RGB")
         _atlases[kit] = (image.load(), image.size)
     except Exception:

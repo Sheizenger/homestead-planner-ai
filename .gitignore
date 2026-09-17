@@ -26,3 +26,5 @@ water.svg
 water.png
 scene.svg
 scene.png
+__pycache__/
+*.pyc

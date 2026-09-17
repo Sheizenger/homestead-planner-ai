@@ -55,10 +55,14 @@ enum SceneAssembly {
     /// a scene this size cheap. Cloning preserves that.
     private static func geometry(named model: String) -> SCNNode? {
         if let cached = cache[model] { return cached }
-        guard let url = Bundle.main.resourceURL?
-            .appendingPathComponent("Models3D")
-            .appendingPathComponent(model + ".obj"),
-            FileManager.default.fileExists(atPath: url.path),
+        // `kit/name` is the logical key, but the file is `kit_name.obj` and it
+        // sits at the top of the resource directory: Xcode copies a resource to
+        // `Contents/Resources/<basename>`, so the directory it occupies in the
+        // repository is not a directory in the bundle.
+        guard let url = Bundle.main.url(
+            forResource: model.replacingOccurrences(of: "/", with: "_"),
+            withExtension: "obj"
+        ),
             let scene = try? SCNScene(url: url, options: [
                 .createNormalsIfAbsent: true,
                 .convertToYUp: false,

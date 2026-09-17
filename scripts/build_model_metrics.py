@@ -219,13 +219,14 @@ def measure(path):
 
 def generate():
     rows = []
-    for obj in sorted(MODELS.glob("*/*.obj")):
+    for obj in sorted(MODELS.glob("*.obj")):
         box = measure(obj)
         if box is None:
             print("warning: %s has no vertices" % obj.name, file=sys.stderr)
             continue
         lo, hi, surface = box
-        name = "%s/%s" % (obj.parent.name, obj.stem)
+        # Vendored flat as `kit_name.obj`; the table is keyed by `kit/name`.
+        name = obj.stem.replace("_", "/", 1)
         rows.append("%s %s %s" % (
             name,
             " ".join("%.4f" % v for v in (lo[0], hi[0], lo[1], hi[1], lo[2], hi[2])),
@@ -250,12 +251,12 @@ def main():
                 file=sys.stderr,
             )
             return 1
-        print("model metrics up to date (%d meshes)" % len(list(MODELS.glob("*/*.obj"))))
+        print("model metrics up to date (%d meshes)" % len(list(MODELS.glob("*.obj"))))
         return 0
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(generated)
-    print("wrote %s (%d meshes)" % (OUTPUT.relative_to(ROOT), len(list(MODELS.glob("*/*.obj")))))
+    print("wrote %s (%d meshes)" % (OUTPUT.relative_to(ROOT), len(list(MODELS.glob("*.obj")))))
     return 0
 
 
