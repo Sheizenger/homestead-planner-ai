@@ -1,0 +1,50 @@
+{
+  "city": {
+    "credit": "Kenney \u2014 City Kit (Suburban)",
+    "models": 40,
+    "sha256": "5869c35cf30b1c87bdb2d197b6d325eebadd2ef08ea27f04797e8e08d77a9a39",
+    "url": "https://kenney.nl/media/pages/assets/city-kit-suburban/2c871b7af2-1745479373/kenney_city-kit-suburban_20.zip"
+  },
+  "forest": {
+    "credit": "Kenney \u2014 Mini Forest",
+    "models": 22,
+    "sha256": "8691614018075a66458e35915b8c358c2e6178648aedadafcdf313b924aa6581",
+    "url": "https://kenney.nl/media/pages/assets/mini-forest/44a89aed7f-1784024079/kenney_mini-forest_1.0.zip"
+  },
+  "survival": {
+    "credit": "Kenney \u2014 Survival Kit",
+    "models": 80,
+    "sha256": "c3586341b5932c87eb43d75d915434f47daed168b17ed36a03e8ca9977c7443e",
+    "url": "https://kenney.nl/media/pages/assets/survival-kit/4065a8185b-1712149243/kenney_survival-kit.zip"
+  },
+  "town": {
+    "credit": "Kenney \u2014 Fantasy Town Kit",
+    "models": 167,
+    "sha256": "1a7530c09f4d2fa2cdee259876f089334f8b1f27fa86a0c4f54ef86cdd8676ef",
+    "url": "https://kenney.nl/media/pages/assets/fantasy-town-kit/efe948d309-1754222374/kenney_fantasy-town-kit_2.0.zip"
+  },
+  "vehicles": {
+    "credit": "Kenney \u2014 Car Kit",
+    "models": 12,
+    "sha256": "fac7dacac5c7874348cf19729af3ef205f3d366493edaf0a827d93f4fdf3d0c4",
+    "url": "https://kenney.nl/media/pages/assets/car-kit/1a312ec241-1775131960/kenney_car-kit.zip"
+  },
+  "water": {
+    "credit": "Kenney \u2014 Watercraft Kit",
+    "models": 9,
+    "sha256": "cd1470c1cf441c7f46d0944ae6d0d897242365dc97677c5079b3238965d659f3",
+    "url": "https://kenney.nl/media/pages/assets/watercraft-kit/a335cfed49-1713519620/kenney_watercraft-pack.zip"
+  },
+  "works": {
+    "credit": "Kenney \u2014 Factory Kit",
+    "models": 23,
+    "sha256": "7e31fb2308e90304672bd15cd18fa9d9f02c03731a8cbc57a8e3e1c181dfb0a7",
+    "url": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip"
+  },
+  "yard": {
+    "credit": "Kenney \u2014 Graveyard Kit",
+    "models": 28,
+    "sha256": "1a93613f2e5675f3310acf49ec9ef13ae7adeb756ac3b205bfb6cc9311a81062",
+    "url": "https://kenney.nl/media/pages/assets/graveyard-kit/ba8d4b4517-1760691807/kenney_graveyard-kit_5.0.zip"
+  }
+}
