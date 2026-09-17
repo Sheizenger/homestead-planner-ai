@@ -15,7 +15,7 @@ struct SceneCatalogTests {
         case let .building(meshes, _): names += meshes
         case let .single(model, _): names.append(model)
         case let .scatter(models, _, _): names += models
-        case let .rows(model, _, _, _, _): names.append(model)
+        case let .rows(model, _, _, _, _, _): names.append(model)
         case .surface, .sunken, .volume: break
         }
         return names + look.props.map(\.model)
@@ -61,7 +61,7 @@ struct SceneCatalogTests {
             case let .scatter(_, density, height):
                 #expect(density > 0 && density < 1, "\(typeId) plants \(density) per m²")
                 #expect(height > 0.2 && height < 20)
-            case let .rows(_, spacing, height, _, tilt):
+            case let .rows(_, spacing, height, _, _, tilt):
                 #expect(abs(tilt) < 1.4, "\(typeId) tilts \(tilt) rad")
                 #expect(spacing > 0.3 && spacing < 10, "\(typeId) rows \(spacing) m apart")
                 #expect(height > 0.1 && height < 10)

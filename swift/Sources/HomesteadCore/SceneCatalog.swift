@@ -22,9 +22,26 @@ public enum SceneCatalog {
         /// metre: an orchard, a rough paddock, a berry patch.
         case scatter(models: [String], perSquareMetre: Double, height: Double)
         /// Meshes in rows across the footprint: crops, vines, panels, beds.
-        /// `tilt` leans each row back — zero for anything growing, and the
+        ///
+        /// `stretched` says which kind of thing is in the row, and it is not a
+        /// detail. A plant repeats at its own size along the row; stretching
+        /// one to the length of a field gives a twenty-metre blade of grass,
+        /// which is what the first version drew. A hedge or a panel is a
+        /// modular row *piece* and stretching is exactly what it is for —
+        /// repeating one at uniform scale piles them into a tangle, which is
+        /// what the second version drew. Inferring it from the tilt got one
+        /// of the two right by accident.
+        ///
+        /// `tilt` leans each piece back: zero for anything growing, and the
         /// array angle for solar panels, which lying flat read as puddles.
-        case rows(model: String, spacing: Double, height: Double, alongLongAxis: Bool, tilt: Double = 0)
+        case rows(
+            model: String,
+            spacing: Double,
+            height: Double,
+            alongLongAxis: Bool,
+            stretched: Bool = false,
+            tilt: Double = 0
+        )
         /// A built volume with an optional pitched top: a glasshouse, a store
         /// cut into a bank. For the handful of things no kit contains and no
         /// flat slab can stand in for.
@@ -192,8 +209,8 @@ public enum SceneCatalog {
         ),
 
         // Growing --------------------------------------------------------
-        "orchard-trees": Look(.scatter(models: broadleafTrees, perSquareMetre: 0.022, height: 5.2)),
-        "berry-rows": Look(.rows(model: "town/hedge", spacing: 1.8, height: 1.1, alongLongAxis: true)),
+        "orchard-trees": Look(.scatter(models: broadleafTrees, perSquareMetre: 0.04, height: 4.8)),
+        "berry-rows": Look(.rows(model: "town/hedge", spacing: 1.8, height: 1.1, alongLongAxis: true, stretched: true)),
         "vineyard": Look(.rows(model: "town/poles", spacing: 2.2, height: 1.9, alongLongAxis: true)),
         "raised-beds": Look(.rows(model: "survival/grass", spacing: 1.4, height: 0.55, alongLongAxis: true)),
         "vegetable-area": Look(.rows(model: "survival/grass", spacing: 1.2, height: 0.45, alongLongAxis: true)),
@@ -221,7 +238,13 @@ public enum SceneCatalog {
         "micro-hydro": Look(.single(model: "town/watermill", fit: .inscribed)),
 
         // Power ----------------------------------------------------------
-        "solar-array": Look(.rows(model: "survival/metal-panel", spacing: 2.6, height: 0.16, alongLongAxis: false, tilt: -0.55)),
+        // `survival/metal-panel` is a corrugated *wall* sheet, and squashing one
+        // flat turns its corrugations into a row of shards. `works/top-large`
+        // is a flat plate, which is what a photovoltaic panel is.
+        "solar-array": Look(
+            .rows(model: "works/top-large", spacing: 2.6, height: 0.12, alongLongAxis: false, stretched: true, tilt: -0.5),
+            tint: 0x2B3A55
+        ),
         "battery-room": Look(.building(meshes: outbuildingMeshes, height: 2.6), tint: 0x8894A0),
         "inverter-room": Look(.building(meshes: outbuildingMeshes, height: 2.4), tint: 0x9AA6B2),
         "generator": Look(.single(model: "works/machine-fortified", fit: .footprint(height: 2.0))),

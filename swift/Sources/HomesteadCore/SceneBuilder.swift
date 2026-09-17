@@ -359,10 +359,11 @@ public enum SceneBuilder {
                 tint: look.tint, metrics: metrics
             )
 
-        case let .rows(model, spacing, height, alongLongAxis, tilt):
+        case let .rows(model, spacing, height, alongLongAxis, stretched, tilt):
             scene.meshes += rows(
                 object, model: model, spacing: spacing, height: height,
-                alongLongAxis: alongLongAxis, tilt: tilt, tint: look.tint, metrics: metrics
+                alongLongAxis: alongLongAxis, stretched: stretched, tilt: tilt,
+                tint: look.tint, metrics: metrics
             )
 
         case let .volume(colour, wallHeight, ridgeRise, opacity):
@@ -580,16 +581,28 @@ public enum SceneBuilder {
         metrics: [String: ModelBounds]
     ) -> [SceneNode] {
         let transform = object.transform
-        let area = transform.width * transform.height
-        let wanted = max(1, min(90, Int((area * density).rounded())))
         let radians = transform.rotationDeg * .pi / 180
+        // `density` is trees per square metre; a grid at that density is what
+        // an orchard is. Scattered at random it reads as scrub — which is the
+        // right answer for rough ground and the wrong one for planting.
+        let pitch = max(3.0, (1 / max(density, 0.001)).squareRoot())
+        // Rounded rather than floored: a 14 m side at a 5 m pitch is three
+        // trees, not two, and flooring both sides of a small orchard loses
+        // half of it.
+        let columns = max(1, Int((transform.width / pitch).rounded()))
+        let rows = max(1, Int((transform.height / pitch).rounded()))
+        let wanted = min(90, columns * rows)
 
         var nodes: [SceneNode] = []
         for index in 0..<wanted {
             let model = models[index % models.count]
+            let column = index % columns
+            let row = index / columns
             let local = Point(
-                x: SceneNoise.jitter(object.id, index, 1, transform.width / 2 - 1),
-                y: SceneNoise.jitter(object.id, index, 2, transform.height / 2 - 1)
+                x: (Double(column) + 0.5) * transform.width / Double(columns) - transform.width / 2
+                    + SceneNoise.jitter(object.id, index, 1, pitch * 0.14),
+                y: (Double(row) + 0.5) * transform.height / Double(rows) - transform.height / 2
+                    + SceneNoise.jitter(object.id, index, 2, pitch * 0.14)
             )
             let scaled = height * (0.82 + SceneNoise.value(object.id, index, 3) * 0.36)
             if let node = ModelPlacement.node(
@@ -608,17 +621,30 @@ public enum SceneBuilder {
         return nodes
     }
 
-    /// Crops, vines, beds, panels: one stretched mesh per row.
+    /// The most plants a single field is allowed to draw.
     ///
-    /// One mesh per *plant* would be tens of thousands of nodes on a grain
-    /// field and would read as noise anyway; a row of planting seen from
-    /// across a plot is a strip, and a strip is what this draws.
+    /// A grain field at a realistic row and plant spacing is thousands of
+    /// meshes, and a plan has four or five fields. The cap is what keeps a
+    /// scene at a few hundred nodes rather than a few thousand; spacing opens
+    /// out to meet it, so a big field is a sparser field rather than a
+    /// truncated one.
+    public static let plantsPerField = 150
+
+    /// Crops, vines, beds and panels.
+    ///
+    /// One stretched mesh per row was the first attempt and it is the exact
+    /// mistake `ModelFit` warns about: `.footprint` is for modular pieces
+    /// that are made to stretch, and a tuft of grass pulled out to twenty
+    /// metres is a twenty-metre blade of grass. It looked like one. Plants
+    /// repeat at their own size instead, and only a panel — which really is
+    /// a flat rectangular thing — still stretches.
     static func rows(
         _ object: PlanObject,
         model: String,
         spacing: Double,
         height: Double,
         alongLongAxis: Bool,
+        stretched: Bool,
         tilt: Double,
         tint: Int?,
         metrics: [String: ModelBounds]
@@ -629,36 +655,82 @@ public enum SceneBuilder {
         let across = longIsX ? transform.height : transform.width
         guard rowLength > 0.5, across > 0.5, spacing > 0.1 else { return [] }
 
-        let count = max(1, min(40, Int((across / spacing).rounded(.down))))
-        let step = across / Double(count)
         let radians = transform.rotationDeg * .pi / 180
-        let bedWidth = min(step * 0.62, spacing * 0.62)
+        let yaw = sceneYaw(fromEngineDegrees: transform.rotationDeg)
+
+        if stretched {
+            let count = max(1, min(40, Int((across / spacing).rounded(.down))))
+            let step = across / Double(count)
+            var nodes: [SceneNode] = []
+            for row in 0..<count {
+                let offset = (Double(row) + 0.5) * step - across / 2
+                let local = longIsX ? Point(x: 0, y: offset) : Point(x: offset, y: 0)
+                let footprint = longIsX
+                    ? Size(width: rowLength * 0.94, height: min(step * 0.62, spacing * 0.62))
+                    : Size(width: min(step * 0.62, spacing * 0.62), height: rowLength * 0.94)
+                if var node = ModelPlacement.node(
+                    id: "\(object.id)-row\(row)",
+                    model: model,
+                    centre: rotate(local, by: radians, around: transform.center),
+                    yaw: yaw,
+                    pitch: tilt,
+                    fit: .footprint(height: height),
+                    footprint: footprint,
+                    objectId: object.id,
+                    tint: tint,
+                    metrics: metrics
+                ) {
+                    // Tilting about the node's own origin would swing half the
+                    // panel underground; a leaning array stands on legs.
+                    if tilt != 0 {
+                        node.position.y += abs(sin(tilt)) * footprint.height / 2 + 0.5
+                    }
+                    nodes.append(node)
+                }
+            }
+            return nodes
+        }
+
+        // Rows across the bed, plants along each row, both opened out
+        // together until the whole field fits under the cap.
+        var rowStep = spacing
+        var plantStep = spacing * 0.82
+        var rowCount = max(1, Int((across / rowStep).rounded(.down)))
+        var plantCount = max(1, Int((rowLength / plantStep).rounded(.down)))
+        while rowCount * plantCount > plantsPerField {
+            rowStep *= 1.18
+            plantStep *= 1.18
+            rowCount = max(1, Int((across / rowStep).rounded(.down)))
+            plantCount = max(1, Int((rowLength / plantStep).rounded(.down)))
+        }
+        let rowSpan = across / Double(rowCount)
+        let plantSpan = rowLength / Double(plantCount)
 
         var nodes: [SceneNode] = []
-        for row in 0..<count {
-            let offset = (Double(row) + 0.5) * step - across / 2
-            let local = longIsX ? Point(x: 0, y: offset) : Point(x: offset, y: 0)
-            let footprint = longIsX
-                ? Size(width: rowLength * 0.94, height: bedWidth)
-                : Size(width: bedWidth, height: rowLength * 0.94)
-            if var node = ModelPlacement.node(
-                id: "\(object.id)-row\(row)",
-                model: model,
-                centre: rotate(local, by: radians, around: transform.center),
-                yaw: sceneYaw(fromEngineDegrees: transform.rotationDeg),
-                pitch: tilt,
-                fit: .footprint(height: height),
-                footprint: footprint,
-                objectId: object.id,
-                tint: tint,
-                metrics: metrics
-            ) {
-                // Tilting about the node's own origin would swing half the
-                // panel underground; a leaning array stands on legs.
-                if tilt != 0 {
-                    node.position.y += abs(sin(tilt)) * footprint.height / 2 + 0.5
+        for row in 0..<rowCount {
+            let acrossOffset = (Double(row) + 0.5) * rowSpan - across / 2
+            for plant in 0..<plantCount {
+                let alongOffset = (Double(plant) + 0.5) * plantSpan - rowLength / 2
+                let index = row * plantCount + plant
+                // Jittered along the row but not across it: a row that
+                // wanders sideways stops being a row.
+                let wobble = SceneNoise.jitter(object.id, index, 1, plantSpan * 0.18)
+                let local = longIsX
+                    ? Point(x: alongOffset + wobble, y: acrossOffset)
+                    : Point(x: acrossOffset, y: alongOffset + wobble)
+                let scaled = height * (0.84 + SceneNoise.value(object.id, index, 2) * 0.32)
+                if let node = ModelPlacement.node(
+                    id: "\(object.id)-\(row)-\(plant)",
+                    model: model,
+                    centre: rotate(local, by: radians, around: transform.center),
+                    yaw: yaw + SceneNoise.jitter(object.id, index, 3, 0.5),
+                    fit: .standing(height: scaled),
+                    objectId: object.id,
+                    tint: tint,
+                    metrics: metrics
+                ) {
+                    nodes.append(node)
                 }
-                nodes.append(node)
             }
         }
         return nodes
