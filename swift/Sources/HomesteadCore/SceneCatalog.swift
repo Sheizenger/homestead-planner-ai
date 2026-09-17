@@ -175,13 +175,20 @@ public enum SceneCatalog {
         // Animals --------------------------------------------------------
         "goat-shelter": Look(.building(meshes: outbuildingMeshes, height: 2.6), tint: 0xC2A06A),
         "goat-paddock": Look(
-            .surface(colour: 0x8FA959, height: 0.02),
-            props: [Prop("survival/grass-large", fit: .spanning(1.1), count: 9)]
+            .surface(colour: 0x9C8E63, height: 0.02),
+            props: [
+                Prop("survival/grass-large", fit: .spanning(1.2), count: 7),
+                Prop("survival/patch-grass", fit: .spanning(1.6), offset: (-0.5, 0.4), count: 3),
+                Prop("yard/hay-bale", fit: .spanning(1.5), offset: (0.6, -0.55)),
+            ]
         ),
         "poultry-coop": Look(.building(meshes: outbuildingMeshes, height: 2.4), tint: 0xD8B26A),
         "apiary": Look(
-            .surface(colour: 0x8FA959, height: 0.02),
-            props: [Prop("survival/box", fit: .spanning(0.8), count: 5)]
+            .surface(colour: 0x88A257, height: 0.02),
+            props: [
+                Prop("survival/box", fit: .spanning(0.9), count: 5),
+                Prop("survival/grass-large", fit: .spanning(0.9), offset: (-0.6, 0.5), count: 2),
+            ]
         ),
 
         // Growing --------------------------------------------------------
@@ -221,7 +228,7 @@ public enum SceneCatalog {
 
         // Ground ---------------------------------------------------------
         "patio": Look(
-            .surface(colour: 0xC9BEA6, height: 0.12),
+            .surface(colour: 0xCFC2A4, height: 0.12),
             props: [
                 Prop("yard/bench", fit: .spanning(1.8), offset: (-0.5, 0.0)),
                 Prop("yard/lightpost-single", fit: .standing(height: 3.0), offset: (0.62, 0.62)),

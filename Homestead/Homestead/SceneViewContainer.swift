@@ -41,62 +41,60 @@ struct SceneViewContainer: View {
     private static let compassRadius: CGFloat = 22
 
     var body: some View {
-        GeometryReader { geometry in
-            ScenePlanView(
-                plot: plot,
-                variant: variant,
-                camera: $camera,
-                zoom: $zoom,
-                pan: $pan,
-                selectedObjectID: $selectedObjectID,
-                highlightedObjectIDs: highlightedObjectIDs
-            )
-            .overlay(alignment: .topTrailing) { compass }
-            .overlay(alignment: .bottomTrailing) { controls }
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 3)
-                    .onChanged { value in
-                        let kind = dragKind ?? begin(at: value.startLocation, in: geometry.size)
-                        switch kind {
-                        case .orbit:
-                            camera = cameraAnchor.turned(
-                                byYaw: Double(value.translation.width) * Self.yawPerPoint,
-                                pitch: Double(value.translation.height) * Self.pitchPerPoint
-                            )
-                        case .pan:
-                            // Screen right is the camera's own right on the
-                            // ground; screen down is further into the scene.
-                            let metresPerPoint = 0.06 * zoom * 40
-                            let right = Point(x: cos(camera.yaw), y: sin(camera.yaw))
-                            let away = Point(x: -sin(camera.yaw), y: cos(camera.yaw))
-                            let dx = -Double(value.translation.width) / 400 * metresPerPoint
-                            let dy = -Double(value.translation.height) / 400 * metresPerPoint
-                                / max(0.2, sin(camera.pitch))
-                            pan = Point(
-                                x: panAnchor.x + right.x * dx + away.x * dy,
-                                y: panAnchor.y + right.y * dx + away.y * dy
-                            )
-                        }
+        ScenePlanView(
+            plot: plot,
+            variant: variant,
+            camera: $camera,
+            zoom: $zoom,
+            pan: $pan,
+            selectedObjectID: $selectedObjectID,
+            highlightedObjectIDs: highlightedObjectIDs
+        )
+        .overlay(alignment: .topTrailing) { compass }
+        .overlay(alignment: .bottomTrailing) { controls }
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 3)
+                .onChanged { value in
+                    let kind = dragKind ?? begin()
+                    switch kind {
+                    case .orbit:
+                        camera = cameraAnchor.turned(
+                            byYaw: Double(value.translation.width) * Self.yawPerPoint,
+                            pitch: Double(value.translation.height) * Self.pitchPerPoint
+                        )
+                    case .pan:
+                        // Screen right is the camera's own right on the
+                        // ground; screen down is further into the scene.
+                        let metresPerPoint = 0.06 * zoom * 40
+                        let right = Point(x: cos(camera.yaw), y: sin(camera.yaw))
+                        let away = Point(x: -sin(camera.yaw), y: cos(camera.yaw))
+                        let dx = -Double(value.translation.width) / 400 * metresPerPoint
+                        let dy = -Double(value.translation.height) / 400 * metresPerPoint
+                            / max(0.2, sin(camera.pitch))
+                        pan = Point(
+                            x: panAnchor.x + right.x * dx + away.x * dy,
+                            y: panAnchor.y + right.y * dx + away.y * dy
+                        )
                     }
-                    .onEnded { _ in dragKind = nil }
-            )
-            .gesture(
-                MagnifyGesture()
-                    .onChanged { value in
-                        let factor = value.magnification / magnifyAnchor
-                        magnifyAnchor = value.magnification
-                        zoom = min(2.5, max(0.08, zoom / Double(factor)))
-                    }
-                    .onEnded { _ in magnifyAnchor = 1 }
-            )
-            .onModifierKeysChanged(mask: .option) { _, held in
-                panModifierHeld = held.contains(.option)
-            }
+                }
+                .onEnded { _ in dragKind = nil }
+        )
+        .gesture(
+            MagnifyGesture()
+                .onChanged { value in
+                    let factor = value.magnification / magnifyAnchor
+                    magnifyAnchor = value.magnification
+                    zoom = min(2.5, max(0.08, zoom / Double(factor)))
+                }
+                .onEnded { _ in magnifyAnchor = 1 }
+        )
+        .onModifierKeysChanged(mask: .option) { _, held in
+            panModifierHeld = held.contains(.option)
         }
     }
 
-    private func begin(at start: CGPoint, in size: CGSize) -> DragKind {
+    private func begin() -> DragKind {
         let kind: DragKind = panModifierHeld ? .pan : .orbit
         dragKind = kind
         cameraAnchor = camera

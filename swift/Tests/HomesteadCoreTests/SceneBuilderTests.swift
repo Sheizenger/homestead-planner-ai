@@ -226,10 +226,33 @@ struct SceneBuilderTests {
         }
     }
 
-    @Test func anEmptyPlanStillProducesGroundAndNothingElse() {
+    /// A plot with nothing on it is still a field, not a green rectangle.
+    @Test func anEmptyPlanIsGroundAndWhatGrowsOnIt() {
         let scene = SceneBuilder.build(plot: plot(), variant: variant([]))
-        #expect(scene.meshes.isEmpty)
         #expect(scene.slabs.count == 1)
-        #expect(!scene.isEmpty)
+        #expect(scene.meshes.count > 20, "an empty plot came out bare")
+        #expect(scene.meshes.allSatisfy { $0.id.hasPrefix("wild-") })
+        #expect(scene.meshes.allSatisfy { $0.objectId == nil }, "undergrowth is not selectable")
+    }
+
+    /// And nothing grows through anything. `Polygon.clearance` answers
+    /// `.infinity` for a single point, so the first version of this filter
+    /// excluded nothing at all and put wild trees inside the barn.
+    @Test func nothingWildGrowsThroughWhatWasBuilt() {
+        let objects = [
+            object("house", 20, 20, 12, 10),
+            object("barn", 36, 26, 10, 8),
+            object("goat-paddock", 10, 30, 14, 10),
+        ]
+        let scene = SceneBuilder.build(plot: plot(), variant: variant(objects))
+        let wild = scene.meshes.filter { $0.id.hasPrefix("wild-") }
+        #expect(!wild.isEmpty)
+        for node in wild {
+            let point = Point(x: node.position.x, y: node.position.z)
+            for item in objects {
+                #expect(!Polygon.contains(point, polygon: item.transform.corners),
+                        "\(node.model) is inside the \(item.typeId)")
+            }
+        }
     }
 }

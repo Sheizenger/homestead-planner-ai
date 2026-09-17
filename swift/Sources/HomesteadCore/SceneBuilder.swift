@@ -138,7 +138,98 @@ public enum SceneBuilder {
             place(object, into: &scene, metrics: metrics)
         }
         fences(variant, into: &scene, metrics: metrics)
+        undergrowth(plot, variant, into: &scene, metrics: metrics)
         return scene
+    }
+
+    // MARK: - The rest of the land
+
+    /// What grows where nothing was built.
+    ///
+    /// A plot with eighteen objects on it and bare green everywhere else
+    /// reads as a model of a site rather than a site. The references are
+    /// dense: there is always something in the middle distance. This is that
+    /// — tufts, the odd rock, a tree well away from anything — scattered on a
+    /// jittered grid so it does not read as a pattern, seeded off the plan so
+    /// it does not crawl when anything else changes.
+    static let tuftMeshes = ["survival/grass", "survival/grass-large", "survival/patch-grass"]
+    static let rockMeshes = ["town/rock-small", "town/rock-wide", "survival/rock-a", "yard/rocks"]
+    static let wildTreeMeshes = ["forest/tree", "survival/tree", "survival/tree-tall", "yard/pine"]
+    /// Grid pitch for the scatter, metres.
+    static let undergrowthSpacing = 4.2
+    /// How far a wild tree keeps from anything built. Close enough and it is
+    /// not wild, it is landscaping — and it hides the thing behind it.
+    static let treeClearance = 7.0
+
+    static func undergrowth(
+        _ plot: Plot,
+        _ variant: Variant,
+        into scene: inout Scene3D,
+        metrics: [String: ModelBounds]
+    ) {
+        guard let bounds = plot.bounds, plot.boundary.count > 2 else { return }
+        let land = dryLand(of: plot)
+        let footprints = variant.objects.map { (Massing3D.footprint(of: $0), $0.transform) }
+        let routes = variant.paths.flatMap(\.points) + variant.fences.flatMap(\.points)
+
+        var index = 0
+        var y = bounds.minY + undergrowthSpacing / 2
+        while y < bounds.maxY {
+            var x = bounds.minX + undergrowthSpacing / 2
+            while x < bounds.maxX {
+                index += 1
+                let point = Point(
+                    x: x + SceneNoise.jitter("wild", index, 1, undergrowthSpacing * 0.42),
+                    y: y + SceneNoise.jitter("wild", index, 2, undergrowthSpacing * 0.42)
+                )
+                x += undergrowthSpacing
+                guard Polygon.contains(point, polygon: land) else { continue }
+                // Nothing grows through a building, a bed or a paddock, and
+                // nothing grows in the middle of a path.
+                //
+                // `Polygon.clearance` takes two polygons and answers
+                // `.infinity` for anything with fewer than two points, so
+                // asking it about a single point excluded nothing at all and
+                // let wild trees grow through the barn.
+                let nearestBuilt = footprints.map { footprint, _ -> Double in
+                    if Polygon.contains(point, polygon: footprint) { return 0 }
+                    return Polygon.distanceToBoundary(point, polygon: footprint) ?? .infinity
+                }.min() ?? .infinity
+                guard nearestBuilt > 0.7 else { continue }
+                guard routes.allSatisfy({ distance($0, point) > 1.2 }) else { continue }
+
+                let roll = SceneNoise.value("wild", index, 3)
+                let model: String
+                let fit: ModelFit
+                if roll < 0.10, nearestBuilt > treeClearance {
+                    model = wildTreeMeshes[index % wildTreeMeshes.count]
+                    fit = .standing(height: 4.0 + SceneNoise.value("wild", index, 4) * 2.4)
+                } else if roll < 0.20 {
+                    model = rockMeshes[index % rockMeshes.count]
+                    fit = .spanning(0.6 + SceneNoise.value("wild", index, 5) * 0.9)
+                } else if roll < 0.78 {
+                    model = tuftMeshes[index % tuftMeshes.count]
+                    fit = .spanning(0.7 + SceneNoise.value("wild", index, 6) * 0.8)
+                } else {
+                    continue
+                }
+                if let node = ModelPlacement.node(
+                    id: "wild-\(index)",
+                    model: model,
+                    centre: point,
+                    yaw: SceneNoise.value("wild", index, 7) * 2 * .pi,
+                    fit: fit,
+                    metrics: metrics
+                ) {
+                    scene.meshes.append(node)
+                }
+            }
+            y += undergrowthSpacing
+        }
+    }
+
+    static func distance(_ a: Point, _ b: Point) -> Double {
+        ((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)).squareRoot()
     }
 
     // MARK: - The site
@@ -696,11 +787,21 @@ public struct WaterPalette: Equatable, Sendable {
     public let weed: Int
     public let depth: Double
 
+    /// How far the surface sits below grade.
+    ///
+    /// A lip rather than a basin, and that is a limitation admitted rather
+    /// than a choice. Water is drawn as an extruded polygon, and an extruded
+    /// polygon cannot express a hole in the ground: sink it half a metre and
+    /// the plot's own edge has half a metre of nothing above the water where
+    /// the river meets the boundary, which from the far side of an orbit is a
+    /// bright gap along the whole bank. At a few centimetres the gap is
+    /// narrower than the line weight and the shading carries the depth
+    /// instead.
     public static func of(_ type: WaterfrontType) -> WaterPalette {
         switch type {
-        case .river: return WaterPalette(deep: 0x2e6f8e, shallow: 0x6fa8bd, bank: 0xc6bda4, weed: 0x6f8f4a, depth: 0.45)
-        case .lake: return WaterPalette(deep: 0x1f5f86, shallow: 0x7cb8d1, bank: 0xd8cfb2, weed: 0x5f8a44, depth: 0.6)
-        case .pond: return WaterPalette(deep: 0x3c6b57, shallow: 0x76a071, bank: 0x9c8f6a, weed: 0x4e7a33, depth: 0.3)
+        case .river: return WaterPalette(deep: 0x24617f, shallow: 0x6fa8bd, bank: 0xc6bda4, weed: 0x6f8f4a, depth: 0.10)
+        case .lake: return WaterPalette(deep: 0x175371, shallow: 0x7cb8d1, bank: 0xd8cfb2, weed: 0x5f8a44, depth: 0.12)
+        case .pond: return WaterPalette(deep: 0x335e4c, shallow: 0x76a071, bank: 0x9c8f6a, weed: 0x4e7a33, depth: 0.08)
         }
     }
 }

@@ -199,10 +199,7 @@ struct ScenePlanView: NSViewRepresentable {
             guard wanted != highlighted else { return }
             highlighted = wanted
             for node in contentNode.childNodes {
-                let isLit = node.value(forKey: SceneAssembly.objectKey)
-                    .flatMap { $0 as? String }
-                    .map { wanted.contains($0) } ?? false
-                SceneAssembly.setHighlighted(node, isLit)
+                SceneAssembly.setHighlighted(node, node.name.map { wanted.contains($0) } ?? false)
             }
         }
 
@@ -213,12 +210,13 @@ struct ScenePlanView: NSViewRepresentable {
                 .searchMode: SCNHitTestSearchMode.closest.rawValue,
                 .ignoreHiddenNodes: true,
             ])
-            // The id is on the node the assembler made; a hit lands on a
-            // child geometry node somewhere under it.
+            // The id is the name of the node the assembler made; a hit lands
+            // on a child geometry node somewhere under it, and scenery has no
+            // name at all, so a click on grass clears the selection.
             var found: String?
             var node = hits.first?.node
             while let current = node, found == nil {
-                found = current.value(forKey: SceneAssembly.objectKey) as? String
+                if let name = current.name, !name.isEmpty { found = name }
                 node = current.parent
             }
             parent.selectedObjectID = found

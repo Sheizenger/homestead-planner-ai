@@ -14,8 +14,13 @@ import HomesteadEngine
 import HomesteadCore
 
 enum SceneAssembly {
-    /// Where a node records which plan object it belongs to, for hit testing.
-    static let objectKey = "homesteadObjectID"
+    /// A node's `name` is the plan object it belongs to, or nil for scenery.
+    ///
+    /// Stashing it under a custom KVC key would read better and relies on
+    /// SCNNode accepting keys it does not declare — an idiom rather than a
+    /// guarantee, and this is the one layer that cannot be compiled or run
+    /// anywhere but on a Mac. The mesh's own id is never read back, so `name`
+    /// is free to carry the thing that is.
 
     // MARK: - Meshes
 
@@ -31,7 +36,7 @@ enum SceneAssembly {
     static func node(for mesh: SceneNode) -> SCNNode? {
         guard let prototype = geometry(named: mesh.model) else { return nil }
         let node = prototype.clone()
-        node.name = mesh.id
+        node.name = mesh.objectId
         node.position = SCNVector3(
             CGFloat(mesh.position.x), CGFloat(mesh.position.y), CGFloat(mesh.position.z)
         )
@@ -39,9 +44,6 @@ enum SceneAssembly {
         // Tilt first, then turn: the order `SceneBuilder` assumes, and the
         // only thing that tilts is a solar panel.
         node.eulerAngles = SCNVector3(CGFloat(mesh.pitch), CGFloat(mesh.yaw), 0)
-        if let objectId = mesh.objectId {
-            node.setValue(objectId, forKey: objectKey)
-        }
         if let tint = mesh.tint {
             apply(tint: tint, to: node)
         }
@@ -121,16 +123,14 @@ enum SceneAssembly {
         node.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0)
         node.position = SCNVector3(0, CGFloat(slab.top), 0)
         node.castsShadow = slab.thickness > 0.05
-        if let objectId = slab.objectId { node.setValue(objectId, forKey: objectKey) }
-        node.name = slab.id
+        node.name = slab.objectId
         return node
     }
 
     /// A built volume: walls up from the footprint, then a lid or a ridge.
     static func node(for solid: SceneSolid) -> SCNNode {
         let group = SCNNode()
-        group.name = solid.id
-        if let objectId = solid.objectId { group.setValue(objectId, forKey: objectKey) }
+        group.name = solid.objectId
 
         let walls = SCNShape(path: bezier(solid.polygon), extrusionDepth: max(0.05, CGFloat(solid.wallHeight)))
         walls.chamferRadius = 0
