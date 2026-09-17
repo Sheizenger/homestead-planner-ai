@@ -274,6 +274,8 @@ def main():
     parser.add_argument("--out", default="scene")
     parser.add_argument("--width", type=int, default=1500)
     parser.add_argument("--scene", default=None, help="a scene JSON to use instead of generating one")
+    parser.add_argument("--label", action="store_true",
+                        help="name each object where it stands, so 'what is that brown thing' has an answer")
     args = parser.parse_args()
 
     if args.scene:
@@ -319,6 +321,21 @@ def main():
     for _, points, colour in triangles:
         body.append('<polygon points="%s" fill="%s"/>'
                     % (" ".join("%.3f,%.3f" % p for p in points), colour))
+    if args.label:
+        # Drawn after the geometry and inside the same transform, so a label
+        # sits where its object stands. Counter-scaled, or the text would be
+        # scaled along with the metres.
+        for obj in data.get("objects", []):
+            # `project` takes scene space: east, up, south. Plan y is south,
+            # and the label floats a little above the object it names.
+            x, y = camera.project(obj["x"], 3.0, obj["y"])
+            body.append(
+                '<g transform="translate(%.3f,%.3f) scale(%.5f)">'
+                '<text x="0" y="0" font-family="monospace" font-size="11" '
+                'text-anchor="middle" fill="#101010" stroke="#ffffff" stroke-width="3" '
+                'paint-order="stroke">%s</text></g>'
+                % (x, y, 1 / scale, obj["type"])
+            )
     body.append("</g></svg>")
 
     svg = ROOT / (args.out + ".svg")

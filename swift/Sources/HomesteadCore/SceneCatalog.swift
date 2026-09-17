@@ -215,7 +215,10 @@ public enum SceneCatalog {
         // Animals --------------------------------------------------------
         "goat-shelter": Look(.building(meshes: outbuildingMeshes, height: 2.6), tint: 0xC2A06A),
         "goat-paddock": Look(
-            .surface(colour: 0x9C8E63, height: 0.02),
+            // Grazed, not bare. Dry dirt over the largest area on the plot
+            // read as a bald patch beside the lawn; a paddock is grass that
+            // animals have been kept on.
+            .surface(colour: 0x8E9B5F, height: 0.02),
             props: [
                 Prop("survival/grass-large", fit: .spanning(1.2), count: 7),
                 Prop("survival/patch-grass", fit: .spanning(1.6), direction: (-0.5, 0.4), count: 3),
@@ -234,7 +237,12 @@ public enum SceneCatalog {
         // Growing --------------------------------------------------------
         "orchard-trees": Look(.scatter(models: broadleafTrees, perSquareMetre: 0.04, height: 4.8)),
         "berry-rows": Look(.rows(model: "town/hedge", spacing: 1.8, height: 1.1, alongLongAxis: true, stretched: true)),
-        "vineyard": Look(.rows(model: "town/poles", spacing: 2.2, height: 1.9, alongLongAxis: true)),
+        // Vines, not the stakes on their own. `town/poles` is a bare pair of
+        // posts and nothing grows on it, so a vineyard came out as a field of
+        // brown sticks. No kit here has a vine; a tall hedge row is what reads
+        // as one, and `hedge-large` is taller than the `hedge` berry rows use,
+        // which keeps the two of them apart.
+        "vineyard": Look(.rows(model: "town/hedge-large", spacing: 2.2, height: 1.7, alongLongAxis: true, stretched: true)),
         "raised-beds": Look(.rows(model: "survival/grass", spacing: 1.4, height: 0.55, alongLongAxis: true)),
         "vegetable-area": Look(.rows(model: "survival/grass", spacing: 1.2, height: 0.45, alongLongAxis: true)),
         "potato-area": Look(.rows(model: "survival/grass", spacing: 1.1, height: 0.4, alongLongAxis: true)),
@@ -252,7 +260,21 @@ public enum SceneCatalog {
         "pump": Look(.single(model: "works/machine", fit: .standing(height: 1.4))),
         "water-tank": Look(.single(model: "survival/barrel", fit: .inscribed), tint: 0x9FB6C4),
         "rainwater-cistern": Look(.single(model: "survival/barrel", fit: .inscribed), tint: 0x6F8A98),
-        "septic": Look(.single(model: "works/top-large", fit: .footprint(height: 0.4)), tint: 0x8A8F84),
+        // The access slab over a buried tank, and a vent beside it.
+        //
+        // Not a mesh, and that is the point: every model in the factory kit is
+        // dark navy in its atlas, and a tint multiplies the atlas rather than
+        // replacing it, so it can only ever make one darker. `works/top-large`
+        // stretched over the five by four metres a septic is given drew as a
+        // near-black rectangle on the lawn, which read as a hole in the
+        // ground; the round tank that replaced it read as one too, because a
+        // hopper is a funnel and a funnel seen from above is its own dark
+        // inside. A surface carries its colour directly, so concrete can
+        // actually be the colour of concrete.
+        "septic": Look(
+            .surface(colour: 0xB9B4A8, height: 0.12),
+            props: [Prop("works/structure-short", fit: .standing(height: 0.8), direction: (0.55, 0.0))]
+        ),
         "pool": Look(.sunken(colour: 0x3FA9D6, depth: 1.4)),
         "dock": Look(
             .single(model: "water/ramp-wide", fit: .footprint(height: 1.0)),
