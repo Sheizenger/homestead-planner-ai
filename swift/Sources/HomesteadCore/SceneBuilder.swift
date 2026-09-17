@@ -444,13 +444,35 @@ public enum SceneBuilder {
             ))
 
         case let .sunken(colour, depth):
+            // The rim is a frame around the water, not a lid over it. Drawn as
+            // the whole footprint it sat two-tenths of a metre above a pool
+            // that is sunk below grade, so it covered it completely and a pool
+            // rendered as a beige slab with no water in it.
+            let outer = Massing3D.footprint(of: object)
+            let inner = inset(outer, by: 0.5)
+            for corner in outer.indices {
+                let next = (corner + 1) % outer.count
+                scene.slabs.append(SceneSlab(
+                    id: object.id + "-coping-\(corner)",
+                    polygon: [outer[corner], outer[next], inner[next], inner[corner]],
+                    top: Ground.coping, thickness: Ground.coping,
+                    colour: 0xD8D2C4, objectId: object.id
+                ))
+            }
+            // Held inside the rim rather than sunk below grade. The ground is
+            // a solid block and an extruded polygon cannot cut a hole in it —
+            // the same limitation the river is drawn around — so water put
+            // below zero is water inside the block, and the pool showed lawn.
+            // Filled to just under the coping, the rim carries the depth.
+            //
+            // `depth` is what the pool is, not what can be drawn of it. The
+            // body is capped just below grade: any more hangs down inside the
+            // block of land where it cannot be seen from above, and shows as
+            // a slab of blue down the cut face wherever the land is cut.
             scene.slabs.append(SceneSlab(
-                id: object.id + "-coping", polygon: Massing3D.footprint(of: object),
-                top: Ground.coping, thickness: Ground.coping, colour: 0xD8D2C4, objectId: object.id
-            ))
-            scene.slabs.append(SceneSlab(
-                id: object.id, polygon: inset(Massing3D.footprint(of: object), by: 0.5),
-                top: -depth * 0.25, thickness: depth, colour: colour, objectId: object.id
+                id: object.id, polygon: inner,
+                top: Ground.coping - 0.05, thickness: min(depth, Ground.coping + 0.1),
+                colour: colour, objectId: object.id
             ))
         }
 
