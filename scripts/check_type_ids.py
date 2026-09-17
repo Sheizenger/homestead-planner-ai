@@ -14,6 +14,7 @@ rather than being caught here:
 4. No one writes the camera's angles out by hand again.
 5. Every file imports the module of every type it names.
 6. A hex colour is the same width here as it is in HomesteadCore.
+7. Every extruded shape is placed by the arithmetic that has a test.
 
 On (1): the view layer keys several tables by type id — massing, materials, palettes,
 cylinder caps, foliage. A typo or a renamed catalog entry makes the row
@@ -256,6 +257,30 @@ def check_colour_width():
     return failures
 
 
+def check_slab_placement():
+    """Every extruded shape is placed by the arithmetic that has a test.
+
+    `SCNShape` extrudes a path centred on its own zero, so a node placed at
+    the height the slab is meant to reach puts half its thickness above it.
+    The ground is 1.6m thick; its surface stood 0.8m proud of the plane the
+    meshes are placed on, and every building on the plot was buried to the
+    knee. The walls of a built volume floated half a storey up for the same
+    reason.
+
+    `GroundPlane.centre` is that arithmetic and HomesteadCore tests it. This
+    only checks that nothing here places a shape without it — which is the
+    part no test on Linux can see.
+    """
+    source = (APP / "SceneAssembly.swift").read_text()
+    shapes = len(re.findall(r"SCNShape\(", source))
+    centred = len(re.findall(r"GroundPlane\.centre\(", source))
+    if shapes != centred:
+        return ["Homestead/Homestead/SceneAssembly.swift: %d extruded shape%s but %d placed by "
+                "GroundPlane.centre — an extruded shape placed any other way sits half its own "
+                "thickness off" % (shapes, "" if shapes == 1 else "s", centred)]
+    return []
+
+
 def main() -> int:
     known = set(re.findall(r'id: "([a-z0-9\-]+)"', LIBRARY.read_text()))
     if not known:
@@ -275,6 +300,7 @@ def main() -> int:
     failures += check_hardcoded_camera()
     failures += check_imports()
     failures += check_colour_width()
+    failures += check_slab_placement()
 
     for failure in failures:
         print(f"error: {failure}", file=sys.stderr)

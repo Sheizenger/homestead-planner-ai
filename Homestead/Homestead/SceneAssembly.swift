@@ -113,7 +113,8 @@ enum SceneAssembly {
 
     /// A flat polygon — ground, paving, a path, the surface of water.
     static func node(for slab: SceneSlab) -> SCNNode {
-        let shape = SCNShape(path: bezier(slab.polygon), extrusionDepth: max(0.01, CGFloat(slab.thickness)))
+        let thickness = GroundPlane.extrusion(slab.thickness)
+        let shape = SCNShape(path: bezier(slab.polygon), extrusionDepth: CGFloat(thickness))
         shape.chamferRadius = 0
         let material = SCNMaterial()
         material.diffuse.contents = colour(slab.colour)
@@ -125,7 +126,10 @@ enum SceneAssembly {
         // `SCNShape` extrudes a path in the XY plane along +Z; a slab lies in
         // the ground plane, so it is laid down and pushed to its own top.
         node.eulerAngles = SCNVector3(CGFloat(GroundPlane.pitch), 0, 0)
-        node.position = SCNVector3(0, CGFloat(slab.top), 0)
+        // Centred, so that the slab's *top* is `slab.top` — see `GroundPlane`.
+        node.position = SCNVector3(
+            0, CGFloat(GroundPlane.centre(top: slab.top, thickness: slab.thickness)), 0
+        )
         node.castsShadow = slab.thickness > 0.05
         node.name = slab.objectId
         return node
@@ -136,12 +140,16 @@ enum SceneAssembly {
         let group = SCNNode()
         group.name = solid.objectId
 
-        let walls = SCNShape(path: bezier(solid.polygon), extrusionDepth: max(0.05, CGFloat(solid.wallHeight)))
+        let wallHeight = max(0.05, solid.wallHeight)
+        let walls = SCNShape(path: bezier(solid.polygon), extrusionDepth: CGFloat(wallHeight))
         walls.chamferRadius = 0
         walls.materials = [material(solid.colour, opacity: solid.opacity)]
         let wallNode = SCNNode(geometry: walls)
         wallNode.eulerAngles = SCNVector3(CGFloat(GroundPlane.pitch), 0, 0)
-        wallNode.position = SCNVector3(0, CGFloat(solid.base + solid.wallHeight), 0)
+        // Standing on the base, not hovering half a storey over it.
+        wallNode.position = SCNVector3(
+            0, CGFloat(GroundPlane.centre(top: solid.base + wallHeight, thickness: wallHeight)), 0
+        )
         wallNode.castsShadow = true
         group.addChildNode(wallNode)
 
@@ -150,13 +158,17 @@ enum SceneAssembly {
             lid.materials = [material(solid.colour, opacity: solid.opacity)]
             let lidNode = SCNNode(geometry: lid)
             lidNode.eulerAngles = SCNVector3(CGFloat(GroundPlane.pitch), 0, 0)
-            lidNode.position = SCNVector3(0, CGFloat(solid.base + solid.wallHeight + 0.05), 0)
+            lidNode.position = SCNVector3(
+                0,
+                CGFloat(GroundPlane.centre(top: solid.base + wallHeight + 0.05, thickness: 0.05)),
+                0
+            )
             group.addChildNode(lidNode)
             return group
         }
 
         // A ridged top, as four triangles over the footprint's bounding box.
-        let eaves = solid.base + solid.wallHeight
+        let eaves = solid.base + wallHeight
         let apex = eaves + solid.ridgeRise
         let alongX = box.width >= box.height
         let corners = [

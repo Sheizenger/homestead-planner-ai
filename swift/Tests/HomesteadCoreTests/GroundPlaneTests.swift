@@ -62,3 +62,37 @@ struct GroundPlaneTests {
         #expect(zs.min() == 11 && zs.max() == 40)
     }
 }
+
+struct SlabDepthTests {
+    /// The one the user saw: a mesh stands on the plane the plan puts it on,
+    /// and the ground's top face has to be that same plane. It was 0.8m
+    /// above it, so everything on the plot stood buried to the knee.
+    @Test func theGroundsSurfaceIsTheHeightMeshesStandOn() {
+        let thickness = 1.6, top = 0.0
+        let centre = GroundPlane.centre(top: top, thickness: thickness)
+        let surface = centre + GroundPlane.extrusion(thickness) / 2
+        #expect(abs(surface - top) < 1e-12, "surface \(surface), meshes stand on \(top)")
+    }
+
+    /// A slab hangs below the height it names, never above it.
+    @Test func aSlabHangsBelowItsTop() {
+        for (top, thickness) in [(0.0, 1.6), (0.06, 0.0), (0.2, 0.2), (-0.35, 1.4)] {
+            let centre = GroundPlane.centre(top: top, thickness: thickness)
+            let half = GroundPlane.extrusion(thickness) / 2
+            #expect(abs((centre + half) - top) < 1e-12)
+            #expect(centre - half <= top + 1e-12)
+        }
+    }
+
+    /// A built volume's walls stand on their base and stop at their height.
+    /// They were floating half a storey up, which is why a greenhouse had no
+    /// bottom to it.
+    @Test func wallsStandOnTheirBase() {
+        for (base, wallHeight) in [(0.0, 1.2), (0.0, 1.9), (0.4, 2.5)] {
+            let centre = GroundPlane.centre(top: base + wallHeight, thickness: wallHeight)
+            let half = GroundPlane.extrusion(wallHeight) / 2
+            #expect(abs((centre - half) - base) < 1e-12, "foot at \(centre - half), base \(base)")
+            #expect(abs((centre + half) - (base + wallHeight)) < 1e-12)
+        }
+    }
+}

@@ -52,6 +52,26 @@ public enum GroundPlane {
         Vector3(x: point.x, y: 0, z: -point.y)
     }
 
+    /// The thickness a slab is actually extruded by.
+    ///
+    /// A slab with no thickness still has to be a solid, or there is nothing
+    /// to extrude and nothing to draw.
+    public static func extrusion(_ thickness: Double) -> Double {
+        max(0.01, thickness)
+    }
+
+    /// Where the node's centre goes so that the top face lands on `top`.
+    ///
+    /// `SCNShape` extrudes a path centred on its own zero: half the thickness
+    /// in front of the path and half behind. A node placed at `top`
+    /// therefore puts half the slab *above* the height it was meant to reach.
+    /// The ground is 1.6m thick, so its surface stood 0.8m proud of the plane
+    /// every mesh is placed on, and the whole homestead was buried to the
+    /// knee in its own lawn.
+    public static func centre(top: Double, thickness: Double) -> Double {
+        top - extrusion(thickness) / 2
+    }
+
     /// Where a plan point ends up in the scene: the whole trip.
     ///
     /// This must agree with where a mesh at the same plan point is placed,

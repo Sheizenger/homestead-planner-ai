@@ -237,12 +237,17 @@ public enum SceneCatalog {
         // Growing --------------------------------------------------------
         "orchard-trees": Look(.scatter(models: broadleafTrees, perSquareMetre: 0.04, height: 4.8)),
         "berry-rows": Look(.rows(model: "town/hedge", spacing: 1.8, height: 1.1, alongLongAxis: true, stretched: true)),
-        // Vines, not the stakes on their own. `town/poles` is a bare pair of
+        // Vines, not the stakes on their own: `town/poles` is a bare pair of
         // posts and nothing grows on it, so a vineyard came out as a field of
-        // brown sticks. No kit here has a vine; a tall hedge row is what reads
-        // as one, and `hedge-large` is taller than the `hedge` berry rows use,
-        // which keeps the two of them apart.
-        "vineyard": Look(.rows(model: "town/hedge-large", spacing: 2.2, height: 1.7, alongLongAxis: true, stretched: true)),
+        // brown sticks. No kit here has a vine and a hedge row is what reads
+        // as one — `hedge-large`, taller than the `hedge` the berry rows use,
+        // so the two stay apart.
+        //
+        // Repeated rather than stretched, which is the whole of the
+        // difference between a row of vines and a smooth green pipe twenty
+        // metres long. A plant repeats at its own size; only a thing that is
+        // genuinely modular, like a panel, is stretched to fit.
+        "vineyard": Look(.rows(model: "town/hedge-large", spacing: 2.2, height: 1.4, alongLongAxis: true)),
         "raised-beds": Look(.rows(model: "survival/grass", spacing: 1.4, height: 0.55, alongLongAxis: true)),
         "vegetable-area": Look(.rows(model: "survival/grass", spacing: 1.2, height: 0.45, alongLongAxis: true)),
         "potato-area": Look(.rows(model: "survival/grass", spacing: 1.1, height: 0.4, alongLongAxis: true)),
