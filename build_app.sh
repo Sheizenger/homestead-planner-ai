@@ -64,6 +64,18 @@ if [ "$DO_SELF_CHECK" = 1 ]; then
     # a display list that paints something over what is nearer to the camera.
     step "Orbit geometry"
     python3 "$ROOT/scripts/preview_orbit.py"
+
+    # The 3D meshes: all present, and measured into a table that matches them.
+    step "Models"
+    python3 "$ROOT/scripts/vendor_models.py" --check
+    python3 "$ROOT/scripts/build_model_metrics.py" --check
+
+    # A whole generated plan, built into a scene and rasterised from the real
+    # meshes. Writes scene.png; the questions it answers — is the shed the
+    # size of a shed, is the tractor on the ground, does the river appear —
+    # are the ones that have actually gone wrong.
+    step "Scene preview"
+    python3 "$ROOT/scripts/preview_scene.py"
 fi
 
 command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild not found — this part needs macOS with Xcode"

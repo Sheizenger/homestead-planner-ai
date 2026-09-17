@@ -127,6 +127,31 @@ public enum WaterfrontModel {
         return clipped.count >= 3 ? clipped : polygon
     }
 
+    /// The dry part of the planning strip: the land between the waterline and
+    /// the line the placer measures setbacks from.
+    ///
+    /// The bank has to be the strip *minus* the water, not the whole strip.
+    /// The water surface sits below grade, so a bank drawn across the whole
+    /// strip is an opaque lid over it — in a renderer with a depth buffer the
+    /// river simply disappears under a sandbank, which is what happened.
+    public static func bank(of plot: Plot, samples: Int = 48) -> [Point]? {
+        guard let waterfront = plot.waterfront,
+              let water = bounds(of: plot),
+              let shore = shoreline(of: plot, samples: samples), shore.count > 2 else { return nil }
+        // `shoreline` walks the waterline first and then closes along the
+        // property line; the bank closes the other way, along the landward
+        // edge of the strip.
+        let waterline = Array(shore.prefix(samples + 1))
+        let landward: [Point]
+        switch waterfront.edge {
+        case .north: landward = [Point(x: water.maxX, y: water.maxY), Point(x: water.minX, y: water.maxY)]
+        case .south: landward = [Point(x: water.minX, y: water.minY), Point(x: water.maxX, y: water.minY)]
+        case .west: landward = [Point(x: water.maxX, y: water.maxY), Point(x: water.maxX, y: water.minY)]
+        case .east: landward = [Point(x: water.minX, y: water.minY), Point(x: water.minX, y: water.maxY)]
+        }
+        return waterline + landward
+    }
+
     /// Rough planning thresholds for a small run-of-river or drop-based
     /// micro-hydro setup — not a substitute for a real hydrology assessment.
     public static let minHydroFlowMps: Double = 0.5

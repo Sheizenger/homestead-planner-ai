@@ -11,10 +11,15 @@ let package = Package(
     products: [
         .library(name: "HomesteadEngine", targets: ["HomesteadEngine"]),
         .library(name: "HomesteadCore", targets: ["HomesteadCore"]),
+        // Dumps a built scene as JSON so it can be rasterised and *looked at*
+        // on Linux, where the app target cannot be compiled. See
+        // `scripts/preview_scene.py`.
+        .executable(name: "scene-dump", targets: ["SceneDump"]),
     ],
     targets: [
         .target(name: "HomesteadEngine"),
         .target(name: "HomesteadCore", dependencies: ["HomesteadEngine"]),
+        .executableTarget(name: "SceneDump", dependencies: ["HomesteadCore"]),
         .testTarget(name: "HomesteadEngineTests", dependencies: ["HomesteadEngine"]),
         .testTarget(name: "HomesteadCoreTests", dependencies: ["HomesteadCore"]),
     ]

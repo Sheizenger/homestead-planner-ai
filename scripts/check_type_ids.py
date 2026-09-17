@@ -61,11 +61,18 @@ def check_nested_types() -> list[str]:
     if not nested:
         return []
 
+    # Names the app declares itself shadow the engine's, legitimately — and a
+    # Swift type is visible across its whole module, not just its own file.
+    # Collecting these per file said `Massing` was unqualified in every file
+    # but the one declaring it, which is nine false reports and a checker
+    # nobody reads.
+    declared = set()
+    for path in APP.glob("*.swift"):
+        declared |= set(re.findall(r"(?:enum|struct|final class|class) (\w+)", path.read_text()))
+
     failures = []
     for path in sorted(APP.glob("*.swift")):
         source = path.read_text()
-        # Names the app declares itself shadow the engine's, legitimately.
-        declared = set(re.findall(r"(?:enum|struct|final class|class) (\w+)", source))
         for name, owner in sorted(nested.items()):
             if name in declared:
                 continue
