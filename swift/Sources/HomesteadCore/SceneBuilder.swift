@@ -203,7 +203,13 @@ public enum SceneBuilder {
     static let rockMeshes = ["town/rock-small", "town/rock-wide", "survival/rock-a", "yard/rocks"]
     static let wildTreeMeshes = ["forest/tree", "survival/tree", "survival/tree-tall", "yard/pine"]
     /// Grid pitch for the scatter, metres.
-    static let undergrowthSpacing = 4.2
+    /// How far apart the wild things are sown.
+    ///
+    /// Four metres left the lawn between the buildings reading as a bare green
+    /// sheet: a homestead is not mown to the fence line. The rolls below are
+    /// rebalanced to match, so that closing the grid adds tufts rather than
+    /// multiplying the trees and rocks, which are what cost triangles.
+    static let undergrowthSpacing = 3.2
     /// How far a wild tree keeps from anything built. Close enough and it is
     /// not wild, it is landscaping — and it hides the thing behind it.
     static let treeClearance = 7.0
@@ -248,13 +254,13 @@ public enum SceneBuilder {
                 let roll = SceneNoise.value("wild", index, 3)
                 let model: String
                 let fit: ModelFit
-                if roll < 0.10, nearestBuilt > treeClearance {
+                if roll < 0.06, nearestBuilt > treeClearance {
                     model = wildTreeMeshes[index % wildTreeMeshes.count]
                     fit = .standing(height: 4.0 + SceneNoise.value("wild", index, 4) * 2.4)
-                } else if roll < 0.20 {
+                } else if roll < 0.12 {
                     model = rockMeshes[index % rockMeshes.count]
                     fit = .spanning(0.6 + SceneNoise.value("wild", index, 5) * 0.9)
-                } else if roll < 0.78 {
+                } else if roll < 0.86 {
                     model = tuftMeshes[index % tuftMeshes.count]
                     fit = .spanning(0.7 + SceneNoise.value("wild", index, 6) * 0.8)
                 } else {
@@ -802,24 +808,53 @@ public enum SceneBuilder {
 
         // Rows across the bed, plants along each row, both opened out
         // together until the whole field fits under the cap.
+        //
+        // The band is inset by half a plant first. A plant is scaled
+        // uniformly, so it is about as wide as it is tall, and it is placed by
+        // its centre: a row laid out to the edge of the bed hangs half a plant
+        // over it. At vine height that was far enough to reach into the
+        // smokehouse standing next door.
+        // How wide a plant comes out is the mesh's own business, not the
+        // height it was asked for. `survival/grass-large` is three times wider
+        // than it is tall, so a vine "1.5 metres tall" is five metres across:
+        // the rows closed into one green mass with no rows visible in it, and
+        // the outermost overhung its bed far enough to stand in the smokehouse
+        // next door.
+        //
+        // So the height is capped by what the row can hold — no wider than the
+        // step along it, and never more than a fraction of the bed itself.
+        let aspect: Double = {
+            guard let bounds = metrics[model], bounds.height > 1e-6 else { return 1 }
+            return max(max(bounds.width, bounds.depth) / bounds.height, 1e-6)
+        }()
+        let drawnHeight = min(
+            height,
+            spacing * 0.82 * 0.85 / aspect,
+            min(across, rowLength) * 0.45 / aspect
+        )
+        // The scatter below can take a plant to 1.16 of its height.
+        let margin = drawnHeight * 1.16 * aspect * 0.5
+        let bandAcross = max(across - margin * 2, across * 0.5)
+        let bandAlong = max(rowLength - margin * 2, rowLength * 0.5)
+
         var rowStep = spacing
         var plantStep = spacing * 0.82
-        var rowCount = max(1, Int((across / rowStep).rounded(.down)))
-        var plantCount = max(1, Int((rowLength / plantStep).rounded(.down)))
+        var rowCount = max(1, Int((bandAcross / rowStep).rounded(.down)))
+        var plantCount = max(1, Int((bandAlong / plantStep).rounded(.down)))
         while rowCount * plantCount > plantsPerField {
             rowStep *= 1.18
             plantStep *= 1.18
-            rowCount = max(1, Int((across / rowStep).rounded(.down)))
-            plantCount = max(1, Int((rowLength / plantStep).rounded(.down)))
+            rowCount = max(1, Int((bandAcross / rowStep).rounded(.down)))
+            plantCount = max(1, Int((bandAlong / plantStep).rounded(.down)))
         }
-        let rowSpan = across / Double(rowCount)
-        let plantSpan = rowLength / Double(plantCount)
+        let rowSpan = bandAcross / Double(rowCount)
+        let plantSpan = bandAlong / Double(plantCount)
 
         var nodes: [SceneNode] = []
         for row in 0..<rowCount {
-            let acrossOffset = (Double(row) + 0.5) * rowSpan - across / 2
+            let acrossOffset = (Double(row) + 0.5) * rowSpan - bandAcross / 2
             for plant in 0..<plantCount {
-                let alongOffset = (Double(plant) + 0.5) * plantSpan - rowLength / 2
+                let alongOffset = (Double(plant) + 0.5) * plantSpan - bandAlong / 2
                 let index = row * plantCount + plant
                 // Jittered along the row but not across it: a row that
                 // wanders sideways stops being a row.
@@ -827,7 +862,7 @@ public enum SceneBuilder {
                 let local = longIsX
                     ? Point(x: alongOffset + wobble, y: acrossOffset)
                     : Point(x: acrossOffset, y: alongOffset + wobble)
-                let scaled = height * (0.84 + SceneNoise.value(object.id, index, 2) * 0.32)
+                let scaled = drawnHeight * (0.84 + SceneNoise.value(object.id, index, 2) * 0.32)
                 if let node = ModelPlacement.node(
                     id: "\(object.id)-\(row)-\(plant)",
                     model: model,

@@ -205,10 +205,24 @@ public enum SceneCatalog {
             .volume(colour: 0x7E8A72, wallHeight: 1.2, ridgeRise: 0.9, opacity: 1),
             props: [Prop("town/wall-wood-door", fit: .standing(height: 1.7), direction: (0, 0.5))]
         ),
-        "greenhouse": Look(.volume(colour: 0xBBE3E8, wallHeight: 1.9, ridgeRise: 1.3, opacity: 0.45)),
+        // Glass on its own is a featureless block of ice. No kit here has a
+        // greenhouse, so what says it is one is what stands in it: a door in
+        // the gable end and planters down the middle, seen through the glass.
+        "greenhouse": Look(
+            .volume(colour: 0xBBE3E8, wallHeight: 1.9, ridgeRise: 1.3, opacity: 0.45),
+            props: [
+                Prop("town/wall-wood-door", fit: .standing(height: 1.8), direction: (0, 0.5)),
+                Prop("city/planter", fit: .spanning(1.1), count: 4, inside: true),
+            ]
+        ),
         "hydroponic-tower": Look(.building(meshes: outbuildingMeshes, height: 4.4), tint: 0xA8C2A0),
+        // Sized by how tall it is, not by how much ground it covers.
+        // `.inscribed` scales uniformly until the mesh fills the footprint, and
+        // a canopy is far taller than it is wide — over four metres of the
+        // plan it came out on stilts, a market awning rather than somewhere to
+        // sit.
         "gazebo": Look(
-            .single(model: "survival/structure-canvas", fit: .inscribed),
+            .single(model: "survival/structure-canvas", fit: .standing(height: 2.6)),
             props: [Prop("town/stall-stool", fit: .spanning(0.7), count: 2, inside: true)]
         ),
 
@@ -236,18 +250,26 @@ public enum SceneCatalog {
 
         // Growing --------------------------------------------------------
         "orchard-trees": Look(.scatter(models: broadleafTrees, perSquareMetre: 0.04, height: 4.8)),
-        "berry-rows": Look(.rows(model: "town/hedge", spacing: 1.8, height: 1.1, alongLongAxis: true, stretched: true)),
+        // Bushes, and `town/hedge` is not one: it is a clipped hedge on a
+        // pale plinth, and the plinth reads as concrete at this size. Repeated
+        // down a bed it gave a row of pale shards.
+        // Spaced wider than the plants are tall. A plant is scaled uniformly,
+        // so its width is about its height, and the step along a row is
+        // `spacing * 0.82` — set the two too close and the row closes up into
+        // one green mass with no rows visible in it at all, which is how the
+        // vines, the berries and the grain all came to look like the same
+        // thing.
+        "berry-rows": Look(.rows(model: "survival/grass-large", spacing: 1.9, height: 1.0, alongLongAxis: true)),
         // Vines, not the stakes on their own: `town/poles` is a bare pair of
         // posts and nothing grows on it, so a vineyard came out as a field of
-        // brown sticks. No kit here has a vine and a hedge row is what reads
-        // as one — `hedge-large`, taller than the `hedge` the berry rows use,
-        // so the two stay apart.
+        // brown sticks. No kit here has a vine, so it is a row of foliage,
+        // taller and further apart than the berry rows.
         //
-        // Repeated rather than stretched, which is the whole of the
-        // difference between a row of vines and a smooth green pipe twenty
-        // metres long. A plant repeats at its own size; only a thing that is
-        // genuinely modular, like a panel, is stretched to fit.
-        "vineyard": Look(.rows(model: "town/hedge-large", spacing: 2.2, height: 1.4, alongLongAxis: true)),
+        // Repeated rather than stretched, which is the whole of the difference
+        // between a row of vines and a smooth green pipe twenty metres long. A
+        // plant repeats at its own size; only a thing that is genuinely
+        // modular, like a panel, is stretched to fit.
+        "vineyard": Look(.rows(model: "survival/grass-large", spacing: 3.0, height: 1.5, alongLongAxis: true)),
         "raised-beds": Look(.rows(model: "survival/grass", spacing: 1.4, height: 0.55, alongLongAxis: true)),
         "vegetable-area": Look(.rows(model: "survival/grass", spacing: 1.2, height: 0.45, alongLongAxis: true)),
         "potato-area": Look(.rows(model: "survival/grass", spacing: 1.1, height: 0.4, alongLongAxis: true)),
